@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./swiss_jass.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  
+  // User avatar/icon (simple shapes for now)
+  avatarShape String @default("circle") // circle, square, triangle, diamond, star, heart
+  avatarColor String @default("#3B82F6") // hex color
+  
+  // Location
+  country   String @default("CH")
+  city      String?
+  
+  // Game stats
+  totalGames  Int @default(0)
+  totalWins   Int @default(0)
+  totalPoints Int @default(0)
+  eloRating   Int @default(1200)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLogin DateTime?
+  
+  @@map("users")
+}
+
+model GameSession {
+  id        String   @id @default(cuid())
+  userId    String
+  gameType  String   // "schieber", "handjass", etc.
+  result    String   // "won", "lost", "draw"
+  points    Int
+  duration  Int      // in minutes
+  createdAt DateTime @default(now())
+  
+  @@map("game_sessions")
+}
