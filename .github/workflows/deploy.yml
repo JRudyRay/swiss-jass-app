@@ -43,24 +43,28 @@ jobs:
         id: setup_pages
         uses: actions/configure-pages@v4
       
+      - name: Debug configure-pages step object
+        run: |
+          echo "SETUP_PAGES_STEP=${{ toJson(steps.setup_pages) }}"
+          echo "UPLOAD_URL_OUT='${{ steps.setup_pages.outputs.upload_url }}'"
+
       - name: Upload artifact (zip + curl)
+        if: ${{ steps.setup_pages.outputs.upload_url != '' }}
         run: |
           echo "RAW_UPLOAD_URL='${{ steps.setup_pages.outputs.upload_url }}'"
           url='${{ steps.setup_pages.outputs.upload_url }}'
           # Trim CR/LF
           url=$(printf "%s" "$url" | tr -d '\r\n')
           echo "TRIMMED_UPLOAD_URL='$url'"
-          if [ -z "$url" ]; then
-            echo "ERROR: upload_url is empty. configure-pages may have failed or returned no upload_url." >&2
-            exit 2
-          fi
-          if ! echo "$url" | grep -E '^https?://'; then
-            echo "ERROR: upload_url does not look like a valid URL: $url" >&2
-            exit 3
-          fi
           cd web
           zip -r ../pages.zip dist
           curl -v -X POST -H "Content-Type: application/zip" --data-binary @../pages.zip "$url"
+
+      - name: Fallback upload via action (upload-pages-artifact@v2)
+        if: ${{ steps.setup_pages.outputs.upload_url == '' }}
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './web/dist'
 
   deploy:
     environment:
