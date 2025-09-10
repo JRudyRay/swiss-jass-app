@@ -37,6 +37,7 @@ jobs:
         run: |
           cd web
           npm run build
+          cp .nojekyll dist/
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
