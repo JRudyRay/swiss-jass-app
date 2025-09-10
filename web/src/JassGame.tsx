@@ -136,6 +136,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [showLastTrick, setShowLastTrick] = useState<(any[] ) | null>(null);
   const [matchFinished, setMatchFinished] = useState<boolean>(false);
   const [roundStarter, setRoundStarter] = useState(0);
+  const [roundHistory, setRoundHistory] = useState<Array<{round: number, team1: number, team2: number, trump: string}>>([]);
   // helper: map engine player id to a seat around the table
   const seatForId = (id: number) => {
     const seats = ['south', 'west', 'north', 'east'];
@@ -514,11 +515,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         return;
       }
       
-      st.trump = chosenTrump;
+      st.trump = chosenTrump as any;
       st.phase = 'playing';
       
       // Detect Weis for all players now that trump is known
-      const updatedSt = Schieber.setTrumpAndDetectWeis(st, chosenTrump);
+      const updatedSt = Schieber.setTrumpAndDetectWeis(st, chosenTrump as any);
       saveLocalState(updatedSt);
       setPlayers(mapPlayersWithSeats(updatedSt.players));
       setGameState({ phase: updatedSt.phase, currentPlayer: updatedSt.currentPlayer, trumpSuit: updatedSt.trump || null, currentTrick: updatedSt.currentTrick || [], scores: updatedSt.scores, weis: updatedSt.weis });
@@ -668,7 +669,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         // apply locally
         const st = loadLocalState();
         if (!st) return;
-        st.trump = trump;
+        st.trump = trump as any;
         st.phase = 'playing';
         saveLocalState(st);
         setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
@@ -782,6 +783,31 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             <div style={{ fontSize: 32, fontWeight: 900, color: '#1d4ed8' }}>{gameState?.scores?.team2 ?? 0}</div>
           </div>
         </div>
+
+        {/* Round-by-round score history */}
+        {roundHistory.length > 0 && (
+          <div style={{ marginBottom: 16, background: '#f9fafb', borderRadius: 8, padding: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>Round History</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {roundHistory.map((round, idx) => (
+                <div key={idx} style={{ 
+                  background: 'white', 
+                  borderRadius: 6, 
+                  padding: '4px 8px', 
+                  fontSize: 12,
+                  border: '1px solid #e5e7eb',
+                  minWidth: 80,
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontWeight: 600 }}>Round {round.round}</div>
+                  <div style={{ color: '#dc2626' }}>{round.team1}</div>
+                  <div style={{ color: '#2563eb' }}>{round.team2}</div>
+                  <div style={{ fontSize: 10, color: '#6b7280' }}>{round.trump}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
           <button style={styles.button} onClick={() => setTab('game')}>Game</button>
           <button style={styles.button} onClick={() => setTab('rankings')}>Rankings</button>
           <button style={styles.button} onClick={() => setTab('settings')}>Settings</button>
@@ -1026,9 +1052,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               Trump Selector: {players.find(p => p.id === gameState.currentPlayer)?.name || `Player ${gameState.currentPlayer}`}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              {['eicheln', 'schellen', 'rosen', 'schilten', 'obenabe', 'undenufe'].map(t => (
+              {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map(t => (
                 <button key={t} style={{ ...styles.button, border: chosenTrump===t ? '2px solid #000' : undefined }} onClick={() => { setChosenTrump(t); setMessage(`Selected trump ${t}`); }}>
-                  {t === 'obenabe' ? 'Obenabe' : t === 'undenufe' ? 'Undenufe' : `${suitSymbols[t]} ${t}`}
+                  {t === 'oben-abe' ? 'Oben-abe' : t === 'unden-ufe' ? 'Unden-ufe' : `${suitSymbols[t]} ${t}`}
                 </button>
               ))}
               <button style={{ ...styles.button, background: '#6b7280' }} onClick={() => { setChosenTrump('schieben'); setMessage('Passed trump decision to partner (Schieben)'); }}>

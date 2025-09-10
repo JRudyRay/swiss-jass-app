@@ -1,8 +1,10 @@
 // Minimal Schieber engine for local play (client-side)
 // Implements deck, dealing, trump rules, trick resolution and scoring.
+// Enhanced with authentic Swiss Jass features and terminology
 
 export type Suit = 'eicheln' | 'schellen' | 'rosen' | 'schilten';
 export type Rank = '6'|'7'|'8'|'9'|'10'|'U'|'O'|'K'|'A';
+export type TrumpContract = 'eicheln' | 'schellen' | 'rosen' | 'schilten' | 'oben-abe' | 'unden-ufe';
 
 export type Card = {
   id: string;
@@ -23,7 +25,7 @@ export type WeisDeclaration = {
 
 export type State = {
   phase: 'dealing'|'trump_selection'|'playing'|'resolving'|'scoring'|'finished';
-  trump?: string | null;
+  trump?: TrumpContract | null;
   currentPlayer: number; // 0..3
   dealer: number; // 0..3, rotates after each hand
   // currentTrick entries now include playerId so UI can show origin
@@ -37,6 +39,9 @@ export type State = {
   pendingResolve?: boolean;
   // Weis declarations for each player after trump is selected
   weis?: Record<number, WeisDeclaration[]>; // playerId -> declarations
+  // Swiss Jass authentic features
+  trumpMultiplier?: number; // 1x, 2x (Schellen/Schilten), 3x (Oben-abe), 4x (Unden-ufe)
+  matchBonus?: number; // 100 for taking all 9 tricks
 };
 
 const suits: Suit[] = ['eicheln','schellen','rosen','schilten'];
@@ -142,14 +147,27 @@ export function chooseRandomTrump(): Suit {
 }
 
 // Set trump and detect all Weis
-export function setTrumpAndDetectWeis(state: State, trump: string): State {
+export function setTrumpAndDetectWeis(state: State, trump: TrumpContract): State {
   const st = JSON.parse(JSON.stringify(state)) as State;
   st.trump = trump;
+  
+  // Set multiplier based on trump contract (authentic Swiss Jass rules)
+  if (trump === 'schellen' || trump === 'schilten') {
+    st.trumpMultiplier = 2; // Double for "Sch-" suits (black suits)
+  } else if (trump === 'oben-abe') {
+    st.trumpMultiplier = 3; // Triple for "tops-down"
+  } else if (trump === 'unden-ufe') {
+    st.trumpMultiplier = 4; // Quadruple for "bottoms-up"
+  } else {
+    st.trumpMultiplier = 1; // Normal for Eicheln/Rosen
+  }
   
   // Detect Weis for all players now that trump is known
   st.weis = {};
   for (const player of st.players) {
-    player.weis = detectWeis(player.hand, trump);
+    // For no-trump contracts, pass null to detectWeis
+    const trumpSuit = (trump === 'oben-abe' || trump === 'unden-ufe') ? null : trump;
+    player.weis = detectWeis(player.hand, trumpSuit);
     st.weis[player.id] = player.weis;
   }
   
@@ -270,7 +288,7 @@ function rankToNumber(rank: Rank): number {
 }
 
 // Detect all possible Weis for a hand
-export function detectWeis(hand: Card[], trump?: string): WeisDeclaration[] {
+export function detectWeis(hand: Card[], trump?: string | null): WeisDeclaration[] {
   const weis: WeisDeclaration[] = [];
   
   // Group cards by suit for sequence detection
