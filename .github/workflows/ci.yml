@@ -41,12 +41,14 @@ jobs:
           npm run build
 
       - name: Setup Pages
+        id: setup_pages
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v2
-        with:
-          path: ./web/dist
+      - name: Upload artifact for GitHub Pages (zip + curl)
+        run: |
+          cd web
+          zip -r ../pages.zip dist
+          curl -X POST -H "Content-Type: application/zip" --data-binary @../pages.zip "${{ steps.setup_pages.outputs.upload_url }}"
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
