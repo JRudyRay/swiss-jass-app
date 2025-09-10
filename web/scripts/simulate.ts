@@ -74,11 +74,31 @@ function simulate(n = 20) {
 
     // The engine already applies settlement in resolveTrick when finishing, so read settled scores from st.scores
     const settled = { team1: st.scores.team1 || 0, team2: st.scores.team2 || 0 };
-    console.log(`Hand ${i+1}: RawTeam1=${teamRaw[1]} RawTeam2=${teamRaw[2]} RawTotal=${teamRaw[1]+teamRaw[2]} Trump=${st.trump} Mult=${st.trumpMultiplier}`);
-    console.log(`  Settled: Team1=${settled.team1} Team2=${settled.team2} Total=${settled.team1+settled.team2}`);
-    console.log(`  Cards counted=${totalCards}, sumFromTricks=${sumFromTricks}, settled-minus-cards=${(settled.team1+settled.team2)-sumFromTricks}`);
-    if (total !== 157) {
-      console.warn('Total points mismatch (expected 157)');
+  const lastTrickBonus = st.players.every(p => p.hand.length === 0) ? 5 : 0;
+  const totalRaw = sumFromTricks + lastTrickBonus;
+  console.log(`Hand ${i+1}: RawTeam1=${teamRaw[1]} RawTeam2=${teamRaw[2]} RawTotal=${teamRaw[1]+teamRaw[2]} Trump=${st.trump} Mult=${st.trumpMultiplier}`);
+    console.log(`  Intermediate: sumFromTricks=${sumFromTricks} lastTrickBonus=${lastTrickBonus} totalRaw=${totalRaw}`);
+    // Compute expected settled totals using Weis and multiplier logic (for verification)
+    const weis = Schieber.calculateTeamWeis(st.players);
+    const declarerId = st.declarer;
+    const declarerTeam = (typeof declarerId === 'number') ? st.players.find(p => p.id === declarerId)!.team : null;
+    const multiplierUsed = st.trumpMultiplier || 1;
+    let expectedT1 = teamRaw[1] + (weis.team1 || 0);
+    let expectedT2 = teamRaw[2] + (weis.team2 || 0);
+    if (declarerTeam === 1) expectedT1 = expectedT1 * multiplierUsed;
+    else if (declarerTeam === 2) expectedT2 = expectedT2 * multiplierUsed;
+    // match bonus if a team captured all cards
+    const team1Cards = st.players.filter(p=>p.team===1).reduce((s,p)=>s + (p.tricks?.length||0), 0);
+    const team2Cards = st.players.filter(p=>p.team===2).reduce((s,p)=>s + (p.tricks?.length||0), 0);
+    const matchBonus = st.matchBonus || 100;
+    if (team1Cards === 36) expectedT1 += (declarerTeam === 1 ? (matchBonus * multiplierUsed) : matchBonus);
+    if (team2Cards === 36) expectedT2 += (declarerTeam === 2 ? (matchBonus * multiplierUsed) : matchBonus);
+
+    console.log(`  Expected settled: Team1=${expectedT1} Team2=${expectedT2} Total=${expectedT1+expectedT2}`);
+    console.log(`  Settled (engine): Team1=${settled.team1} Team2=${settled.team2} Total=${settled.team1+settled.team2}`);
+    console.log(`  Cards counted=${totalCards}, settled-minus-expected=${(settled.team1+settled.team2)-(expectedT1+expectedT2)}`);
+    if (settled.team1 !== expectedT1 || settled.team2 !== expectedT2) {
+      console.warn(`  Settlement mismatch between engine and expected calculation. Diff Team1=${settled.team1-expectedT1} Team2=${settled.team2-expectedT2}`);
     }
   }
 }

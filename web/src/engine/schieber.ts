@@ -42,6 +42,8 @@ export type State = {
   // Swiss Jass authentic features
   trumpMultiplier?: number; // 1x, 2x (Schellen/Schilten), 3x (Oben-abe), 4x (Unden-ufe)
   matchBonus?: number; // 100 for taking all 9 tricks
+  // player id who declared the contract (set during trump selection)
+  declarer?: number | null;
 };
 
 const suits: Suit[] = ['eicheln','schellen','rosen','schilten'];
@@ -249,6 +251,8 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
   // Narrow to proper TrumpContract before assigning
   const realTrump = trump as TrumpContract;
   st.trump = realTrump;
+  // record who declared the contract
+  st.declarer = state.currentPlayer;
   
   // Set multiplier based on trump contract (authentic Swiss Jass rules)
   if (trump === 'schellen' || trump === 'schilten') {
@@ -706,9 +710,29 @@ export function settleHand(state: State): State {
   let t1 = rawTeam1 + (weisScore.team1 || 0);
   let t2 = rawTeam2 + (weisScore.team2 || 0);
 
-  // Apply contract multiplier to the whole settled score
-  t1 = t1 * multiplier;
-  t2 = t2 * multiplier;
+  // Debug logging to diagnose scoring mismatches
+  try {
+    console.log('settleHand debug: rawTeam1=', rawTeam1, 'rawTeam2=', rawTeam2, 'weisTeam1=', weisScore.team1, 'weisTeam2=', weisScore.team2, 'multiplier=', multiplier, 'declarer=', st.declarer);
+    console.log('  after weis: t1=', t1, 't2=', t2);
+  } catch (e) {
+    // ignore console errors in environments without console
+  }
+
+  // Apply contract multiplier only to the declarer's team (authentic Schieber semantics)
+  const declarerTeam = (typeof st.declarer === 'number') ? st.players.find(p => p.id === st.declarer)!.team : null;
+  if (declarerTeam === 1) {
+    t1 = t1 * multiplier;
+  } else if (declarerTeam === 2) {
+    t2 = t2 * multiplier;
+  } else {
+    // If no declarer (shouldn't happen), apply multiplier to both as fallback
+    t1 = t1 * multiplier;
+    t2 = t2 * multiplier;
+  }
+
+  try {
+    console.log('  after multiplier: t1=', t1, 't2=', t2);
+  } catch (e) {}
 
   // Check for match-all (one team captured all tricks) and award match bonus (multiplied)
   try {
@@ -716,13 +740,17 @@ export function settleHand(state: State): State {
     const team2Cards = st.players.filter(p=>p.team===2).reduce((s,p)=>s + (p.tricks?.length||0), 0);
     const matchBonus = st.matchBonus || 100;
     if (team1Cards === 36) {
-      t1 += (matchBonus * multiplier);
+      t1 += (declarerTeam === 1 ? (matchBonus * multiplier) : matchBonus);
     } else if (team2Cards === 36) {
-      t2 += (matchBonus * multiplier);
+      t2 += (declarerTeam === 2 ? (matchBonus * multiplier) : matchBonus);
     }
   } catch (e) {
     // ignore
   }
+
+  try {
+    console.log('  after match bonus: t1=', t1, 't2=', t2);
+  } catch (e) {}
 
   st.scores.team1 = t1;
   st.scores.team2 = t2;
@@ -846,18 +874,16 @@ function compareCardValue(a: Card, b: Card, trumpContract: TrumpContract | 'schi
   const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
   const aIsTrump = suitTrump ? a.suit === suitTrump : false;
   const bIsTrump = suitTrump ? b.suit === suitTrump : false;
-  
-  if (aIsTrump && !bIsTrump) return 1; // Trump is higher
-  if (!aIsTrump && bIsTrump) return -1;
-  
-  if (aIsTrump && bIsTrump) {
-    // Use correct Swiss Jass trump order: U (Jack) highest, then 9, A, 10, K, O, 8, 7, 6 lowest
-    const trumpOrder = ['6', '7', '8', 'O', 'K', '10', 'A', '9', 'U'];
-    return trumpOrder.indexOf(a.rank) - trumpOrder.indexOf(b.rank);
-  }
-  
-  const normalOrder = ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
-  return normalOrder.indexOf(a.rank) - normalOrder.indexOf(b.rank);
+
+  // Primary sort by point value (lower points first)
+  const aPts = aIsTrump ? trumpOverride[a.rank] : basePoints[a.rank];
+  const bPts = bIsTrump ? trumpOverride[b.rank] : basePoints[b.rank];
+  if (aPts !== bPts) return aPts - bPts;
+
+  // Tie-breaker: use rank order index (lower index is stronger) so we want weaker first for ascending order
+  const ai = rankOrderIndex(a.rank, trumpContract as any, aIsTrump);
+  const bi = rankOrderIndex(b.rank, trumpContract as any, bIsTrump);
+  return ai - bi;
 }
 
 // Helper: Check if card A beats card B in the current context
@@ -865,26 +891,21 @@ function isCardBetter(a: Card, b: Card, trumpContract: TrumpContract | 'schieben
   const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
   const aIsTrump = suitTrump ? a.suit === suitTrump : false;
   const bIsTrump = suitTrump ? b.suit === suitTrump : false;
-  
-  // Trump always beats non-trump
+
+  // Trump beats non-trump
   if (aIsTrump && !bIsTrump) return true;
   if (!aIsTrump && bIsTrump) return false;
-  
-  // Both trump: compare trump values using correct Swiss Jass hierarchy
-  if (aIsTrump && bIsTrump) {
-    // In Swiss Jass trump: U (Jack) = highest, then 9, A, 10, K, O, 8, 7, 6 = lowest
-    const trumpOrder = ['6', '7', '8', 'O', 'K', '10', 'A', '9', 'U'];
-    return trumpOrder.indexOf(a.rank) > trumpOrder.indexOf(b.rank);
+
+  // If both trump or both non-trump, consider lead suit preference
+  if (leadSuit) {
+    const aFollows = a.suit === leadSuit;
+    const bFollows = b.suit === leadSuit;
+    if (aFollows && !bFollows) return true;
+    if (!aFollows && bFollows) return false;
   }
-  
-  // Both non-trump: must follow suit if possible
-  const aFollows = a.suit === leadSuit;
-  const bFollows = b.suit === leadSuit;
-  
-  if (aFollows && !bFollows) return true;
-  if (!aFollows && bFollows) return false;
-  
-  // Both follow suit or both don't: compare normal values
-  const normalOrder = ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
-  return normalOrder.indexOf(a.rank) > normalOrder.indexOf(b.rank);
+
+  // Finally, use rankOrderIndex: lower index means stronger card
+  const ai = rankOrderIndex(a.rank, trumpContract as any, aIsTrump);
+  const bi = rankOrderIndex(b.rank, trumpContract as any, bIsTrump);
+  return ai < bi;
 }
