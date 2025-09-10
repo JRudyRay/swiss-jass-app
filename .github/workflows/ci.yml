@@ -49,4 +49,4 @@ jobs:
           path: ./web/dist
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
