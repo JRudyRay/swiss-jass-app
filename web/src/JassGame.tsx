@@ -259,6 +259,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     );
   }
 
+  // Compact tricks count for inline display
+  function getTricksCount(p: any) {
+    return Math.floor((p?.tricks?.length || 0) / 4);
+  }
+
   async function startSwoopAndResolve(st: Schieber.State): Promise<Schieber.State> {
     // lightweight UX: flash an emoji next to the winner instead of a heavy DOM animation
     const winner = Schieber.peekTrickWinner(st);
@@ -688,22 +693,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       const currentTotalsRaw = localStorage.getItem('jassTotals');
       const currentTotals: Record<string, number> = currentTotalsRaw ? JSON.parse(currentTotalsRaw) : {};
 
-      // Determine per-player points from state
+      // Determine per-player points from state - Swiss Jass is TEAM-based scoring
       const additions: Record<string, number> = {};
 
-      // If playersList contains per-player points, use that
-      if (playersList && playersList.length && playersList.every(p => typeof (p as any).points === 'number')) {
-        playersList.forEach(p => { additions[p.name] = (p as any).points || 0; });
-      } else if (state.scores && (state.scores as any).team1 !== undefined) {
-        // Distribute team scores to team members evenly if per-player scores absent
-        const team1 = (state.scores as any).team1 || 0;
-        const team2 = (state.scores as any).team2 || 0;
+      // Swiss Jass: Teams earn points together, each player gets the FULL team score
+      if (state.scores && (state.scores as any).team1 !== undefined) {
+        const team1Score = (state.scores as any).team1 || 0;
+        const team2Score = (state.scores as any).team2 || 0;
         const team1Players = playersList.filter(p => p.team === 1);
         const team2Players = playersList.filter(p => p.team === 2);
-        const per1 = team1Players.length ? Math.round(team1 / team1Players.length) : 0;
-        const per2 = team2Players.length ? Math.round(team2 / team2Players.length) : 0;
-        team1Players.forEach(p => additions[p.name] = per1);
-        team2Players.forEach(p => additions[p.name] = per2);
+        
+        // In Swiss Jass, each player gets their team's FULL score (not divided)
+        team1Players.forEach(p => additions[p.name] = team1Score);
+        team2Players.forEach(p => additions[p.name] = team2Score);
+      } else if (playersList && playersList.length && playersList.every(p => typeof (p as any).points === 'number')) {
+        // Fallback: if per-player points are already calculated
+        playersList.forEach(p => { additions[p.name] = (p as any).points || 0; });
       }
 
       // Apply additions to totals
@@ -714,9 +719,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
       // Debug message to confirm points are being updated
       if (Object.keys(additions).length > 0) {
-        const additionsList = Object.entries(additions).map(([name, pts]) => `${name}: +${pts}`).join(', ');
-        console.log('Swiss Jass: Updating totals:', additionsList);
-        setMessage(`Game finished! Points awarded: ${additionsList}`);
+        const team1Total = Object.entries(additions).filter(([name]) => 
+          playersList.find(p => p.name === name)?.team === 1
+        ).map(([,pts]) => pts)[0] || 0;
+        const team2Total = Object.entries(additions).filter(([name]) => 
+          playersList.find(p => p.name === name)?.team === 2
+        ).map(([,pts]) => pts)[0] || 0;
+        
+        console.log('Swiss Jass: Team scores - Team 1:', team1Total, 'Team 2:', team2Total);
+        setMessage(`Game finished! Team 1: ${team1Total} pts, Team 2: ${team2Total} pts`);
       }
 
       localStorage.setItem('jassTotals', JSON.stringify(newTotals));
@@ -891,30 +902,50 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>{T[lang].logout}</button>}
         </div>
 
-        {/* Team scores below tabs */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 60, marginTop: 12, marginBottom: 16 }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#dc2626' }}>{teamNames[1] || 'Team 1'}</div>
-            <div style={{ fontSize: 32, fontWeight: 900, color: '#991b1b' }}>{gameState?.scores?.team1 ?? 0}</div>
+        {/* Team scores below tabs - Swiss professional design */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 80, marginTop: 12, marginBottom: 16 }}>
+          <div style={{ 
+            textAlign: 'center', 
+            background: 'linear-gradient(135deg, #fef3f2 0%, #fee2e2 100%)', 
+            borderRadius: 12, 
+            padding: '12px 20px',
+            border: '2px solid #dc2626',
+            boxShadow: '0 4px 8px rgba(220, 38, 38, 0.1)'
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#7f1d1d', marginBottom: 2 }}>{teamNames[1] || 'Team 1'} 🇨🇭</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#991b1b' }}>{gameState?.scores?.team1 ?? 0}</div>
+            <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#2563eb' }}>{teamNames[2] || 'Team 2'}</div>
-            <div style={{ fontSize: 32, fontWeight: 900, color: '#1d4ed8' }}>{gameState?.scores?.team2 ?? 0}</div>
+          <div style={{ 
+            textAlign: 'center', 
+            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', 
+            borderRadius: 12, 
+            padding: '12px 20px',
+            border: '2px solid #2563eb',
+            boxShadow: '0 4px 8px rgba(37, 99, 235, 0.1)'
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a8a', marginBottom: 2 }}>{teamNames[2] || 'Team 2'} 🇨🇭</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#1d4ed8' }}>{gameState?.scores?.team2 ?? 0}</div>
+            <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
           </div>
         </div>
         
-        {/* Trump indicator - more prominent */}
+        {/* Trump indicator - Swiss professional design */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <div style={{ 
-            background: currentTrump ? '#d1fae5' : '#f3f4f6', 
-            border: '2px solid #10b981', 
+            background: currentTrump ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', 
+            border: currentTrump ? '2px solid #10b981' : '2px solid #9ca3af', 
             borderRadius: 12, 
-            padding: '8px 16px',
-            fontSize: 20,
+            padding: '10px 18px',
+            fontSize: 16,
             fontWeight: 700,
-            color: '#064e3b'
+            color: currentTrump ? '#064e3b' : '#6b7280',
+            boxShadow: currentTrump ? '0 4px 12px rgba(16, 185, 129, 0.2)' : '0 2px 4px rgba(0,0,0,0.1)',
+            minWidth: 200,
+            textAlign: 'center' as const
           }}>
-            {T[lang].currentTrump}: {currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}
+            <span style={{ fontSize: 12, display: 'block', marginBottom: 2, opacity: 0.8 }}>{T[lang].currentTrump}</span>
+            <span style={{ fontSize: 18 }}>{currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}</span>
           </div>
         </div>
 
@@ -958,11 +989,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                     </div>
                     <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', gap: 8, justifyContent: 'center' }}>
                       <span>{players.find(p=>p.position==='north')?.hand?.length ?? 0} {T[lang].cards}</span>
-                      <span>{T[lang].team} {players.find(p=>p.position==='north')?.team ?? '-'}</span>
+                      <span>{T[lang].team} {players.find(p=>p.position==='north')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='north'))} {T[lang].tricks}</span>
                     </div>
                   </div>
                 </div>
-                <div style={{ marginTop: 4 }}>{renderTrickStack(players.find(p=>p.position==='north'))}</div>
               </div>
 
               {/* West player (id 1) - Compact layout */}
@@ -977,12 +1007,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                       </div>
                       <div style={{ fontSize: 9, color: '#6b7280' }}>
                         <div>{players.find(p=>p.position==='west')?.hand?.length ?? 0} {T[lang].cards}</div>
-                        <div>{T[lang].team} {players.find(p=>p.position==='west')?.team ?? '-'}</div>
+                        <div>{T[lang].team} {players.find(p=>p.position==='west')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='west'))} {T[lang].tricks}</div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div style={{ marginTop: 4 }}>{renderTrickStack(players.find(p=>p.position==='west'))}</div>
               </div>
 
               {/* East player (id 3) - Compact layout */}
@@ -996,18 +1025,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                       </div>
                       <div style={{ fontSize: 9, color: '#6b7280' }}>
                         <div>{players.find(p=>p.position==='east')?.hand?.length ?? 0} {T[lang].cards}</div>
-                        <div>{T[lang].team} {players.find(p=>p.position==='east')?.team ?? '-'}</div>
+                        <div>{T[lang].team} {players.find(p=>p.position==='east')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='east'))} {T[lang].tricks}</div>
                       </div>
                     </div>
                     {gameState?.dealer === 3 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
                   </div>
                 </div>
-                <div style={{ marginTop: 4 }}>{renderTrickStack(players.find(p=>p.position==='east'))}</div>
               </div>
 
               {/* South player (human) - Compact layout */}
               <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 100 }}>
-                <div style={{ marginBottom: 4 }}>{renderTrickStack(players.find(p=>p.position==='south'))}</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   <div>
                     <div style={{ fontWeight: '800', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
@@ -1016,7 +1043,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                     </div>
                     <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', gap: 8, justifyContent: 'center' }}>
                       <span>{players.find(p=>p.position==='south')?.hand?.length ?? 0} {T[lang].cards}</span>
-                      <span>{T[lang].team} {players.find(p=>p.position==='south')?.team ?? '-'}</span>
+                      <span>{T[lang].team} {players.find(p=>p.position==='south')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='south'))} {T[lang].tricks}</span>
                     </div>
                   </div>
                   {gameState?.dealer === 0 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
