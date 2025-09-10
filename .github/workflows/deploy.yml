@@ -39,29 +39,42 @@ jobs:
           npm run build
           cp .nojekyll dist/
       
-      - name: Deploy to gh-pages branch (git push)
+      - name: Deploy to gh-pages branch (git push with fallback)
         env:
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
+          set -euo pipefail
           echo "Prepare gh-pages deploy"
           git --version
           mkdir -p out
-          if git ls-remote --exit-code "https://x-access-token:${TOKEN}@github.com/${REPO}.git" refs/heads/gh-pages; then
-            git clone --branch=gh-pages "https://x-access-token:${TOKEN}@github.com/${REPO}.git" out
+          : ${PAGES_TOKEN:=}
+          if git ls-remote --exit-code "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" refs/heads/gh-pages; then
+            git clone --branch=gh-pages "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" out
             cd out
           else
-            git clone "https://x-access-token:${TOKEN}@github.com/${REPO}.git" out
+            git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" out || git clone "https://github.com/${REPO}.git" out
             cd out
-            git checkout --orphan gh-pages
+            git checkout --orphan gh-pages || true
           fi
           git rm -rf . || true
           cp -r ../web/dist/* ./
           git add -A
           git -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "deploy: gh-pages (${SHA})" || echo "No changes to commit"
-          git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" gh-pages
+          echo "Attempting git push with GITHUB_TOKEN"
+          if git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" gh-pages; then
+            echo "Pushed with GITHUB_TOKEN"
+          else
+            echo "Push with GITHUB_TOKEN failed."
+            if [ -n "${PAGES_TOKEN}" ]; then
+              echo "Attempting push with PAGES_TOKEN secret"
+              git push --force "https://x-access-token:${PAGES_TOKEN}@github.com/${REPO}.git" gh-pages
+            else
+              echo "PAGES_TOKEN not set; cannot retry. Please add a personal access token (repo scope) as the secret 'PAGES_TOKEN' in repository settings." >&2
+              exit 1
+            fi
+          fi
 
   deploy:
     environment:
