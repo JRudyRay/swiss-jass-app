@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "if exist dist rmdir /s /q dist && if exist node_modules\\.prisma rmdir /s /q node_modules\\.prisma && npx prisma generate && tsc",
+    "build": "rimraf dist node_modules/.prisma && npx prisma generate && tsc",
     "start": "npm run build && node dist/index.js",
     "postinstall": "npx prisma generate"
   },
@@ -27,6 +27,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.4.0",
     "nodemon": "^3.0.0",
+    "rimraf": "^5.0.0",
     "ts-node": "^10.9.0"
   }
 }
