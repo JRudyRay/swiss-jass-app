@@ -3,7 +3,13 @@ import { SwissCard } from './SwissCard';
 import * as Schieber from './engine/schieber';
 import YouTubePlayer from './YouTubePlayer';
 
-const API_URL = 'http://localhost:3000';
+// Allow API override at build-time via Vite env (VITE_API_URL).
+// When the app is served from GitHub Pages (not localhost) there is no backend available,
+// so default to empty string to indicate local-only mode.
+const _meta = (import.meta as any);
+const API_URL = (_meta && _meta.env && _meta.env.VITE_API_URL)
+  ? _meta.env.VITE_API_URL
+  : (typeof location !== 'undefined' && location.hostname === 'localhost' ? 'http://localhost:3000' : '');
 
 type GameState = {
   phase: string;
@@ -244,7 +250,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const createGame = async () => {
     setIsLoading(true);
     try {
-  const res = await fetch(`${API_URL}/api/games/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerNames: ['You', 'Anna (bot)', 'Reto (bot)', 'Fritz (bot)'], gameType }) });
+      if (!API_URL) {
+        // no backend available (e.g. GitHub Pages) — start local game instead
+        startLocalGameWithOptions();
+        setMessage('No backend detected — running local game');
+        return;
+      }
+      const res = await fetch(`${API_URL}/api/games/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerNames: ['You', 'Anna (bot)', 'Reto (bot)', 'Fritz (bot)'], gameType }) });
       const data = await res.json();
       if (data?.success) {
         setGameId(data.gameId);
@@ -266,7 +278,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const createGameWithOptions = async (opts?: { gameType?: string; maxPoints?: number }) => {
     setIsLoading(true);
     try {
-  const body = { playerNames: ['You', 'Anna (bot)', 'Reto (bot)', 'Fritz (bot)'], gameType: opts?.gameType || gameType, maxPoints: opts?.maxPoints || maxPoints };
+      const body = { playerNames: ['You', 'Anna (bot)', 'Reto (bot)', 'Fritz (bot)'], gameType: opts?.gameType || gameType, maxPoints: opts?.maxPoints || maxPoints };
+      if (!API_URL) {
+        // run local flow instead
+        startLocalGameWithOptions();
+        setMessage('No backend detected — running local game');
+        return;
+      }
       const res = await fetch(`${API_URL}/api/games/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (data?.success) {
@@ -541,9 +559,21 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   };
 
   const selectTrump = async (trump: string) => {
-    if (!gameId) return;
+    if (!gameId && !isLocal) return;
     setIsLoading(true);
     try {
+      if (!API_URL || isLocal) {
+        // apply locally
+        const st = loadLocalState();
+        if (!st) return;
+        st.trump = trump;
+        st.phase = 'playing';
+        saveLocalState(st);
+        setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
+        setMessage(`Trump selected: ${trump}`);
+        setTimeout(()=>botsTakeTurns(),200);
+        return;
+      }
       const res = await fetch(`${API_URL}/api/games/${gameId}/trump`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trump, playerId: 0 }) });
       const data = await res.json();
       if (data?.success) {
@@ -560,6 +590,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   };
 
   const playCard = async (cardId: string) => {
+    // if no backend, route to local play APIs
+    if (!API_URL || isLocal) {
+      playLocalCard(cardId);
+      return;
+    }
     if (!gameId || !gameState) return;
     if (gameState.currentPlayer !== 0) {
       setMessage("It's not your turn");
