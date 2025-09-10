@@ -37,3 +37,5 @@ Thumbs.db
 
 # gh-pages cache
 web/node_modules/.cache/gh-pages/
+web/dist
+web/dist_scripts
