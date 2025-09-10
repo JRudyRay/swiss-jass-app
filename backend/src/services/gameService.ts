@@ -13,7 +13,6 @@ export class GameService {
           totalGames: { increment: 1 },
           totalWins: won ? { increment: 1 } : undefined,
           totalPoints: { increment: points },
-          currentStreak: won ? { increment: 1 } : 0,
         }
       });
     } catch (error) {
