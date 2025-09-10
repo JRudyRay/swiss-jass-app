@@ -107,12 +107,32 @@ function testMatchAllAward() {
   assert(settled.scores.team1 === 200, 'Match-all bonus should be applied and multiplied for declarer team');
 }
 
+function testTrumpChooserSchieben() {
+  // Dealer should be initial trump chooser
+  const st = Schieber.startGameLocal();
+  assert(st.currentPlayer === st.dealer, 'Initial currentPlayer should be dealer who chooses trump');
+
+  // If dealer schiebt (passes), the decision moves to partner (opposite player)
+  const passed = (Schieber as any).setTrumpAndDetectWeis(st, 'schieben');
+  const expectedPartner = (st.dealer + 2) % 4;
+  assert(passed.currentPlayer === expectedPartner, 'After schieben currentPlayer should be partner');
+  assert(passed.phase === 'trump_selection', 'After schieben we should remain in trump_selection phase');
+
+  // Partner now chooses a real trump; declarer should be the partner, but play should start with dealer
+  const final = (Schieber as any).setTrumpAndDetectWeis(passed, 'eicheln');
+  assert(final.declarer === passed.currentPlayer, 'Declarer should be the player who selected trump (the partner)');
+  assert(final.phase === 'playing', 'After setting trump phase should be playing');
+  assert(final.currentPlayer === final.dealer, 'Play should start with the dealer even if partner declared via schieben');
+}
+
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
   // existing extra tests
   tests.push(testObenUndenOrdering, testWeisTieNoScore);
   // newly added settlement edge-case tests
   tests.push(testDeclarerMultiplierEffect, testMatchAllAward);
+  // dealer/trump chooser and schieben behavior test
+  tests.push(testTrumpChooserSchieben);
   let passed = 0;
   for (const t of tests) {
     try {

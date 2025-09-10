@@ -340,6 +340,30 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     return Math.floor((p?.tricks?.length || 0) / 4);
   }
 
+  // Explain why a card is not playable for UI tooltips
+  function notPlayableReason(card: any): string | null {
+    try {
+      // If no game or no trick in progress, no reason
+      if (!gameState) return null;
+      const trick = (gameState.currentTrick || []);
+      if (!trick || trick.length === 0) return null;
+      const leadSuit = trick[0].suit;
+      const handCards = hand || [];
+      const hasLeadSuit = handCards.some((h:any) => h.suit === leadSuit);
+      // If player has lead suit but card isn't of that suit -> must follow suit
+      if (hasLeadSuit && card.suit !== leadSuit) return T[lang].pleaseChooseTrump ? 'Must follow suit' : 'Must follow suit';
+      // If player has lead suit and this card is of that suit but not in legalCards -> must beat current winner
+      if (hasLeadSuit && card.suit === leadSuit && !legalCards.some((c:any) => c.id === card.id)) return 'Must beat current winning card (Stichzwang)';
+      // If no lead suit but a suit-trump exists and player has trumps, require trump
+      const suitTrump = gameState.trumpSuit && ['eicheln','schellen','rosen','schilten'].includes(gameState.trumpSuit) ? gameState.trumpSuit : null;
+      if (!hasLeadSuit && suitTrump) {
+        const hasTrump = handCards.some((h:any) => h.suit === suitTrump);
+        if (hasTrump && card.suit !== suitTrump) return 'Must play trump when void in lead suit';
+      }
+      return 'Card not legal right now';
+    } catch (e) { return null; }
+  }
+
   async function startSwoopAndResolve(st: Schieber.State): Promise<Schieber.State> {
     // lightweight UX: flash an emoji next to the winner instead of a heavy DOM animation
     const winner = Schieber.peekTrickWinner(st);
@@ -361,19 +385,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setShowLastTrick(newSt.lastTrick || null);
         await new Promise(r=>setTimeout(r, 2000));
         setShowLastTrick(null);
-        // award points to winning team players (use settled team scores from engine)
-        const settled = Schieber.settleHand(newSt);
-        const team1 = settled.scores.team1 || 0;
-        const team2 = settled.scores.team2 || 0;
-        const winningTeam = team1 >= team2 ? 1 : 2;
-        const winners = settled.players.filter(p=>p.team === winningTeam);
-        const addPts = Math.max(team1, team2);
-        try {
-          const cur = JSON.parse(localStorage.getItem('jassTotals')||'{}');
-          winners.forEach(w=> { cur[w.name] = (cur[w.name]||0) + addPts; });
-          localStorage.setItem('jassTotals', JSON.stringify(cur));
-          setTotals(cur);
-        } catch (e) {}
+  // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
+  // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
         // if maxPoints reached by either team, stop; else start a fresh local round
         const t1 = newSt.scores.team1 || 0; const t2 = newSt.scores.team2 || 0;
         if (t1 >= maxPoints || t2 >= maxPoints) {
@@ -411,6 +424,25 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     }
   }
 
+  // Helper to render a prominent dealer badge and animated winner emoji
+  const renderPlayerBadge = (playerId?: number) => {
+    const isDealer = gameState?.dealer === playerId;
+    const isWinner = winnerFlash?.id === playerId;
+    return (
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        {isDealer && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(90deg,#fde68a,#fca5a5)', padding: '6px 10px', borderRadius: 14, boxShadow: '0 6px 18px rgba(0,0,0,0.12)', border: '2px solid rgba(0,0,0,0.06)' }}>
+            <span style={{ fontWeight: 900, color: '#7c2d12', fontSize: 12 }}>DEALER</span>
+            <span style={{ fontSize: 18 }}>🎩</span>
+          </div>
+        )}
+        {isWinner && winnerFlash && (
+          <span style={{ fontSize: 28, lineHeight: 1, display: 'inline-block', animation: 'bounceIn 550ms ease, pulse 1200ms infinite', transformOrigin: 'center' }}>{winnerFlash.emoji}</span>
+        )}
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (gameId) loadGameState(gameId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -431,6 +463,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     // Try to resume a local game from localStorage
     const st = loadLocalState();
     if (st) {
+      // If the stored local game already finished, start a fresh hand instead of resuming finished state
+      if (st.phase === 'finished') {
+        const fresh = Schieber.startNewHand(st);
+        saveLocalState(fresh);
+        setPlayers(mapPlayersWithSeats(fresh.players));
+        setGameState({ phase: fresh.phase, currentPlayer: fresh.currentPlayer, trumpSuit: fresh.trump || null, currentTrick: fresh.currentTrick || [], scores: fresh.scores, dealer: fresh.dealer });
+        setHand(fresh.players.find((p: any) => p.id === 0)?.hand || []);
+        setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
+        setOptionsVisible(false);
+        setIsLocal(true);
+        setMessage('Previous match finished — new round started');
+        return;
+      }
+
       setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores, dealer: st.dealer, weis: st.weis });
       setPlayers(mapPlayersWithSeats(st.players));
       setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
@@ -460,7 +506,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         if (uiPendingResolve) {
           const st = loadLocalState();
           if (st && st.pendingResolve) {
-            const age = Date.now() - (st._lastActionAt || Date.now());
+            const age = Date.now() - ((st as any)._lastActionAt || Date.now());
             if (age > 8000) {
               // Force a resolveTrick to advance the game
               const resolved = Schieber.resolveTrick(st);
@@ -808,14 +854,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         // save immediate state so UI shows the just-played card
         saveLocalState(newSt);
         setGameState({ phase: newSt.phase, currentPlayer: newSt.currentPlayer, trumpSuit: newSt.trump || null, currentTrick: newSt.currentTrick || [], scores: newSt.scores });
-        setHand(newSt.players.find(p=>p.id===0)?.hand || []);
-        setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
+    setPlayers(mapPlayersWithSeats(newSt.players));
+    setHand(newSt.players.find(p=>p.id===0)?.hand || []);
+    setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
   // perform swoop animation then resolve and retrieve resulting state
   const resolved = await startSwoopAndResolve(newSt);
   // update newSt to the resolved state so later logic uses correct state
   // (resolved may be same object)
   // ensure we persist resolved state
   saveLocalState(resolved);
+    // refresh UI with resolved state so trick counters update
+    setPlayers(mapPlayersWithSeats(resolved.players));
+    setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+    setHand(resolved.players.find(p=>p.id===0)?.hand || []);
+    setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
       } finally {
         setUiPendingResolve(false);
       }
@@ -825,9 +877,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     }
     // normal play: persist and update UI, then let bots act
     saveLocalState(newSt);
-    setGameState({ phase: newSt.phase, currentPlayer: newSt.currentPlayer, trumpSuit: newSt.trump || null, currentTrick: newSt.currentTrick || [], scores: newSt.scores });
-    setHand(newSt.players.find(p=>p.id===0)?.hand || []);
-    setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
+  setPlayers(mapPlayersWithSeats(newSt.players));
+  setGameState({ phase: newSt.phase, currentPlayer: newSt.currentPlayer, trumpSuit: newSt.trump || null, currentTrick: newSt.currentTrick || [], scores: newSt.scores });
+  setHand(newSt.players.find(p=>p.id===0)?.hand || []);
+  setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
     // let bots respond
     setTimeout(()=>botsTakeTurns(), 200);
   };
@@ -871,9 +924,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         let team2Score = (state.scores as any).team2 || 0;
         try {
           if (state.phase === 'finished') {
-            const settled = Schieber.settleHand(state as any);
-            team1Score = (settled.scores as any).team1 || team1Score;
-            team2Score = (settled.scores as any).team2 || team2Score;
+            // The incoming `state` may already contain settled scores (resolveTrick calls settleHand
+            // and stores final scores into state.scores). Avoid calling settleHand again in that case
+            // to prevent double-application of Weis/multiplier/match bonus.
+            const incomingScores = (state.scores as any) || { team1: 0, team2: 0 };
+            const sum = (incomingScores.team1 || 0) + (incomingScores.team2 || 0);
+            const hasMultiplier = (state as any).trumpMultiplier !== undefined && (state as any).trumpMultiplier !== null;
+            if (hasMultiplier || sum > 157) {
+              // Already settled or contains multiplier -> trust provided scores
+              team1Score = incomingScores.team1 || team1Score;
+              team2Score = incomingScores.team2 || team2Score;
+            } else {
+              // Not settled yet: calculate settled totals now
+              const settled = Schieber.settleHand(state as any);
+              team1Score = (settled.scores as any).team1 || team1Score;
+              team2Score = (settled.scores as any).team2 || team2Score;
+            }
           }
         } catch (e) {
           // fallback to provided state.scores if settlement fails
@@ -1217,14 +1283,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </div>
         )}
 
-        {tab === 'game' && (
+  {tab === 'game' && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
             <div style={{ width: 700, height: 420, position: 'relative', background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)', borderRadius: 16, boxShadow: '0 8px 25px rgba(0,0,0,0.1)', padding: 8, border: '3px solid #16a34a' }}>
               
               {/* North player (id 2) - Compact layout */}
               <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 100 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
-                  {gameState?.dealer === 2 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
+                  {renderPlayerBadge(players.find(p=>p.position==='north')?.id)}
                   <div>
                     <div style={{ fontWeight: '700', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
                       {players.find(p=>p.position==='north')?.name || 'North'}
@@ -1242,7 +1308,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               <div style={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)', textAlign: 'center', minWidth: 80 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 4, flexDirection: 'column' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {gameState?.dealer === 1 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
+                    {renderPlayerBadge(players.find(p=>p.position==='west')?.id)}
                     <div>
                       <div style={{ fontWeight: '700', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
                         {players.find(p=>p.position==='west')?.name || 'West'}
@@ -1271,7 +1337,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                         <div>{T[lang].team} {players.find(p=>p.position==='east')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='east'))} {T[lang].tricks}</div>
                       </div>
                     </div>
-                    {gameState?.dealer === 3 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
+                    {renderPlayerBadge(players.find(p=>p.position==='east')?.id)}
                   </div>
                 </div>
               </div>
@@ -1289,7 +1355,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                       <span>{T[lang].team} {players.find(p=>p.position==='south')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='south'))} {T[lang].tricks}</span>
                     </div>
                   </div>
-                  {gameState?.dealer === 0 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
+                  {renderPlayerBadge(players.find(p=>p.position==='south')?.id)}
                 </div>
               </div>
 
@@ -1528,21 +1594,29 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         <div>
           <h3>{T[lang].yourHand}</h3>
           <div style={styles.hand}>
-            {hand.length ? sortHandForDisplay(hand, chosenTrump).map(card => (
-              <div key={card.id} onClick={() => setSelectedCard(card.id)} onDoubleClick={() => { if (isLocal) playLocalCard(card.id); else playCard(card.id); }}>
-                <SwissCard card={card} isSelected={selectedCard === card.id} isPlayable={legalCards.some((c: any) => c.id === card.id)} />
-              </div>
-            )) : <div style={{ color: '#6b7280' }}>No cards</div>}
+            {hand.length ? sortHandForDisplay(hand, chosenTrump).map(card => {
+              const playable = legalCards.some((c: any) => c.id === card.id);
+              const reason = !playable ? notPlayableReason(card) : null;
+              return (
+                <div key={card.id} style={{ position: 'relative' }}>
+                  <div title={reason || undefined} onClick={() => { if (playable) setSelectedCard(card.id); else if (reason) setMessage(reason); }} onDoubleClick={() => {
+                    if (!playable) { if (reason) setMessage(reason); return; }
+                    if (isLocal) playLocalCard(card.id); else playCard(card.id);
+                  }}>
+                    <SwissCard card={card} isSelected={selectedCard === card.id} isPlayable={playable} />
+                  </div>
+                </div>
+              );
+            }) : <div style={{ color: '#6b7280' }}>No cards</div>}
           </div>
         </div>
 
         {/* Simple trump selector if phase requests it */}
         {gameState?.phase === 'trump_selection' && (
           <div style={{ marginTop: 12 }}>
-            <h4>{T[lang].selectTrump} - Current Player: {players.find(p => p.id === gameState.currentPlayer)?.name || `Player ${gameState.currentPlayer}`}</h4>
+            <h4>{T[lang].selectTrump} — Dealer: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`}</h4>
             <div style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}>
-              {T[lang].dealer}: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`} • 
-              {T[lang].trumpSelector}: {players.find(p => p.id === gameState.currentPlayer)?.name || `Player ${gameState.currentPlayer}`}
+              {T[lang].dealer}: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`} (chooses trump)
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map(t => (
@@ -1550,13 +1624,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                   {t === 'oben-abe' ? 'Oben-abe' : t === 'unden-ufe' ? 'Unden-ufe' : `${suitSymbols[t]} ${t}`}
                 </button>
               ))}
-              <button style={{ ...styles.button, background: '#6b7280' }} onClick={() => { setChosenTrump('schieben'); setMessage('Passed trump decision to partner (Schieben)'); }}>
-                🔄 Schieben (Pass)
-              </button>
               <button style={styles.button} onClick={submitTrump}>{T[lang].submitTrump}</button>
+              {/* Allow dealer to pass (schieben) to partner when choosing trump */}
+              {/* If this local human is the dealer, allow them to schieben (pass) to partner */}
+              {isLocal && gameState?.dealer === 0 && (
+                <button style={{ ...styles.button, background: '#6b7280' }} onClick={() => { setChosenTrump('schieben'); setMessage('Dealer passed trump decision to partner (Schieben)'); }}>
+                  🔄 Schieben (Pass)
+                </button>
+              )}
             </div>
             <div style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
-              {lang === 'ch' ? 'Im Schieber Jass chasch "schiebe" (witerge) d Trump-Entscheidig a din Partner wenn du e mittelmäss Hand hesch.' : 'In Schieber Jass, you can "schieben" (pass) the trump decision to your partner if you have a mediocre hand.'}
+              {lang === 'ch' ? 'Der Dealer wählt de Trump in däm Modus; er cha de Entscheid a sin Partner witerge (schiebe).' : 'Dealer chooses trump; they may pass the decision to their partner (schieben).'}
             </div>
           </div>
         )}

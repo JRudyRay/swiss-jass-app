@@ -123,12 +123,11 @@ export function startGameLocal(previousDealer?: number): State {
   const players = deal();
   // Dealer rotates clockwise each hand (0->1->2->3->0)
   const dealer = previousDealer !== undefined ? (previousDealer + 1) % 4 : 0;
-  // Trump selector is the player to the left of dealer (dealer + 1)
-  const trumpSelector = (dealer + 1) % 4;
+  // Dealer now chooses trump (user requested): currentPlayer set to dealer
   const st: State = { 
     phase: 'trump_selection', 
     trump: null, 
-    currentPlayer: trumpSelector, 
+    currentPlayer: dealer, 
     dealer,
     currentTrick: [], 
     trickLead: null, 
@@ -143,12 +142,11 @@ export function startNewHand(previousState: State): State {
   const players = deal();
   // Dealer rotates clockwise each hand
   const dealer = (previousState.dealer + 1) % 4;
-  // Trump selector is the player to the left of dealer
-  const trumpSelector = (dealer + 1) % 4;
+  // Dealer chooses trump for the new hand
   const st: State = { 
     phase: 'trump_selection', 
     trump: null, 
-    currentPlayer: trumpSelector, 
+    currentPlayer: dealer, 
     dealer,
     currentTrick: [], 
     trickLead: null, 
@@ -256,7 +254,7 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
   // Narrow to proper TrumpContract before assigning
   const realTrump = trump as TrumpContract;
   st.trump = realTrump;
-  // record who declared the contract
+  // record who declared the contract (the player who selected trump)
   st.declarer = state.currentPlayer;
   
   // Set multiplier based on trump contract (authentic Swiss Jass rules)
@@ -278,8 +276,9 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
     player.weis = detectWeis(player.hand, trumpSuit);
     st.weis[player.id] = player.weis;
   }
-  
+  // After trump selection, play always starts with the dealer (even if partner chose via schieben)
   st.phase = 'playing';
+  st.currentPlayer = st.dealer;
   return st;
 }
 
