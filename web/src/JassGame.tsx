@@ -1007,7 +1007,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           <button style={styles.button} onClick={() => setTab('rankings')}>{T[lang].rankings}</button>
           <button style={styles.button} onClick={() => setTab('settings')}>{T[lang].settings}</button>
           <button style={styles.button} onClick={() => setTab('profile')}>{T[lang].profile}</button>
-          <button style={styles.button} onClick={createGame} disabled={isLoading}>{gameId ? T[lang].newGame : T[lang].startGame}</button>
           {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>{T[lang].refresh}</button>}
           {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>{T[lang].logout}</button>}
         </div>

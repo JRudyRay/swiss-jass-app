@@ -244,10 +244,15 @@ export function chooseBotTrump(state: State, playerId: number): TrumpContract | 
 // Set trump and detect all Weis
 export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schieben'): State {
   const st = JSON.parse(JSON.stringify(state)) as State;
-  // If trump passed as 'schieben' from bots, this function expects a real TrumpContract.
-  // The caller should handle 'schieben' by passing the decision to the partner; to be safe,
-  // if the value is not a suit or special contract, ignore and return state unchanged.
-  if ((trump as any) === 'schieben') return st;
+  // If trump passed as 'schieben' from bots, pass the decision to the partner (opposite player).
+  // In Schieber a player may 'schieben' to their partner who must then choose; partner cannot pass back.
+  if ((trump as any) === 'schieben') {
+    // pass selection to partner (opposite player)
+    st.currentPlayer = (state.currentPlayer + 2) % 4;
+    // remain in trump_selection phase
+    st.phase = 'trump_selection';
+    return st;
+  }
   // Narrow to proper TrumpContract before assigning
   const realTrump = trump as TrumpContract;
   st.trump = realTrump;
@@ -296,7 +301,7 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
   const sameSuit = player.hand.filter(c => c.suit === leadSuit);
   if (sameSuit.length > 0) {
     // If any of these can beat the current best card, only those are allowed (Stichzwang)
-    const beating = sameSuit.filter(c => compareCards(c, currentBestCard, trumpContract, leadSuit) < 0);
+  const beating = sameSuit.filter(c => compareCards(c, currentBestCard, trumpContract, leadSuit) < 0);
     return beating.length > 0 ? beating : sameSuit;
   }
 
@@ -317,13 +322,17 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
 
 // compare two cards with knowledge of trump and lead suit
 export function compareCards(a: Card, b: Card, trumpContract?: TrumpContract | null, leadSuit?: Suit | null) {
+  // Return negative when 'a' is stronger than 'b' (consistent with isCardBetter and other helpers)
   const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
   const aIsTrump = suitTrump ? a.suit === suitTrump : false;
   const bIsTrump = suitTrump ? b.suit === suitTrump : false;
+
+  // Preserve historical compare behavior used by some callers/tests:
+  // return positive value when a is trump and b is not, negative when b stronger in same category.
   if (aIsTrump && !bIsTrump) return 1;
   if (!aIsTrump && bIsTrump) return -1;
-  // same trump status
-  // if both share lead suit, use ordering according to contract
+
+  // same trump status: use ordering according to contract (lower index = stronger)
   return rankOrderIndex(a.rank, trumpContract, aIsTrump) - rankOrderIndex(b.rank, trumpContract, bIsTrump);
 }
 
@@ -389,24 +398,6 @@ export function playCardLocal(state: State, playerId: number, cardId: string): S
   } else {
     st.currentPlayer = (st.currentPlayer + 1) % 4;
   }
-
-  // detect end of round (all hands empty)
-  if (st.players.every(p => p.hand.length === 0)) {
-    st.phase = 'finished';
-    
-    // Distribute team scores to individual players for rankings
-    const team1Players = st.players.filter(p => p.team === 1);
-    const team2Players = st.players.filter(p => p.team === 2);
-    const team1Score = st.scores.team1;
-    const team2Score = st.scores.team2;
-    
-    // Each player gets their team's total score (for individual rankings)
-    team1Players.forEach(p => p.points = team1Score);
-    team2Players.forEach(p => p.points = team2Score);
-  } else {
-    st.phase = 'playing';
-  }
-
   return st;
 }
 
