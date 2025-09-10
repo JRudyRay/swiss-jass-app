@@ -1,125 +1,160 @@
 import { Router } from 'express';
+import { gameHub } from '../gameHub';
+import { SwissSuit, TrumpContract } from '../gameEngine/SwissJassEngine';
 
 const router = Router();
 
-// Simple middleware
-const simpleAuth = (req: any, res: any, next: any) => {
-  req.user = { userId: 'demo-user-123', username: 'demo-user' };
-  next();
-};
-
-// Create new game
-router.post('/create', simpleAuth, async (req: any, res) => {
+/**
+ * POST /api/games/create
+ * Creates a new game
+ * body: { playerNames?: string[], gameType?: string }
+ */
+router.post('/create', (req, res) => {
   try {
-    const gameId = 'game-' + Math.random().toString(36).substr(2, 9);
-    res.status(201).json({
-      success: true,
-      game: {
-        gameId,
-        gameType: req.body.gameType || 'schieber',
-        status: 'waiting',
-        pointsToWin: req.body.pointsToWin || 1000
-      }
+    const { playerNames, gameType = 'schieber' } = req.body || {};
+    const { id, engine } = gameHub.create(playerNames, gameType);
+    
+    // Deal cards to start the game
+    engine.dealCards();
+    
+    const state = engine.getGameState();
+    const players = engine.getPlayers();
+    const humanPlayer = players.find(p => !p.isBot);
+    
+    res.json({ 
+      success: true, 
+      gameId: id, 
+      state,
+      players,
+      hand: humanPlayer?.hand || []
     });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+  } catch (e: any) {
+    console.error('Error creating game:', e);
+    res.status(400).json({ success: false, message: e.message });
   }
 });
 
-// Join game
-router.post('/:gameId/join', simpleAuth, async (req: any, res) => {
+/**
+ * GET /api/games/:id
+ * Get game state
+ */
+router.get('/:id', (req, res) => {
   try {
-    res.json({
+    const { id } = req.params;
+    const engine = gameHub.get(id);
+    const state = engine.getGameState();
+    const players = engine.getPlayers();
+    const humanPlayer = players.find(p => !p.isBot);
+    
+    res.json({ 
       success: true,
-      gameId: req.params.gameId,
-      position: Math.floor(Math.random() * 4),
-      team: Math.random() > 0.5 ? 1 : 2,
-      canStart: true
+      gameId: id,
+      state,
+      players,
+      hand: humanPlayer?.hand || [],
+      legalCards: state.currentPlayer === 0 ? engine.getLegalCards(0) : []
     });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+  } catch (e: any) {
+    res.status(404).json({ success: false, message: 'Game not found' });
   }
 });
 
-// Get game state
-router.get('/:gameId', simpleAuth, async (req: any, res) => {
+/**
+ * POST /api/games/:id/trump
+ * Select trump
+ * body: { trump: TrumpContract, playerId: number }
+ */
+router.post('/:id/trump', (req, res) => {
   try {
-    res.json({
-      success: true,
-      gameState: {
-        gameId: req.params.gameId,
-        phase: 'waiting',
-        players: [
-          { id: 0, name: 'You', team: 1, hand: [] },
-          { id: 1, name: 'Anna', team: 2, hand: [] },
-          { id: 2, name: 'Partner', team: 1, hand: [] },
-          { id: 3, name: 'Fritz', team: 2, hand: [] }
-        ],
-        scores: { team1: 0, team2: 0 },
-        trumpSuit: null
-      }
+    const { id } = req.params;
+    const { trump, playerId = 0 } = req.body as { trump: TrumpContract; playerId?: number };
+    const engine = gameHub.get(id);
+    
+    const success = engine.selectTrump(trump, playerId);
+    
+    if (!success) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cannot select trump at this time' 
+      });
+    }
+    
+    const state = engine.getGameState();
+    const players = engine.getPlayers();
+    const humanPlayer = players.find(p => !p.isBot);
+    
+    // Start bot play after trump selection
+    gameHub.startBotPlay(id);
+    
+    res.json({ 
+      success: true, 
+      state,
+      players,
+      hand: humanPlayer?.hand || []
     });
-  } catch (error: any) {
-    res.status(404).json({
-      success: false,
-      message: error.message
-    });
+  } catch (e: any) {
+    res.status(400).json({ success: false, message: e.message });
   }
 });
 
-// Play a card
-router.post('/:gameId/play', simpleAuth, async (req: any, res) => {
+/**
+ * POST /api/games/:id/play
+ * Play a card
+ * body: { playerId: number, cardId: string }
+ */
+router.post('/:id/play', (req, res) => {
   try {
-    res.json({
-      success: true,
-      message: 'Card played',
-      cardId: req.body.cardId
+    const { id } = req.params;
+    const { playerId = 0, cardId } = req.body;
+    const engine = gameHub.get(id);
+    
+    const success = engine.playCard(cardId, playerId);
+    
+    if (!success) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Illegal card play' 
+      });
+    }
+    
+    const state = engine.getGameState();
+    const players = engine.getPlayers();
+    const humanPlayer = players.find(p => !p.isBot);
+    
+    res.json({ 
+      success: true, 
+      state,
+      players,
+      hand: humanPlayer?.hand || [],
+      legalCards: state.currentPlayer === 0 ? engine.getLegalCards(0) : []
     });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+  } catch (e: any) {
+    res.status(400).json({ success: false, message: e.message });
   }
 });
 
-// Select trump
-router.post('/:gameId/trump', simpleAuth, async (req: any, res) => {
+/**
+ * POST /api/games/:id/bot-action
+ * Trigger bot to play (for testing)
+ */
+router.post('/:id/bot-action', (req, res) => {
   try {
-    res.json({
-      success: true,
-      trumpSuit: req.body.trumpSuit,
-      message: 'Trump selected'
+    const { id } = req.params;
+    gameHub.performBotAction(id);
+    
+    const engine = gameHub.get(id);
+    const state = engine.getGameState();
+    const players = engine.getPlayers();
+    const humanPlayer = players.find(p => !p.isBot);
+    
+    res.json({ 
+      success: true, 
+      state,
+      players,
+      hand: humanPlayer?.hand || []
     });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-// Get user history
-router.get('/user/history', simpleAuth, async (req: any, res) => {
-  try {
-    res.json({
-      success: true,
-      games: [
-        { id: 'game1', status: 'finished', result: 'won' },
-        { id: 'game2', status: 'finished', result: 'lost' }
-      ]
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+  } catch (e: any) {
+    res.status(400).json({ success: false, message: e.message });
   }
 });
 

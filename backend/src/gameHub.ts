@@ -1,0 +1,188 @@
+import { SwissJassEngine, TrumpContract, SwissCard } from './gameEngine/SwissJassEngine';
+
+type GameId = string;
+
+interface GameInstance {
+  engine: SwissJassEngine;
+  botInterval?: NodeJS.Timeout;
+}
+
+class GameHub {
+  private games = new Map<GameId, GameInstance>();
+
+  create(playerNames?: string[], gameType?: string): { id: GameId; engine: SwissJassEngine } {
+    const id = this.generateGameId();
+    const engine = new SwissJassEngine(gameType as any || 'schieber');
+    
+    // Set player names if provided
+    if (playerNames) {
+      const players = engine.getPlayers();
+      playerNames.forEach((name, index) => {
+        if (name && players[index]) {
+          players[index].name = name;
+        }
+      });
+    }
+    
+    // Set up event listeners
+    this.setupEngineEvents(id, engine);
+    
+    this.games.set(id, { engine });
+    return { id, engine };
+  }
+
+  get(id: GameId): SwissJassEngine {
+    const game = this.games.get(id);
+    if (!game) throw new Error('Game not found');
+    return game.engine;
+  }
+
+  private generateGameId(): string {
+    return `game-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private setupEngineEvents(gameId: string, engine: SwissJassEngine): void {
+    // Listen for phase changes
+    engine.on('phaseChange', (phase: string) => {
+      console.log(`[${gameId}] Phase changed to: ${phase}`);
+      
+      // Handle bot actions for trump selection
+      if (phase === 'trump_selection') {
+        this.handleBotTrumpSelection(gameId);
+      }
+    });
+
+    // Listen for card played events
+    engine.on('cardPlayed', (data: any) => {
+      console.log(`[${gameId}] Card played:`, data);
+      
+      // Trigger next bot action after a human plays
+      const state = engine.getGameState();
+      if (state.phase === 'playing' && state.currentPlayer !== 0) {
+        setTimeout(() => this.performBotAction(gameId), 1500);
+      }
+    });
+
+    // Listen for trick completion
+    engine.on('trickCompleted', (data: any) => {
+      console.log(`[${gameId}] Trick completed:`, data);
+      
+      // Continue bot play after trick
+      setTimeout(() => {
+        const state = engine.getGameState();
+        if (state.phase === 'playing' && state.currentPlayer !== 0) {
+          this.performBotAction(gameId);
+        }
+      }, 2000);
+    });
+  }
+
+  private handleBotTrumpSelection(gameId: string): void {
+    const engine = this.get(gameId);
+    const state = engine.getGameState();
+    
+    // If it's a bot's turn to select trump
+    if (state.currentPlayer !== 0) {
+      setTimeout(() => {
+        const trumpOptions: TrumpContract[] = ['eicheln', 'schellen', 'rosen', 'schilten', 'obenabe', 'undenufe'];
+        const selectedTrump = trumpOptions[Math.floor(Math.random() * trumpOptions.length)];
+        
+        console.log(`[${gameId}] Bot ${state.currentPlayer} selecting trump: ${selectedTrump}`);
+        engine.selectTrump(selectedTrump, state.currentPlayer);
+        
+        // Start bot play if needed
+        const newState = engine.getGameState();
+        if (newState.phase === 'playing' && newState.currentPlayer !== 0) {
+          setTimeout(() => this.performBotAction(gameId), 1500);
+        }
+      }, 2000);
+    }
+  }
+
+  startBotPlay(gameId: string): void {
+    const engine = this.get(gameId);
+    const state = engine.getGameState();
+    
+    // If it's a bot's turn, trigger their action
+    if (state.phase === 'playing' && state.currentPlayer !== 0) {
+      setTimeout(() => this.performBotAction(gameId), 1500);
+    }
+  }
+
+  performBotAction(gameId: string): void {
+    try {
+      const engine = this.get(gameId);
+      const state = engine.getGameState();
+      
+      // Only perform bot action if game is in playing phase
+      if (state.phase !== 'playing') return;
+      
+      const currentPlayerId = state.currentPlayer;
+      
+      // Don't play for human player
+      if (currentPlayerId === 0) return;
+      
+      const players = engine.getPlayers();
+      const currentPlayer = players[currentPlayerId];
+      
+      if (!currentPlayer || !currentPlayer.isBot) return;
+      
+      // Get legal cards for the bot
+      const legalCards = engine.getLegalCards(currentPlayerId);
+      
+      if (legalCards.length === 0) {
+        console.log(`[${gameId}] Bot ${currentPlayerId} has no legal cards`);
+        return;
+      }
+      
+      // Simple bot strategy: play a random legal card
+      const cardToPlay = this.selectBotCard(legalCards, state);
+      
+      console.log(`[${gameId}] Bot ${currentPlayerId} playing card: ${cardToPlay.id}`);
+      
+      const success = engine.playCard(cardToPlay.id, currentPlayerId);
+      
+      if (success) {
+        // Check if next player is also a bot
+        const newState = engine.getGameState();
+        if (newState.phase === 'playing' && newState.currentPlayer !== 0) {
+          setTimeout(() => this.performBotAction(gameId), 1500);
+        }
+      }
+    } catch (error) {
+      console.error(`Error in bot action for game ${gameId}:`, error);
+    }
+  }
+
+  private selectBotCard(legalCards: SwissCard[], state: any): SwissCard {
+    // Simple strategy:
+    // - If leading, play a medium-value card
+    // - If following, try to win if partner isn't winning
+    // - Otherwise play lowest card
+    
+    if (state.currentTrick.length === 0) {
+      // Leading - play a medium card
+      const sorted = [...legalCards].sort((a, b) => a.points - b.points);
+      return sorted[Math.floor(sorted.length / 2)];
+    }
+    
+    // Following - for now just play a random legal card
+    // TODO: Implement smarter bot strategy
+    return legalCards[Math.floor(Math.random() * legalCards.length)];
+  }
+
+  stopBotPlay(gameId: string): void {
+    const game = this.games.get(gameId);
+    if (game?.botInterval) {
+      clearInterval(game.botInterval);
+      game.botInterval = undefined;
+    }
+  }
+
+  destroyGame(gameId: string): void {
+    this.stopBotPlay(gameId);
+    this.games.delete(gameId);
+  }
+}
+
+export const gameHub = new GameHub();

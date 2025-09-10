@@ -88,6 +88,11 @@ export class SwissJassEngine {
     this.players = this.initializePlayers();
   }
 
+  // Start a new round
+  public startRound(): void {
+    this.dealCards();
+  }
+
   private initializeGameState(gameType: string): GameState {
     return {
       phase: 'waiting',
@@ -462,8 +467,26 @@ export class SwissJassEngine {
     return { ...this.gameState };
   }
 
-  public getPlayers(): Readonly<JassPlayer[]> {
-    return [...this.players];
+  public getPlayers(): JassPlayer[] {
+    return this.players;
+  }
+
+  public getPublicState(): any {
+    return {
+      phase: this.gameState.phase,
+      currentPlayer: this.gameState.currentPlayer,
+      trumpSuit: this.gameState.trumpSuit,
+      currentTrick: this.gameState.currentTrick,
+      scores: this.gameState.scores,
+      roundScores: this.gameState.roundScores,
+      dealer: this.gameState.dealer,
+      gameType: this.gameState.gameType
+    };
+  }
+
+  public getPlayerHand(playerId: number): SwissCard[] {
+    const player = this.players.find(p => p.id === playerId);
+    return player ? player.hand : [];
   }
 
   public getPlayer(playerId: number): Readonly<JassPlayer> | null {

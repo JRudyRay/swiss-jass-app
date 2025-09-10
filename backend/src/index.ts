@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 // Import routes
 import authRoutes from './routes/auth';
 import gameRoutes from './routes/games';
+import adminRoutes from './routes/admin';
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ app.get('/health', async (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
