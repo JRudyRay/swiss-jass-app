@@ -1,0 +1,12 @@
+{
+  "name": "swiss-jass-app",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd backend && npm install && npm run build",
+    "start": "cd backend && npm start",
+    "postinstall": "cd backend && npm install && npx prisma generate"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
