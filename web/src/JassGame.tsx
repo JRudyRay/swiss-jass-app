@@ -808,6 +808,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             </div>
           </div>
         )}
+
+        <div style={styles.controls}>
           <button style={styles.button} onClick={() => setTab('game')}>Game</button>
           <button style={styles.button} onClick={() => setTab('rankings')}>Rankings</button>
           <button style={styles.button} onClick={() => setTab('settings')}>Settings</button>
