@@ -39,32 +39,29 @@ jobs:
           npm run build
           cp .nojekyll dist/
       
-      - name: Setup Pages
-        id: setup_pages
-        uses: actions/configure-pages@v4
-      
-      - name: Debug configure-pages step object
+      - name: Deploy to gh-pages branch (git push)
+        env:
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "SETUP_PAGES_STEP=${{ toJson(steps.setup_pages) }}"
-          echo "UPLOAD_URL_OUT='${{ steps.setup_pages.outputs.upload_url }}'"
-
-      - name: Upload artifact (zip + curl)
-        if: ${{ steps.setup_pages.outputs.upload_url != '' }}
-        run: |
-          echo "RAW_UPLOAD_URL='${{ steps.setup_pages.outputs.upload_url }}'"
-          url='${{ steps.setup_pages.outputs.upload_url }}'
-          # Trim CR/LF
-          url=$(printf "%s" "$url" | tr -d '\r\n')
-          echo "TRIMMED_UPLOAD_URL='$url'"
-          cd web
-          zip -r ../pages.zip dist
-          curl -v -X POST -H "Content-Type: application/zip" --data-binary @../pages.zip "$url"
-
-      - name: Fallback upload via action (upload-pages-artifact@v2)
-        if: ${{ steps.setup_pages.outputs.upload_url == '' }}
-        uses: actions/upload-pages-artifact@v2
-        with:
-          path: './web/dist'
+          set -e
+          echo "Prepare gh-pages deploy"
+          git --version
+          mkdir -p out
+          if git ls-remote --exit-code "https://x-access-token:${TOKEN}@github.com/${REPO}.git" refs/heads/gh-pages; then
+            git clone --branch=gh-pages "https://x-access-token:${TOKEN}@github.com/${REPO}.git" out
+            cd out
+          else
+            git clone "https://x-access-token:${TOKEN}@github.com/${REPO}.git" out
+            cd out
+            git checkout --orphan gh-pages
+          fi
+          git rm -rf . || true
+          cp -r ../web/dist/* ./
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "deploy: gh-pages (${SHA})" || echo "No changes to commit"
+          git push --force "https://x-access-token:${TOKEN}@github.com/${REPO}.git" gh-pages
 
   deploy:
     environment:
