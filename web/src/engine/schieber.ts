@@ -64,6 +64,7 @@ function rankValue(rank: Rank, isTrump: boolean): number {
 }
 
 // For ordering cards (not points) we need rank order lists.
+// Swiss Jass trump order: U (Jack) highest, then 9, A, 10, K, O, 8, 7, 6 lowest
 const trumpOrder: Rank[] = ['U','9','A','10','K','O','8','7','6'];
 const normalOrder: Rank[] = ['A','10','K','O','U','9','8','7','6'];
 
@@ -753,7 +754,8 @@ function compareCardValue(a: Card, b: Card, trump: string | null | undefined, le
   if (!aIsTrump && bIsTrump) return -1;
   
   if (aIsTrump && bIsTrump) {
-    const trumpOrder = ['6', '7', '8', '9', '10', 'K', 'A', 'O', 'U'];
+    // Use correct Swiss Jass trump order: U (Jack) highest, then 9, A, 10, K, O, 8, 7, 6 lowest
+    const trumpOrder = ['6', '7', '8', 'O', 'K', '10', 'A', '9', 'U'];
     return trumpOrder.indexOf(a.rank) - trumpOrder.indexOf(b.rank);
   }
   
@@ -770,9 +772,10 @@ function isCardBetter(a: Card, b: Card, trump: string | null | undefined, leadSu
   if (aIsTrump && !bIsTrump) return true;
   if (!aIsTrump && bIsTrump) return false;
   
-  // Both trump: compare trump values
+  // Both trump: compare trump values using correct Swiss Jass hierarchy
   if (aIsTrump && bIsTrump) {
-    const trumpOrder = ['6', '7', '8', '9', '10', 'K', 'A', 'O', 'U'];
+    // In Swiss Jass trump: U (Jack) = highest, then 9, A, 10, K, O, 8, 7, 6 = lowest
+    const trumpOrder = ['6', '7', '8', 'O', 'K', '10', 'A', '9', 'U'];
     return trumpOrder.indexOf(a.rank) > trumpOrder.indexOf(b.rank);
   }
   

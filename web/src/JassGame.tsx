@@ -27,15 +27,28 @@ const suitSymbols: { [key: string]: string } = {
   schellen: '🔔',
   rosen: '🌹',
   schilten: '🛡️',
+  'oben-abe': '⬆️',
+  'unden-ufe': '⬇️'
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: { fontFamily: 'Segoe UI, Arial, sans-serif', minHeight: '100vh', background: 'linear-gradient(180deg,#f8fafc,#fffef0)', paddingBottom: 40 },
-  header: { background: '#b91c1c', color: 'white', padding: '1rem 0.8rem', textAlign: 'center' as const, fontSize: 20, fontWeight: 700 },
-  gameArea: { maxWidth: 1100, margin: '1.5rem auto', background: 'white', borderRadius: 14, padding: 18, boxShadow: '0 10px 30px rgba(0,0,0,0.06)' },
-  controls: { display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' as const },
-  button: { background: '#b91c1c', color: 'white', border: 'none', padding: '0.6rem 1.1rem', borderRadius: 10, cursor: 'pointer', fontWeight: 600 },
-  message: { padding: 10, marginBottom: 12, background: '#eef2ff', borderRadius: 10 },
+  container: { fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 50%, #fefce8 100%)', paddingBottom: 40 },
+  header: { background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', color: 'white', padding: '1.2rem 1rem', textAlign: 'center' as const, fontSize: 22, fontWeight: 800, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+  gameArea: { maxWidth: 1200, margin: '2rem auto', background: 'rgba(255, 255, 255, 0.95)', borderRadius: 20, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.08)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' },
+  controls: { display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' as const, justifyContent: 'center' },
+  button: { 
+    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', 
+    color: 'white', 
+    border: 'none', 
+    padding: '12px 20px', 
+    borderRadius: 10, 
+    cursor: 'pointer', 
+    fontWeight: 600, 
+    fontSize: 14,
+    boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3)',
+    transition: 'all 0.2s ease'
+  },
+  message: { textAlign: 'center' as const, marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#1f2937', padding: '12px 16px', background: '#f3f4f6', borderRadius: 10, border: '2px solid #e5e7eb' },
   hand: { display: 'flex', gap: 10, flexWrap: 'wrap' as const, justifyContent: 'center', padding: '12px 8px' },
   table: { padding: 14, background: '#f1fff4', borderRadius: 10, minHeight: 140, marginBottom: 12 },
 };
@@ -80,6 +93,24 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       submitTrump: 'Submit Trump',
       scoringDetails: 'Scoring Details',
       musicPlaylist: 'Mountain Music Playlist',
+      cards: 'Cards',
+      team: 'Team',
+      tricks: 'Tricks',
+      game: 'Game',
+      rankings: 'Rankings',
+      settings: 'Settings',
+      startGame: 'Start Game',
+      newGame: 'New Game',
+      refresh: 'Refresh',
+      logout: 'Logout',
+      chooseTeam: 'Choose Team',
+      dealer: 'Dealer',
+      trumpSelector: 'Trump Selector',
+      itsYourTurn: "It's your turn",
+      matchFinished: 'Match finished — start a new game to continue',
+      pleaseChooseTrump: 'Please choose trump',
+      playAgain: 'Play Again',
+      backToGame: 'Back to Game'
     },
     ch: {
       currentTrump: 'Trump jetzt',
@@ -91,6 +122,24 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       submitTrump: 'Trump bestätigt',
       scoringDetails: 'Punktetabelle',
       musicPlaylist: 'Bärgmusig Playlist',
+      cards: 'Charte',
+      team: 'Mannschaft',
+      tricks: 'Stich',
+      game: 'Spiel',
+      rankings: 'Rangliste',
+      settings: 'Iistellige',
+      startGame: 'Spiel starte',
+      newGame: 'Neus Spiel',
+      refresh: 'Aktualisiere',
+      logout: 'Abmelde',
+      chooseTeam: 'Mannschaft wähle',
+      dealer: 'Gäber',
+      trumpSelector: 'Trump-Wähler',
+      itsYourTurn: 'Du bisch dra',
+      matchFinished: 'Spiel fertig — start es neus Spiel',
+      pleaseChooseTrump: 'Bitte wähl en Trump',
+      playAgain: 'Nomol spiele',
+      backToGame: 'Zrugg zum Spiel'
     }
   };
   const [gameId, setGameId] = useState<string | null>(null);
@@ -157,34 +206,55 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   function sortHandForDisplay(hand: any[], trump?: string|null) {
     if (!hand || !hand.length) return hand.slice();
     const trumpSuit = trump || null;
-    // Use engine rank codes: U = Unter (jack), O = Ober (queen)
+    
+    // Swiss Jass trump order: U(Jack)=20, 9=14, A=11, 10=10, K=4, O(Queen)=3, 8=0, 7=0, 6=0
+    // Normal order: A=11, 10=10, K=4, O=3, U=2, 9=0, 8=0, 7=0, 6=0
     const normalRankOrder = ['6','7','8','9','10','U','O','K','A'];
-    const trumpRankOrder = ['U','9','A','10','K','O','8','7','6'];
-    const rankWeight = new Map(normalRankOrder.map((r,i)=>[r,i]));
-    const trumpWeight = new Map(trumpRankOrder.map((r,i)=>[r,i]));
-    const normal = hand.filter(c=>c.suit !== trumpSuit).slice();
-    const trumps = hand.filter(c=>c.suit === trumpSuit).slice();
-    normal.sort((a,b)=>{
+    const trumpRankOrder = ['6','7','8','O','K','10','A','9','U']; // Proper Swiss trump order (best to worst)
+    
+    const normalCards = hand.filter(c => c.suit !== trumpSuit);
+    const trumpCards = hand.filter(c => c.suit === trumpSuit);
+    
+    // Sort normal cards by suit, then by rank
+    normalCards.sort((a, b) => {
       if (a.suit !== b.suit) return a.suit.localeCompare(b.suit);
-      return (rankWeight.get(a.rank) ?? 0) - (rankWeight.get(b.rank) ?? 0);
+      return normalRankOrder.indexOf(a.rank) - normalRankOrder.indexOf(b.rank);
     });
-    // For trumps show best-to-worst (highest first on the right side) so sort by trumpWeight ascending
-    trumps.sort((a,b)=> (trumpWeight.get(a.rank) ?? 0) - (trumpWeight.get(b.rank) ?? 0));
-    return [...normal, ...trumps];
+    
+    // Sort trump cards by proper Swiss trump value (highest first for easy selection)
+    trumpCards.sort((a, b) => {
+      return trumpRankOrder.indexOf(b.rank) - trumpRankOrder.indexOf(a.rank);
+    });
+    
+    return [...normalCards, ...trumpCards];
   }
 
   function renderTrickStack(p: any) {
-    const count = p?.tricks?.length || 0;
+    // Count actual tricks won (every 4 cards = 1 trick)
+    const tricksWon = Math.floor((p?.tricks?.length || 0) / 4);
     const stack = [] as any[];
-    for (let i=0;i<Math.min(count,4);i++) stack.push(i);
+    for (let i = 0; i < Math.min(tricksWon, 4); i++) stack.push(i);
+    
     return (
-      <div style={{ display:'flex', gap:4, alignItems:'center', justifyContent:'center', flexDirection: 'column' }}>
-        <div style={{ position:'relative', width:32, height:44 }}>
-          {stack.map((s,i)=> (
-            <div key={i} style={{ position:'absolute', left: i*2, top: -i*1.5, width:32, height:44, background:'#111827', borderRadius:3, boxShadow:'0 2px 6px rgba(0,0,0,0.2)', opacity:0.9 }} />
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+        <div style={{ position: 'relative', width: 24, height: 32 }}>
+          {stack.map((s, i) => (
+            <div key={i} style={{ 
+              position: 'absolute', 
+              left: i * 1.5, 
+              top: -i * 1, 
+              width: 24, 
+              height: 32, 
+              background: '#111827', 
+              borderRadius: 2, 
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)', 
+              opacity: 0.9 
+            }} />
           ))}
         </div>
-        <div style={{ fontSize: 11, color:'#374151', textAlign: 'center', whiteSpace: 'nowrap' }}>{count} Stiche</div>
+        <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: '600' }}>
+          {tricksWon} {T[lang].tricks}
+        </div>
       </div>
     );
   }
@@ -436,7 +506,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         if (st.currentPlayer === 0) {
           // player's turn to pick trump — update UI and wait for human
           setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
-          setMessage('Please choose trump');
+          setMessage(T[lang].pleaseChooseTrump);
           break;
         }
         // let engine pick a smart trump for bots
@@ -550,13 +620,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   const playLocalCard = async (cardId: string) => {
   // prevent playing while UI is resolving a trick or when match finished
-  if (matchFinished) return setMessage('Match has finished — start a new game to continue');
+  if (matchFinished) return setMessage(T[lang].matchFinished);
   // prevent playing while UI is resolving a trick
     if (uiPendingResolve) return;
     const st = loadLocalState();
     if (!st) return;
     if (st.phase !== 'playing') return setMessage('Game not in playing phase');
-    if (st.currentPlayer !== 0) return setMessage("It's not your turn");
+    if (st.currentPlayer !== 0) return setMessage(T[lang].itsYourTurn);
     const legal = Schieber.getLegalCardsForPlayer(st, 0).map(c=>c.id);
     if (!legal.includes(cardId)) return setMessage('Illegal card');
     const newSt = Schieber.playCardLocal(st, 0, cardId);
@@ -641,6 +711,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       Object.keys(additions).forEach(name => {
         newTotals[name] = (newTotals[name] || 0) + (additions[name] || 0);
       });
+
+      // Debug message to confirm points are being updated
+      if (Object.keys(additions).length > 0) {
+        const additionsList = Object.entries(additions).map(([name, pts]) => `${name}: +${pts}`).join(', ');
+        console.log('Swiss Jass: Updating totals:', additionsList);
+        setMessage(`Game finished! Points awarded: ${additionsList}`);
+      }
 
       localStorage.setItem('jassTotals', JSON.stringify(newTotals));
       setTotals(newTotals);
@@ -806,12 +883,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         </div>
 
         <div style={styles.controls}>
-          <button style={styles.button} onClick={() => setTab('game')}>Game</button>
-          <button style={styles.button} onClick={() => setTab('rankings')}>Rankings</button>
-          <button style={styles.button} onClick={() => setTab('settings')}>Settings</button>
-          <button style={styles.button} onClick={createGame} disabled={isLoading}>{gameId ? 'New Game' : 'Start Game'}</button>
-          {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>Refresh</button>}
-          {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>Logout</button>}
+          <button style={styles.button} onClick={() => setTab('game')}>{T[lang].game}</button>
+          <button style={styles.button} onClick={() => setTab('rankings')}>{T[lang].rankings}</button>
+          <button style={styles.button} onClick={() => setTab('settings')}>{T[lang].settings}</button>
+          <button style={styles.button} onClick={createGame} disabled={isLoading}>{gameId ? T[lang].newGame : T[lang].startGame}</button>
+          {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>{T[lang].refresh}</button>}
+          {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>{T[lang].logout}</button>}
         </div>
 
         {/* Team scores below tabs */}
@@ -867,58 +944,105 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         )}
 
         {tab === 'game' && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-            <div style={{ width: 800, height: 480, position: 'relative', background: '#dcfce7', borderRadius: 12, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', padding: 12, border: '2px solid #16a34a' }}>
-              {/* North player (id 2) */}
-              <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 120 }}>
-                <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>{players.find(p=>p.position==='north')?.name || 'North'} {winnerFlash?.id === (players.find(p=>p.position==='north')?.id) ? <span style={{ marginLeft:8, fontSize: '1.6rem', lineHeight: '1rem' }}>{winnerFlash?.emoji}</span> : null}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.2 }}>Karten: {players.find(p=>p.position==='north')?.hand?.length ?? 0}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.2, marginBottom: 4 }}>Mannschaft: {players.find(p=>p.position==='north')?.team ?? '-'}</div>
-                <div style={{ marginTop: 8 }}>{renderTrickStack(players.find(p=>p.position==='north'))}</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+            <div style={{ width: 700, height: 420, position: 'relative', background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)', borderRadius: 16, boxShadow: '0 8px 25px rgba(0,0,0,0.1)', padding: 8, border: '3px solid #16a34a' }}>
+              
+              {/* North player (id 2) - Compact layout */}
+              <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 100 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
+                  {gameState?.dealer === 2 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
+                      {players.find(p=>p.position==='north')?.name || 'North'}
+                      {winnerFlash?.id === (players.find(p=>p.position==='north')?.id) ? <span style={{ marginLeft: 4, fontSize: '1.2rem' }}>{winnerFlash?.emoji}</span> : null}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', gap: 8, justifyContent: 'center' }}>
+                      <span>{players.find(p=>p.position==='north')?.hand?.length ?? 0} {T[lang].cards}</span>
+                      <span>{T[lang].team} {players.find(p=>p.position==='north')?.team ?? '-'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginTop: 4 }}>{renderTrickStack(players.find(p=>p.position==='north'))}</div>
               </div>
 
-              {/* West player (id 1) */}
-              <div style={{ position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)', textAlign: 'center', minWidth: 100 }}>
-                <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>{players.find(p=>p.position==='west')?.name || 'West'} {winnerFlash?.id === (players.find(p=>p.position==='west')?.id) ? <span style={{ marginLeft:8, fontSize: '1.6rem', lineHeight: '1rem' }}>{winnerFlash?.emoji}</span> : null}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.2 }}>Karten: {players.find(p=>p.position==='west')?.hand?.length ?? 0}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.2, marginBottom: 4 }}>Mannschaft: {players.find(p=>p.position==='west')?.team ?? '-'}</div>
-                <div style={{ marginTop: 8 }}>{renderTrickStack(players.find(p=>p.position==='west'))}</div>
+              {/* West player (id 1) - Compact layout */}
+              <div style={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)', textAlign: 'center', minWidth: 80 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 4, flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {gameState?.dealer === 1 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
+                    <div>
+                      <div style={{ fontWeight: '700', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
+                        {players.find(p=>p.position==='west')?.name || 'West'}
+                        {winnerFlash?.id === (players.find(p=>p.position==='west')?.id) ? <span style={{ marginLeft: 4, fontSize: '1.2rem' }}>{winnerFlash?.emoji}</span> : null}
+                      </div>
+                      <div style={{ fontSize: 9, color: '#6b7280' }}>
+                        <div>{players.find(p=>p.position==='west')?.hand?.length ?? 0} {T[lang].cards}</div>
+                        <div>{T[lang].team} {players.find(p=>p.position==='west')?.team ?? '-'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginTop: 4 }}>{renderTrickStack(players.find(p=>p.position==='west'))}</div>
               </div>
 
-              {/* East player (id 3) */}
-              <div style={{ position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)', textAlign: 'center', minWidth: 100 }}>
-                <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>{players.find(p=>p.position==='east')?.name || 'East'} {winnerFlash?.id === (players.find(p=>p.position==='east')?.id) ? <span style={{ marginLeft:8, fontSize: '1.6rem', lineHeight: '1rem' }}>{winnerFlash?.emoji}</span> : null}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.2 }}>Karten: {players.find(p=>p.position==='east')?.hand?.length ?? 0}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.2, marginBottom: 4 }}>Mannschaft: {players.find(p=>p.position==='east')?.team ?? '-'}</div>
-                <div style={{ marginTop: 8 }}>{renderTrickStack(players.find(p=>p.position==='east'))}</div>
+              {/* East player (id 3) - Compact layout */}
+              <div style={{ position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)', textAlign: 'center', minWidth: 80 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 4, flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div>
+                      <div style={{ fontWeight: '700', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
+                        {players.find(p=>p.position==='east')?.name || 'East'}
+                        {winnerFlash?.id === (players.find(p=>p.position==='east')?.id) ? <span style={{ marginLeft: 4, fontSize: '1.2rem' }}>{winnerFlash?.emoji}</span> : null}
+                      </div>
+                      <div style={{ fontSize: 9, color: '#6b7280' }}>
+                        <div>{players.find(p=>p.position==='east')?.hand?.length ?? 0} {T[lang].cards}</div>
+                        <div>{T[lang].team} {players.find(p=>p.position==='east')?.team ?? '-'}</div>
+                      </div>
+                    </div>
+                    {gameState?.dealer === 3 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
+                  </div>
+                </div>
+                <div style={{ marginTop: 4 }}>{renderTrickStack(players.find(p=>p.position==='east'))}</div>
               </div>
 
-              {/* South player (human) */}
-              <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 120 }}>
-                <div style={{ fontWeight: '700', fontSize: 14, marginBottom: 2 }}>{players.find(p=>p.position==='south')?.name || 'You'} {winnerFlash?.id === (players.find(p=>p.position==='south')?.id) ? <span style={{ marginLeft:8, fontSize: '1.6rem', lineHeight: '1rem' }}>{winnerFlash?.emoji}</span> : null}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.2 }}>Karten: {players.find(p=>p.position==='south')?.hand?.length ?? 0}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.2, marginBottom: 4 }}>Mannschaft: {players.find(p=>p.position==='south')?.team ?? '-'}</div>
-                <div style={{ marginTop: 8 }}>{renderTrickStack(players.find(p=>p.position==='south'))}</div>
+              {/* South player (human) - Compact layout */}
+              <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 100 }}>
+                <div style={{ marginBottom: 4 }}>{renderTrickStack(players.find(p=>p.position==='south'))}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
+                      {players.find(p=>p.position==='south')?.name || 'You'}
+                      {winnerFlash?.id === (players.find(p=>p.position==='south')?.id) ? <span style={{ marginLeft: 4, fontSize: '1.2rem' }}>{winnerFlash?.emoji}</span> : null}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', gap: 8, justifyContent: 'center' }}>
+                      <span>{players.find(p=>p.position==='south')?.hand?.length ?? 0} {T[lang].cards}</span>
+                      <span>{T[lang].team} {players.find(p=>p.position==='south')?.team ?? '-'}</span>
+                    </div>
+                  </div>
+                  {gameState?.dealer === 0 && <span style={{ fontSize: '1.2rem' }}>🇨🇭</span>}
+                </div>
               </div>
 
-              {/* Center trick area - show played cards near origin seat, pointing inward */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 360, height: 360 }}>
+              {/* Center trick area - more compact design */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 280, height: 280 }}>
                 <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                   {/* If showing last trick at round end, render that first (override) */}
                   {showLastTrick && showLastTrick.length > 0 ? (
                     showLastTrick.map((c:any, i:number) => {
                       const seat = seatForId(c.playerId ?? i);
                       const posMap = {
-                        south: { left: '50%', top: '82%', rot: 0 },
-                        north: { left: '50%', top: '18%', rot: 180 },
-                        west:  { left: '18%', top: '50%', rot: 90 },
-                        east:  { left: '82%', top: '50%', rot: -90 },
+                        south: { left: '50%', top: '75%', rot: 0 },
+                        north: { left: '50%', top: '25%', rot: 180 },
+                        west:  { left: '25%', top: '50%', rot: 90 },
+                        east:  { left: '75%', top: '50%', rot: -90 },
                       };
                       const pos = posMap[seat] || { left: '50%', top: '50%', rot: 0 };
                       return (
                         <div key={c.id || i} style={{ position: 'absolute', left: pos.left, top: pos.top, transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`, textAlign: 'center' as const }}>
                           <SwissCard card={c} />
-                          <div style={{ fontSize: 11, color: '#374151' }}>{players.find(p=>p.id===c.playerId)?.name ?? 'Player'}</div>
+                          <div style={{ fontSize: 9, color: '#374151', fontWeight: '600', marginTop: 2 }}>
+                            {players.find(p=>p.id===c.playerId)?.name ?? 'Player'}
+                          </div>
                         </div>
                       );
                     })
@@ -928,10 +1052,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                       gameState.currentTrick.map((c:any, i:number) => {
                         const seat = seatForId(c.playerId ?? i);
                           const posMap = {
-                            south: { left: '50%', top: '82%', rot: 0 },
-                            north: { left: '50%', top: '18%', rot: 180 },
-                            west:  { left: '18%', top: '50%', rot: 90 },
-                            east:  { left: '82%', top: '50%', rot: -90 },
+                            south: { left: '50%', top: '75%', rot: 0 },
+                            north: { left: '50%', top: '25%', rot: 180 },
+                            west:  { left: '25%', top: '50%', rot: 90 },
+                            east:  { left: '75%', top: '50%', rot: -90 },
                           };
                         const pos = posMap[seat] || { left: '50%', top: '50%', rot: 0 };
                         const isSwooping = animCards.findIndex((ac:any) => ac.id === c.id) !== -1;
@@ -941,7 +1065,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                         return (
                           <div key={c.id || i} style={{ position: 'absolute', left: pos.left, top: pos.top, transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`, textAlign: 'center' as const, ...swoopStyle }}>
                             <SwissCard card={c} />
-                            <div style={{ fontSize: 11, color: '#374151' }}>{players.find(p=>p.id===c.playerId)?.name ?? 'Player'}</div>
+                            <div style={{ fontSize: 9, color: '#374151', fontWeight: '600', marginTop: 2 }}>
+                              {players.find(p=>p.id===c.playerId)?.name ?? 'Player'}
+                            </div>
                           </div>
                         );
                       })
@@ -949,14 +1075,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                     )}
 
                   {isAnimating && (
-                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: '#6b7280' }}>Resolving...</div>
+                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: '#6b7280', fontWeight: '600', fontSize: 14 }}>
+                      Resolving...
+                    </div>
                   )}
 
                   {!gameState?.currentTrick?.length && !uiPendingResolve && !isAnimating && (
-                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: '#6b7280' }}>No cards played</div>
+                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: '#6b7280', fontWeight: '500', fontSize: 12 }}>
+                      No cards played
+                    </div>
                   )}
                 </div>
-    {/* team scores removed from center table to avoid duplication */}
               </div>
             </div>
           </div>
@@ -997,7 +1126,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           <div style={{ marginTop: 8 }}>
             <h3>Player Rankings & Statistics</h3>
             <div style={{ marginBottom: 8 }}>
-              <button style={styles.button} onClick={() => { setTab('game'); }}>Back to Game</button>
+              <button style={styles.button} onClick={() => { setTab('game'); }}>{T[lang].backToGame}</button>
               <button style={{ ...styles.button, background: '#ef4444', marginLeft: 8 }} onClick={resetTotals}>Reset Totals</button>
             </div>
             
@@ -1096,10 +1225,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         {/* Simple trump selector if phase requests it */}
         {gameState?.phase === 'trump_selection' && (
           <div style={{ marginTop: 12 }}>
-            <h4>Select Trump - Current Player: {players.find(p => p.id === gameState.currentPlayer)?.name || `Player ${gameState.currentPlayer}`}</h4>
+            <h4>{T[lang].selectTrump} - Current Player: {players.find(p => p.id === gameState.currentPlayer)?.name || `Player ${gameState.currentPlayer}`}</h4>
             <div style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}>
-              Dealer: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`} • 
-              Trump Selector: {players.find(p => p.id === gameState.currentPlayer)?.name || `Player ${gameState.currentPlayer}`}
+              {T[lang].dealer}: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`} • 
+              {T[lang].trumpSelector}: {players.find(p => p.id === gameState.currentPlayer)?.name || `Player ${gameState.currentPlayer}`}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map(t => (
@@ -1110,10 +1239,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               <button style={{ ...styles.button, background: '#6b7280' }} onClick={() => { setChosenTrump('schieben'); setMessage('Passed trump decision to partner (Schieben)'); }}>
                 🔄 Schieben (Pass)
               </button>
-              <button style={styles.button} onClick={submitTrump}>Submit Trump</button>
+              <button style={styles.button} onClick={submitTrump}>{T[lang].submitTrump}</button>
             </div>
             <div style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
-              In Schieber Jass, you can "schieben" (pass) the trump decision to your partner if you have a mediocre hand.
+              {lang === 'ch' ? 'Im Schieber Jass chasch "schiebe" (witerge) d Trump-Entscheidig a din Partner wenn du e mittelmäss Hand hesch.' : 'In Schieber Jass, you can "schieben" (pass) the trump decision to your partner if you have a mediocre hand.'}
             </div>
           </div>
         )}
@@ -1247,7 +1376,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                   }} 
                   onClick={() => { setMatchFinished(false); createGame(); }}
                 >
-                  🎮 Play Again
+                  🎮 {T[lang].playAgain}
                 </button>
                 <button 
                   style={{ 
@@ -1267,27 +1396,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
         {/* Bottom info: Scoring details + Music player as two columns */}
         <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: '1fr 320px', gap: 12, alignItems: 'start' }}>
-          <div style={{ background: '#fffaf0', border: '1px solid #fde2b6', padding: 12, borderRadius: 10 }}>
-            <div style={{ fontWeight: 800, marginBottom: 8 }}>Scoring Details</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 14 }}>
-              <div><strong>Non-trump</strong></div><div></div>
-              <div>A</div><div>11 pts</div>
-              <div>10</div><div>10 pts</div>
-              <div>K</div><div>4 pts</div>
-              <div>O</div><div>3 pts</div>
-              <div>U</div><div>2 pts</div>
-              <div>9/8/7/6</div><div>0 pts</div>
-              <div style={{ marginTop: 6 }}><strong>Trump</strong></div><div></div>
-              <div>U (Unter)</div><div>20 pts</div>
-              <div>9</div><div>14 pts</div>
-              <div>A</div><div>11 pts</div>
-              <div>10</div><div>10 pts</div>
-              <div>K</div><div>4 pts</div>
-              <div>O</div><div>3 pts</div>
-              <div>8/7/6</div><div>0 pts</div>
+          <div style={{ background: '#fffaf0', border: '1px solid #fde2b6', padding: 8, borderRadius: 8 }}>
+            <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 14 }}>{T[lang].scoringDetails}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2px 8px', fontSize: 12, lineHeight: 1.3 }}>
+              <div style={{ fontWeight: 600, fontSize: 11 }}>Non-trump</div><div></div><div style={{ fontWeight: 600, fontSize: 11 }}>Trump</div><div></div>
+              <div>A: 11</div><div>K: 4</div><div>U: 20</div><div>A: 11</div>
+              <div>10: 10</div><div>O: 3</div><div>9: 14</div><div>10: 10</div>
+              <div>U: 2</div><div>9,8,7,6: 0</div><div>K: 4</div><div>O,8,7,6: 0</div>
             </div>
-            <div style={{ marginTop: 8, fontSize: 13, color: '#374151' }}>
-              Winner of trick becomes next starter. Last trick awards +5 bonus points. Total per round: 157 points (152 + 5).
+            <div style={{ marginTop: 4, fontSize: 11, color: '#6b7280', lineHeight: 1.3 }}>
+              Last trick: +5 bonus • Total: 157 pts (152+5)
             </div>
           </div>
 
