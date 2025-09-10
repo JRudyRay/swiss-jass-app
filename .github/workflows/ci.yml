@@ -39,8 +39,13 @@ jobs:
           cd web
           npm run build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./web/dist
+          path: ./web/dist
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
