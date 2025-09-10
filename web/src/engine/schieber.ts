@@ -146,6 +146,73 @@ export function chooseRandomTrump(): Suit {
   return suits[Math.floor(Math.random()*suits.length)];
 }
 
+// Smart bot trump selection based on hand analysis
+export function chooseBotTrump(state: State, playerId: number): TrumpContract {
+  const player = state.players.find(p => p.id === playerId);
+  if (!player) return chooseRandomTrump();
+  
+  const hand = player.hand;
+  
+  // Count cards by suit
+  const suitCounts: Record<Suit, number> = {
+    'eicheln': 0,
+    'schellen': 0, 
+    'rosen': 0,
+    'schilten': 0
+  };
+  
+  const suitStrength: Record<Suit, number> = {
+    'eicheln': 0,
+    'schellen': 0,
+    'rosen': 0, 
+    'schilten': 0
+  };
+  
+  // Analyze hand strength by suit
+  hand.forEach(card => {
+    suitCounts[card.suit]++;
+    
+    // Add strength points for high cards
+    switch(card.rank) {
+      case 'A': suitStrength[card.suit] += 4; break;
+      case 'K': suitStrength[card.suit] += 3; break;
+      case 'O': suitStrength[card.suit] += 3; break;
+      case 'U': suitStrength[card.suit] += 5; break; // Jack is strong in trump
+      case '10': suitStrength[card.suit] += 2; break;
+      case '9': suitStrength[card.suit] += 1; break; // 9 is strong in trump
+    }
+  });
+  
+  // Find best suit (combination of count and strength)
+  let bestSuit: Suit = 'eicheln';
+  let bestScore = 0;
+  
+  (Object.keys(suitCounts) as Suit[]).forEach(suit => {
+    const score = suitCounts[suit] * 2 + suitStrength[suit];
+    if (score > bestScore) {
+      bestScore = score;
+      bestSuit = suit;
+    }
+  });
+  
+  // Sometimes choose special contracts with good hands
+  const totalHighCards = hand.filter(c => ['A', 'K', 'O'].includes(c.rank)).length;
+  const random = Math.random();
+  
+  // 10% chance to choose oben-abe with many high cards
+  if (totalHighCards >= 5 && random < 0.1) {
+    return 'oben-abe';
+  }
+  
+  // 5% chance to choose unden-ufe with many low cards  
+  const totalLowCards = hand.filter(c => ['6', '7', '8'].includes(c.rank)).length;
+  if (totalLowCards >= 5 && random < 0.05) {
+    return 'unden-ufe';
+  }
+  
+  return bestSuit;
+}
+
 // Set trump and detect all Weis
 export function setTrumpAndDetectWeis(state: State, trump: TrumpContract): State {
   const st = JSON.parse(JSON.stringify(state)) as State;
@@ -178,10 +245,25 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract): State
 export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
   const player = state.players.find(p=>p.id===playerId)!;
   if (!player) return [];
+  
+  // First card of trick - any card allowed
   if (state.currentTrick.length===0) return player.hand.slice();
+  
   const leadSuit = state.trickLead!;
+  const trump = state.trump;
+  
+  // Swiss Jass rule: You can ALWAYS play a trump card
+  const trumpCards = trump ? player.hand.filter(c => c.suit === trump) : [];
   const sameSuit = player.hand.filter(c => c.suit === leadSuit);
-  if (sameSuit.length) return sameSuit;
+  
+  // If you have cards of the lead suit, you must play either:
+  // 1. A card of the lead suit, OR
+  // 2. A trump card (always allowed)
+  if (sameSuit.length > 0) {
+    return [...sameSuit, ...trumpCards.filter(c => c.suit !== leadSuit)];
+  }
+  
+  // If you don't have the lead suit, any card is allowed
   return player.hand.slice();
 }
 

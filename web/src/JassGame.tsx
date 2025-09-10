@@ -137,6 +137,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [matchFinished, setMatchFinished] = useState<boolean>(false);
   const [roundStarter, setRoundStarter] = useState(0);
   const [roundHistory, setRoundHistory] = useState<Array<{round: number, team1: number, team2: number, trump: string}>>([]);
+  const [weisWinner, setWeisWinner] = useState<{playerId: number, teamId: number} | null>(null);
+  const [weisCompetition, setWeisCompetition] = useState<{active: boolean, currentPlayer: number, bestWeis: any, declarations: any[]}>({
+    active: false, currentPlayer: 0, bestWeis: null, declarations: []
+  });
   // helper: map engine player id to a seat around the table
   const seatForId = (id: number) => {
     const seats = ['south', 'west', 'north', 'east'];
@@ -429,29 +433,28 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   if (matchFinished) break;
       // if trump selection phase, let bots choose only when it's their turn
       if (st.phase === 'trump_selection') {
-  if (st.currentPlayer === 0) {
+        if (st.currentPlayer === 0) {
           // player's turn to pick trump — update UI and wait for human
           setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
           setMessage('Please choose trump');
           break;
         }
-  // let engine pick a random trump for bots to avoid getting stuck
-  const chosen = Schieber.chooseRandomTrump();
-  st.trump = chosen;
-  setChosenTrump(chosen);
-        st.phase = 'playing';
-        setMessage(`Local bots chose trump: ${chosen}`);
-        saveLocalState(st);
+        // let engine pick a smart trump for bots
+        const chosen = Schieber.chooseBotTrump(st, st.currentPlayer);
+        const newState = Schieber.setTrumpAndDetectWeis(st, chosen);
+        st = newState;
+        setChosenTrump(chosen);
+        const botPlayer = newState.players.find(p => p.id === newState.currentPlayer);
+        setMessage(`${botPlayer?.name || 'Bot'} chose trump: ${chosen}`);
+        saveLocalState(newState);
         setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
-  // update UI players and hand
-  setPlayers(mapPlayersWithSeats(st.players));
-  setHand(st.players.find(p=>p.id===0)?.hand || []);
-  setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
-  await new Promise(r=>setTimeout(r, playDelayMs));
+        // update UI players and hand
+        setPlayers(mapPlayersWithSeats(st.players));
+        setHand(st.players.find(p=>p.id===0)?.hand || []);
+        setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
+        await new Promise(r=>setTimeout(r, playDelayMs));
         continue;
-      }
-
-      // if it's a bot's turn (0 is our south player), let bots play automatically
+      }      // if it's a bot's turn (0 is our south player), let bots play automatically
       if (st.currentPlayer !== 0) {
         const id = st.currentPlayer;
         const pick = Schieber.chooseBotCard(st, id);
@@ -520,10 +523,21 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       
       // Detect Weis for all players now that trump is known
       const updatedSt = Schieber.setTrumpAndDetectWeis(st, chosenTrump as any);
+      
+      // Determine Weis winner (authentic Swiss Jass competition)
+      const weisWinnerResult = determineWeisWinner(updatedSt.weis || {});
+      setWeisWinner(weisWinnerResult);
+      
       saveLocalState(updatedSt);
       setPlayers(mapPlayersWithSeats(updatedSt.players));
       setGameState({ phase: updatedSt.phase, currentPlayer: updatedSt.currentPlayer, trumpSuit: updatedSt.trump || null, currentTrick: updatedSt.currentTrick || [], scores: updatedSt.scores, weis: updatedSt.weis });
-      setMessage(`Trump set: ${chosenTrump} - Weis detected for all players`);
+      
+      if (weisWinnerResult) {
+        const winnerName = players.find(p => p.id === weisWinnerResult.playerId)?.name;
+        setMessage(`Trump: ${chosenTrump} | Weis Winner: ${winnerName} (Team ${weisWinnerResult.teamId})`);
+      } else {
+        setMessage(`Trump set: ${chosenTrump} - No Weis declared`);
+      }
       // start bots playing
       setTimeout(()=>botsTakeTurns(), 200);
       return;
@@ -728,6 +742,49 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     }
   };
 
+  // Determine Weis winner according to authentic Swiss Jass rules
+  const determineWeisWinner = (weis: Record<number, any[]>): {playerId: number, teamId: number} | null => {
+    let bestWeis: any = null;
+    let bestPlayer: number | null = null;
+    let bestTeam: number | null = null;
+
+    // Find the highest value Weis
+    Object.entries(weis).forEach(([playerId, playerWeis]) => {
+      if (!playerWeis || playerWeis.length === 0) return;
+      
+      const player = players.find(p => p.id === parseInt(playerId));
+      if (!player) return;
+      
+      playerWeis.forEach((w: any) => {
+        if (!bestWeis || w.points > bestWeis.points || 
+           (w.points === bestWeis.points && compareWeisEquality(w, bestWeis, player.team))) {
+          bestWeis = w;
+          bestPlayer = parseInt(playerId);
+          bestTeam = player.team;
+        }
+      });
+    });
+
+    return (bestPlayer !== null && bestTeam !== null) ? { playerId: bestPlayer, teamId: bestTeam } : null;
+  };
+
+  // Compare Weis of equal value according to Swiss Jass rules
+  const compareWeisEquality = (w1: any, w2: any, team: number): boolean => {
+    // Same points: longer sequence wins, then higher cards, then trump suit, then position
+    if (w1.points !== w2.points) return false;
+    
+    // For sequences, longer wins
+    if (w1.type.includes('sequence') && w2.type.includes('sequence')) {
+      return w1.cards.length > w2.cards.length;
+    }
+    
+    // For equal sequences, trump sequences win
+    const w1InTrump = w1.cards.some((c: any) => c.suit === gameState?.trumpSuit);
+    const w2InTrump = w2.cards.some((c: any) => c.suit === gameState?.trumpSuit);
+    
+    return w1InTrump && !w2InTrump;
+  };
+
   const resetTotals = () => {
     localStorage.removeItem('jassTotals');
     localStorage.removeItem('jassProcessedGames');
@@ -746,21 +803,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             <option value="en">🇺🇸 English</option>
             <option value="ch">🇨🇭 Schwiizerdütsch</option>
           </select>
-        </div>
-        
-        {/* Trump indicator - more prominent */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-          <div style={{ 
-            background: currentTrump ? '#d1fae5' : '#f3f4f6', 
-            border: '2px solid #10b981', 
-            borderRadius: 12, 
-            padding: '8px 16px',
-            fontSize: 20,
-            fontWeight: 700,
-            color: '#064e3b'
-          }}>
-            {T[lang].currentTrump}: {currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}
-          </div>
         </div>
 
         <div style={styles.controls}>
@@ -781,6 +823,21 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#2563eb' }}>{teamNames[2] || 'Team 2'}</div>
             <div style={{ fontSize: 32, fontWeight: 900, color: '#1d4ed8' }}>{gameState?.scores?.team2 ?? 0}</div>
+          </div>
+        </div>
+        
+        {/* Trump indicator - more prominent */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{ 
+            background: currentTrump ? '#d1fae5' : '#f3f4f6', 
+            border: '2px solid #10b981', 
+            borderRadius: 12, 
+            padding: '8px 16px',
+            fontSize: 20,
+            fontWeight: 700,
+            color: '#064e3b'
+          }}>
+            {T[lang].currentTrump}: {currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}
           </div>
         </div>
 
@@ -808,15 +865,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             </div>
           </div>
         )}
-
-        <div style={styles.controls}>
-          <button style={styles.button} onClick={() => setTab('game')}>Game</button>
-          <button style={styles.button} onClick={() => setTab('rankings')}>Rankings</button>
-          <button style={styles.button} onClick={() => setTab('settings')}>Settings</button>
-          <button style={styles.button} onClick={createGame} disabled={isLoading}>{gameId ? 'New Game' : 'Start Game'}</button>
-          {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>Refresh</button>}
-          {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>Logout</button>}
-        </div>
 
         {tab === 'game' && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
@@ -1070,28 +1118,96 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </div>
         )}
 
-        {/* Display Weis (melds) after trump has been selected */}
+        {/* Enhanced Weis (Melds) Display with Swiss Authenticity */}
         {gameState?.weis && Object.keys(gameState.weis).length > 0 && (
-          <div style={{ marginTop: 16, padding: 12, background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8 }}>
-            <h4 style={{ margin: '0 0 12px 0', color: '#0c4a6e' }}>🎯 Detected Weis (Melds)</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 8 }}>
+          <div style={{ marginTop: 16, padding: 16, background: '#f0f9ff', border: '2px solid #10b981', borderRadius: 12 }}>
+            <h4 style={{ margin: '0 0 12px 0', color: '#064e3b', fontSize: 18, textAlign: 'center' }}>
+              🎯 Weis (Melds) - Swiss Jass Tradition
+            </h4>
+            
+            {weisWinner && (
+              <div style={{ 
+                background: '#d1fae5', 
+                border: '1px solid #10b981', 
+                borderRadius: 8, 
+                padding: 8, 
+                marginBottom: 12,
+                textAlign: 'center',
+                fontSize: 14,
+                fontWeight: 600,
+                color: '#064e3b'
+              }}>
+                🏆 Weis Winner: {players.find(p => p.id === weisWinner.playerId)?.name} (Team {weisWinner.teamId})
+                <br />
+                <span style={{ fontSize: 12, fontWeight: 400 }}>
+                  Only this team's Weis count for scoring (authentic Swiss Jass rules)
+                </span>
+              </div>
+            )}
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
               {Object.entries(gameState.weis).map(([playerId, weis]) => {
                 const player = players.find(p => p.id === parseInt(playerId));
                 if (!weis || weis.length === 0) return null;
                 
+                const isWinningTeam = weisWinner?.teamId === player?.team;
+                
                 return (
-                  <div key={playerId} style={{ padding: 8, background: 'white', borderRadius: 6, border: '1px solid #e0e7ff' }}>
-                    <div style={{ fontWeight: '600', color: '#1e40af', marginBottom: 4 }}>
+                  <div key={playerId} style={{ 
+                    padding: 12, 
+                    background: isWinningTeam ? '#ecfdf5' : 'white', 
+                    borderRadius: 8, 
+                    border: isWinningTeam ? '2px solid #10b981' : '1px solid #e5e7eb',
+                    opacity: weisWinner && !isWinningTeam ? 0.6 : 1
+                  }}>
+                    <div style={{ 
+                      fontWeight: '700', 
+                      color: isWinningTeam ? '#064e3b' : '#1e40af', 
+                      marginBottom: 6,
+                      fontSize: 15
+                    }}>
                       {player?.name || `Player ${playerId}`} (Team {player?.team || '?'})
+                      {isWinningTeam && <span style={{ marginLeft: 8 }}>👑</span>}
                     </div>
                     {weis.map((w: any, idx: number) => (
-                      <div key={idx} style={{ fontSize: 13, color: '#374151', marginBottom: 2 }}>
-                        <span style={{ fontWeight: '500', color: '#059669' }}>{w.points}pts</span> - {w.description}
+                      <div key={idx} style={{ 
+                        fontSize: 13, 
+                        color: '#374151', 
+                        marginBottom: 3,
+                        padding: '4px 8px',
+                        background: isWinningTeam ? '#f0fdf4' : '#f9fafb',
+                        borderRadius: 4,
+                        border: `1px solid ${isWinningTeam ? '#bbf7d0' : '#e5e7eb'}`
+                      }}>
+                        <span style={{ 
+                          fontWeight: '600', 
+                          color: isWinningTeam ? '#059669' : '#6b7280',
+                          marginRight: 8
+                        }}>
+                          {w.points} Punkte
+                        </span>
+                        {w.description}
+                        {weisWinner && !isWinningTeam && (
+                          <span style={{ color: '#ef4444', fontSize: 11, fontStyle: 'italic' }}> (zählt nicht)</span>
+                        )}
                       </div>
                     ))}
                   </div>
                 );
               })}
+            </div>
+            
+            <div style={{ 
+              marginTop: 12, 
+              padding: 8, 
+              background: '#fef3c7', 
+              borderRadius: 6, 
+              fontSize: 12, 
+              color: '#92400e',
+              textAlign: 'center'
+            }}>
+              <strong>Swiss Jass Weis Rules:</strong> Only the team with the best Weis scores points. 
+              Weis are declared during the first trick with "gut" (good), "gleich" (equal), or better value.
             </div>
           </div>
         )}
