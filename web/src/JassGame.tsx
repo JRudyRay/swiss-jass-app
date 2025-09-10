@@ -80,7 +80,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   }, []);
 
   const ytRef = useRef<any>(null);
-  const [lang, setLang] = useState<'en'|'ch'>('en');
+  const [lang, setLang] = useState<'en'|'ch'>('ch');
 
   const T: Record<string, Record<string,string>> = {
     en: {
@@ -109,8 +109,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       itsYourTurn: "It's your turn",
       matchFinished: 'Match finished — start a new game to continue',
       pleaseChooseTrump: 'Please choose trump',
-      playAgain: 'Play Again',
-      backToGame: 'Back to Game'
+  playAgain: 'Play Again',
+  backToGame: 'Back to Game',
+  profile: 'Profile',
+  changePassword: 'Change Password',
+  username: 'Username',
+  newPassword: 'New password',
+  savePassword: 'Save Password'
     },
     ch: {
       currentTrump: 'Trump jetzt',
@@ -138,8 +143,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       itsYourTurn: 'Du bisch dra',
       matchFinished: 'Spiel fertig — start es neus Spiel',
       pleaseChooseTrump: 'Bitte wähl en Trump',
-      playAgain: 'Nomol spiele',
-      backToGame: 'Zrugg zum Spiel'
+  playAgain: 'Nomol spiele',
+  backToGame: 'Zrugg zum Spiel',
+  profile: 'Profil',
+  changePassword: 'Passwort ändere',
+  username: 'Benutzername',
+  newPassword: 'Neus Passwort',
+  savePassword: 'Speichere'
     }
   };
   const [gameId, setGameId] = useState<string | null>(null);
@@ -150,13 +160,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [message, setMessage] = useState('Welcome to Swiss Jass!');
   const [isLoading, setIsLoading] = useState(false);
-  const [tab, setTab] = useState<'game'|'rankings'|'settings'>('game');
+  const [tab, setTab] = useState<'game'|'rankings'|'settings'|'profile'>('game');
   const [usersList, setUsersList] = useState<Array<{ id: string; username: string; totalPoints: number }>>([]);
   const [totals, setTotals] = useState<Record<string, number>>(() => {
     try {
       const raw = localStorage.getItem('jassTotals');
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
+  });
+  // richer local user store: name -> { totalPoints, gamesPlayed, wins, lastSeen, passwordHash }
+  const [jassUsers, setJassUsers] = useState<Record<string, any>>(() => {
+    try { return JSON.parse(localStorage.getItem('jassUsers') || '{}'); } catch { return {}; }
   });
   const [gameType, setGameType] = useState<string>('schieber');
   const [maxPoints, setMaxPoints] = useState<number>(1000);
@@ -184,6 +198,31 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const headerEmojis = ['🇨🇭','🧀','🫕','🏔️','🐄','🍫'];
   const [showLastTrick, setShowLastTrick] = useState<(any[] ) | null>(null);
   const [matchFinished, setMatchFinished] = useState<boolean>(false);
+  const [currentUserName, setCurrentUserName] = useState<string>(user?.username || 'You');
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+
+  // simple SHA-256 helper for local password hashing
+  async function sha256(text: string) {
+    const enc = new TextEncoder();
+    const data = enc.encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  const handleChangePassword = async () => {
+    if (!currentUserName) return setProfileMessage('No user');
+    if (!newPasswordInput || newPasswordInput.length < 6) return setProfileMessage('Password must be at least 6 chars');
+    const h = await sha256(newPasswordInput);
+    const users = { ...jassUsers };
+    if (!users[currentUserName]) users[currentUserName] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
+    users[currentUserName].passwordHash = h;
+    localStorage.setItem('jassUsers', JSON.stringify(users));
+    setJassUsers(users);
+    setProfileMessage('Password updated locally');
+    setNewPasswordInput('');
+    setTimeout(()=>setProfileMessage(null), 3000);
+  };
   const [roundStarter, setRoundStarter] = useState(0);
   const [roundHistory, setRoundHistory] = useState<Array<{round: number, team1: number, team2: number, trump: string}>>([]);
   const [weisWinner, setWeisWinner] = useState<{playerId: number, teamId: number} | null>(null);
@@ -195,7 +234,41 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     const seats = ['south', 'west', 'north', 'east'];
     return seats[id] || 'south';
   };
-  const mapPlayersWithSeats = (pls: any[]) => (pls || []).map(p => ({ id: p.id, name: p.name, hand: p.hand, team: p.team, teamName: teamNames[p.team] || `Team ${p.team}`, position: seatForId(p.id), points: (p as any).points }));
+  const mapPlayersWithSeats = (pls: any[]) => (pls || []).map(p => {
+    // Normalize tricks array: engine-local uses p.tricks (array of cards).
+    // Server may not include p.tricks; try to infer from gameState.playedTricks or stored local state.
+    let tricksArr = (p as any).tricks || [];
+
+    // If no tricks on player object, try to recover from current gameState (server payload)
+    if ((!tricksArr || tricksArr.length === 0) && (gameState as any)?.playedTricks) {
+      try {
+        const played = (gameState as any).playedTricks as any[];
+        if (Array.isArray(played)) {
+          // Flatten and pick cards belonging to this player id
+          const flat = played.flatMap(x => Array.isArray(x) ? x : []);
+          tricksArr = flat.filter(c => c.playerId === p.id).map(c => ({ id: c.id, suit: c.suit, rank: c.rank }));
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // As a last resort, try localStorage jassLocalState (for local play persisted state)
+    if ((!tricksArr || tricksArr.length === 0)) {
+      try {
+        const raw = localStorage.getItem('jassLocalState');
+        if (raw) {
+          const ls = JSON.parse(raw) as any;
+          if (ls.players && Array.isArray(ls.players)) {
+            const lp = ls.players.find((pp: any) => pp.id === p.id);
+            if (lp && lp.tricks && lp.tricks.length) tricksArr = lp.tricks;
+          }
+        }
+      } catch (e) {}
+    }
+
+    return { id: p.id, name: p.name, hand: p.hand, team: p.team, teamName: teamNames[p.team] || `Team ${p.team}`, position: seatForId(p.id), points: (p as any).points, tricks: tricksArr || [], weis: (p as any).weis || [] };
+  });
 
   const seatPlayer = (pos: string) => players.find(p => p.position === pos);
   const northPlayer = seatPlayer('north');
@@ -280,16 +353,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       setHand(newSt.players.find(p=>p.id===0)?.hand || []);
       setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
       // if round finished, show lastTrick for 2s then clear and award totals
-      if (newSt.phase === 'finished') {
+  if (newSt.phase === 'finished') {
         // show the final trick for 2s before clearing
         setShowLastTrick(newSt.lastTrick || null);
         await new Promise(r=>setTimeout(r, 2000));
         setShowLastTrick(null);
-        // award points to winning team players (use team scores)
-        const team1 = newSt.scores.team1 || 0;
-        const team2 = newSt.scores.team2 || 0;
+        // award points to winning team players (use settled team scores from engine)
+        const settled = Schieber.settleHand(newSt);
+        const team1 = settled.scores.team1 || 0;
+        const team2 = settled.scores.team2 || 0;
         const winningTeam = team1 >= team2 ? 1 : 2;
-        const winners = newSt.players.filter(p=>p.team === winningTeam);
+        const winners = settled.players.filter(p=>p.team === winningTeam);
         const addPts = Math.max(team1, team2);
         try {
           const cur = JSON.parse(localStorage.getItem('jassTotals')||'{}');
@@ -690,31 +764,64 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   // Persist and update per-player totals stored in localStorage
   const updateTotalsFromGameState = (state: GameState, playersList: Player[], maybeGameId?: string | null) => {
     try {
-      const currentTotalsRaw = localStorage.getItem('jassTotals');
-      const currentTotals: Record<string, number> = currentTotalsRaw ? JSON.parse(currentTotalsRaw) : {};
+  const currentTotalsRaw = localStorage.getItem('jassTotals');
+  const currentTotals: Record<string, number> = currentTotalsRaw ? JSON.parse(currentTotalsRaw) : {};
+  const currentUsersRaw = localStorage.getItem('jassUsers');
+  const currentUsers: Record<string, any> = currentUsersRaw ? JSON.parse(currentUsersRaw) : {};
 
       // Determine per-player points from state - Swiss Jass is TEAM-based scoring
       const additions: Record<string, number> = {};
 
       // Swiss Jass: Teams earn points together, each player gets the FULL team score
       if (state.scores && (state.scores as any).team1 !== undefined) {
-        const team1Score = (state.scores as any).team1 || 0;
-        const team2Score = (state.scores as any).team2 || 0;
+        // If the hand finished, prefer the engine's settled totals (multiplier/Weis/match applied)
+        let team1Score = (state.scores as any).team1 || 0;
+        let team2Score = (state.scores as any).team2 || 0;
+        try {
+          if (state.phase === 'finished') {
+            const settled = Schieber.settleHand(state as any);
+            team1Score = (settled.scores as any).team1 || team1Score;
+            team2Score = (settled.scores as any).team2 || team2Score;
+          }
+        } catch (e) {
+          // fallback to provided state.scores if settlement fails
+        }
         const team1Players = playersList.filter(p => p.team === 1);
         const team2Players = playersList.filter(p => p.team === 2);
         
-        // In Swiss Jass, each player gets their team's FULL score (not divided)
-        team1Players.forEach(p => additions[p.name] = team1Score);
-        team2Players.forEach(p => additions[p.name] = team2Score);
+  // In Swiss Jass, each player gets their team's FULL score (not divided)
+  team1Players.forEach(p => additions[p.name] = team1Score);
+  team2Players.forEach(p => additions[p.name] = team2Score);
       } else if (playersList && playersList.length && playersList.every(p => typeof (p as any).points === 'number')) {
         // Fallback: if per-player points are already calculated
         playersList.forEach(p => { additions[p.name] = (p as any).points || 0; });
       }
 
-      // Apply additions to totals
+      // Apply additions to totals and to user records
       const newTotals = { ...currentTotals };
+      const newUsers = { ...currentUsers };
       Object.keys(additions).forEach(name => {
-        newTotals[name] = (newTotals[name] || 0) + (additions[name] || 0);
+        const pts = additions[name] || 0;
+        newTotals[name] = (newTotals[name] || 0) + pts;
+        if (!newUsers[name]) newUsers[name] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
+        newUsers[name].totalPoints = (newUsers[name].totalPoints || 0) + pts;
+        newUsers[name].gamesPlayed = (newUsers[name].gamesPlayed || 0) + 1;
+      });
+      // determine winning team and credit wins
+      const t1 = (state.scores as any)?.team1 || 0;
+      const t2 = (state.scores as any)?.team2 || 0;
+      const winningTeam = t1 >= t2 ? 1 : 2;
+      playersList.filter(p => p.team === winningTeam).forEach(p => {
+        const nm = p.name;
+        if (!newUsers[nm]) newUsers[nm] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
+        newUsers[nm].wins = (newUsers[nm].wins || 0) + 1;
+      });
+      // update lastSeen timestamp for all players
+      const now = Date.now();
+      playersList.forEach(p => {
+        const nm = p.name;
+        if (!newUsers[nm]) newUsers[nm] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
+        newUsers[nm].lastSeen = now;
       });
 
       // Debug message to confirm points are being updated
@@ -730,8 +837,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setMessage(`Game finished! Team 1: ${team1Total} pts, Team 2: ${team2Total} pts`);
       }
 
-      localStorage.setItem('jassTotals', JSON.stringify(newTotals));
-      setTotals(newTotals);
+  localStorage.setItem('jassTotals', JSON.stringify(newTotals));
+  localStorage.setItem('jassUsers', JSON.stringify(newUsers));
+  setTotals(newTotals);
+  setJassUsers(newUsers);
 
       // Best-effort: try to sync totals to backend if available and refresh server-side users list
       (async () => {
@@ -897,6 +1006,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           <button style={styles.button} onClick={() => setTab('game')}>{T[lang].game}</button>
           <button style={styles.button} onClick={() => setTab('rankings')}>{T[lang].rankings}</button>
           <button style={styles.button} onClick={() => setTab('settings')}>{T[lang].settings}</button>
+          <button style={styles.button} onClick={() => setTab('profile')}>{T[lang].profile}</button>
           <button style={styles.button} onClick={createGame} disabled={isLoading}>{gameId ? T[lang].newGame : T[lang].startGame}</button>
           {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>{T[lang].refresh}</button>}
           {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>{T[lang].logout}</button>}
@@ -914,6 +1024,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#7f1d1d', marginBottom: 2 }}>{teamNames[1] || 'Team 1'} 🇨🇭</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: '#991b1b' }}>{gameState?.scores?.team1 ?? 0}</div>
+            {/* Clearer breakdown card for transparency */}
+            <div style={{ marginTop: 8, padding: 8, background: '#fff7f7', borderRadius: 8, border: '1px solid rgba(153,27,27,0.08)', width: 160 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b' }}>Team 1</div>
+              <div style={{ fontSize: 12, color: '#374151' }}>Raw: <strong>{(gameState && gameState.scores) ? gameState.scores.team1 : 0}</strong></div>
+              <div style={{ fontSize: 12, color: '#374151' }}>Weis+Bonus: <strong>{(function(){ try { if (!gameState) return 0; const settled = Schieber.settleHand(gameState as any); return (settled.scores.team1 - (gameState.scores?.team1||0)); } catch(e){ return 0; } })()}</strong></div>
+              <div style={{ fontSize: 13, marginTop: 6 }}>Settled: <strong>{(function(){ try { if (!gameState) return 0; const settled = Schieber.settleHand(gameState as any); return settled.scores.team1; } catch(e){ return gameState?.scores?.team1 ?? 0; } })()}</strong></div>
+            </div>
             <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
           </div>
           <div style={{ 
@@ -926,6 +1043,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a8a', marginBottom: 2 }}>{teamNames[2] || 'Team 2'} 🇨🇭</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: '#1d4ed8' }}>{gameState?.scores?.team2 ?? 0}</div>
+            <div style={{ marginTop: 8, padding: 8, background: '#f0f9ff', borderRadius: 8, border: '1px solid rgba(29,78,216,0.08)', width: 160 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8' }}>Team 2</div>
+              <div style={{ fontSize: 12, color: '#374151' }}>Raw: <strong>{(gameState && gameState.scores) ? gameState.scores.team2 : 0}</strong></div>
+              <div style={{ fontSize: 12, color: '#374151' }}>Weis+Bonus: <strong>{(function(){ try { if (!gameState) return 0; const settled = Schieber.settleHand(gameState as any); return (settled.scores.team2 - (gameState.scores?.team2||0)); } catch(e){ return 0; } })()}</strong></div>
+              <div style={{ fontSize: 13, marginTop: 6 }}>Settled: <strong>{(function(){ try { if (!gameState) return 0; const settled = Schieber.settleHand(gameState as any); return settled.scores.team2; } catch(e){ return gameState?.scores?.team2 ?? 0; } })()}</strong></div>
+            </div>
             <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
           </div>
         </div>
@@ -1186,6 +1309,19 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                     ))}
                   </ol>
                 )}
+                {/* Local detailed user stats */}
+                {Object.keys(jassUsers).length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <h5 style={{ margin: '6px 0' }}>Local Player Stats</h5>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {Object.entries(jassUsers).sort((a:any,b:any)=> (b[1].totalPoints||0)-(a[1].totalPoints||0)).map(([name, info]: any) => (
+                        <li key={name} style={{ marginBottom: 6 }}>
+                          <strong>{name}</strong>: {info.totalPoints || 0} pts • {info.gamesPlayed || 0} games • {info.wins || 0} wins
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
               
               <div style={{ background: '#e0f2fe', padding: 12, borderRadius: 8 }}>
@@ -1206,6 +1342,37 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                 <div>• <strong>Trump Selection:</strong> Choose wisely - your team's Weis only counts if you have the best!</div>
                 <div>• <strong>Team Play:</strong> Coordinate with your partner - if they're winning a trick, play low to conserve good cards</div>
                 <div>• <strong>Last Trick Bonus:</strong> Remember the +5 points for winning the final trick!</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'profile' && (
+          <div style={{ marginTop: 8 }}>
+            <h3>{T[lang].profile}</h3>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <div style={{ flex: 1, background: '#fff', padding: 12, borderRadius: 8 }}>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>{currentUserName}</div>
+                <div style={{ color: '#6b7280', marginTop: 8 }}>Total Points: {jassUsers[currentUserName]?.totalPoints ?? 0}</div>
+                <div style={{ color: '#6b7280' }}>Games Played: {jassUsers[currentUserName]?.gamesPlayed ?? 0}</div>
+                <div style={{ color: '#6b7280' }}>Wins: {jassUsers[currentUserName]?.wins ?? 0}</div>
+                <div style={{ color: '#6b7280' }}>Last Seen: {jassUsers[currentUserName]?.lastSeen ? new Date(jassUsers[currentUserName].lastSeen).toLocaleString() : '—'}</div>
+              </div>
+              <div style={{ width: 360, background: '#fff', padding: 12, borderRadius: 8 }}>
+                <h4>{T[lang].changePassword}</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label>{T[lang].username}
+                    <input value={currentUserName} onChange={e=>setCurrentUserName(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
+                  </label>
+                  <label>{T[lang].newPassword}
+                    <input type="password" value={newPasswordInput} onChange={e=>setNewPasswordInput(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
+                  </label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button style={styles.button} onClick={handleChangePassword}>{T[lang].savePassword}</button>
+                    <button style={{ ...styles.button, background: '#6b7280' }} onClick={()=>{ setProfileMessage(null); setNewPasswordInput(''); }}>{T[lang].backToGame}</button>
+                  </div>
+                  {profileMessage && <div style={{ color: '#065f46', marginTop: 6 }}>{profileMessage}</div>}
+                </div>
               </div>
             </div>
           </div>
