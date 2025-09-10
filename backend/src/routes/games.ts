@@ -158,4 +158,57 @@ router.post('/:id/bot-action', (req, res) => {
   }
 });
 
+/**
+ * POST /api/games/:id/complete
+ * Handles game completion and updates user stats
+ * body: { userTeamScore: number, opponentTeamScore: number, userWon: boolean, totalRounds: number }
+ */
+router.post('/:id/complete', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userTeamScore, opponentTeamScore, userWon, totalRounds } = req.body;
+    const userId = (req as any).userId; // From auth middleware
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    
+    // Import the gameService here to avoid circular dependencies
+    const { updateUserStats } = require('../services/gameService');
+    
+    // Calculate points earned (Swiss Jass typically awards 1-3 points based on margin)
+    let pointsEarned = 0;
+    if (userWon) {
+      const margin = userTeamScore - opponentTeamScore;
+      if (margin >= 100) {
+        pointsEarned = 3; // Dominant victory
+      } else if (margin >= 50) {
+        pointsEarned = 2; // Clear victory
+      } else {
+        pointsEarned = 1; // Close victory
+      }
+    }
+    
+    // Update user stats
+    await updateUserStats(userId, {
+      gamesPlayed: 1,
+      gamesWon: userWon ? 1 : 0,
+      totalPoints: pointsEarned,
+      totalRounds: totalRounds || 0
+    });
+    
+    // Clean up the game from memory
+    gameHub.destroyGame(id);
+    
+    res.json({ 
+      success: true, 
+      pointsEarned,
+      message: userWon ? `Congratulations! You earned ${pointsEarned} points!` : 'Better luck next time!'
+    });
+  } catch (e: any) {
+    console.error('Error completing game:', e);
+    res.status(500).json({ success: false, message: 'Failed to update stats' });
+  }
+});
+
 export default router;

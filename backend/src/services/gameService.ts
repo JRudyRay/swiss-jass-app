@@ -37,3 +37,36 @@ export class GameService {
     }
   }
 }
+
+// Enhanced stats update for detailed game completion
+export async function updateUserStats(userId: string, stats: {
+  gamesPlayed: number;
+  gamesWon: number;
+  totalPoints: number;
+  totalRounds: number;
+}) {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        totalGames: { increment: stats.gamesPlayed },
+        totalWins: { increment: stats.gamesWon },
+        totalPoints: { increment: stats.totalPoints },
+      }
+    });
+
+    // Log the game session
+    await prisma.gameSession.create({
+      data: {
+        userId,
+        gameType: 'schieber',
+        result: stats.gamesWon > 0 ? 'win' : 'loss',
+        points: stats.totalPoints,
+        duration: stats.totalRounds * 2 // Rough estimate: 2 minutes per round
+      }
+    });
+  } catch (error) {
+    console.error('Error updating user stats:', error);
+    throw error;
+  }
+}

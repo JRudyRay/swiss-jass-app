@@ -224,6 +224,19 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           // mark match finished and update state so UI can react
           setMatchFinished(true);
           setGameState({ phase: 'finished', currentPlayer: newSt.currentPlayer, trumpSuit: newSt.trump || null, currentTrick: newSt.currentTrick || [], scores: newSt.scores });
+          
+          // Update backend stats if this is an online game
+          if (gameId && API_URL) {
+            const userTeam = newSt.players.find(p => p.id === 0)?.team || 1; // User is player 0
+            const userTeamScore = userTeam === 1 ? t1 : t2;
+            const opponentTeamScore = userTeam === 1 ? t2 : t1;
+            const userWon = userTeamScore > opponentTeamScore;
+            
+            // Count total rounds played (rough estimate based on score progression)
+            const totalRounds = Math.floor((userTeamScore + opponentTeamScore) / 100) + 1;
+            
+            completeGame(userTeamScore, opponentTeamScore, userWon, totalRounds);
+          }
         } else {
           // start a new round (fresh deal) keeping totals and rotating dealer
           const fresh = Schieber.startNewHand(newSt);
@@ -336,6 +349,38 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       setIsLoading(false);
     }
   setIsLocal(false);
+  };
+
+  // Complete game and update user stats on backend
+  const completeGame = async (userTeamScore: number, opponentTeamScore: number, userWon: boolean, totalRounds: number) => {
+    if (!gameId || !API_URL) return; // Only for backend games
+
+    try {
+      const token = localStorage.getItem('jassAuthToken');
+      const res = await fetch(`${API_URL}/api/games/${gameId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userTeamScore,
+          opponentTeamScore,
+          userWon,
+          totalRounds
+        })
+      });
+
+      const data = await res.json();
+      if (data?.success) {
+        console.log(`Game completed: ${data.message}`);
+        if (data.pointsEarned > 0) {
+          setMessage(`${data.message} (+${data.pointsEarned} points)`);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to complete game:', err);
+    }
   };
 
   // --- Local play with simple bots ---
@@ -693,22 +738,27 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       <div style={styles.header}>Swiss Jass <span style={{ marginLeft: 8 }}>🇨🇭 🧀🫕🏔️🐄🍫</span></div>
       <div style={styles.gameArea}>
         <div style={styles.message}>{message}</div>
-        {/* Compact top info */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ fontSize: 18, color: '#374151' }}>{T[lang].currentTrump}: <strong>{currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump}` : '—'}</strong></div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 800 }}>{teamNames[1] || 'Team 1'}</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: '#111827' }}>{gameState?.scores?.team1 ?? 0}</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 800 }}>{teamNames[2] || 'Team 2'}</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: '#111827' }}>{gameState?.scores?.team2 ?? 0}</div>
-          </div>
-          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            <select value={lang} onChange={e=>setLang(e.target.value as any)} style={{ padding:6, borderRadius:6 }} title="Language">
-              <option value="en">🇺🇸 English</option>
-              <option value="ch">🇨🇭 Schwiizerdütsch</option>
-            </select>
+        
+        {/* Language selector in top right */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <select value={lang} onChange={e=>setLang(e.target.value as any)} style={{ padding:6, borderRadius:6 }} title="Language">
+            <option value="en">🇺🇸 English</option>
+            <option value="ch">🇨🇭 Schwiizerdütsch</option>
+          </select>
+        </div>
+        
+        {/* Trump indicator - more prominent */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <div style={{ 
+            background: currentTrump ? '#d1fae5' : '#f3f4f6', 
+            border: '2px solid #10b981', 
+            borderRadius: 12, 
+            padding: '8px 16px',
+            fontSize: 20,
+            fontWeight: 700,
+            color: '#064e3b'
+          }}>
+            {T[lang].currentTrump}: {currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}
           </div>
         </div>
 
@@ -721,9 +771,28 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>Logout</button>}
         </div>
 
+        {/* Team scores below tabs */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 60, marginTop: 12, marginBottom: 16 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#dc2626' }}>{teamNames[1] || 'Team 1'}</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: '#991b1b' }}>{gameState?.scores?.team1 ?? 0}</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#2563eb' }}>{teamNames[2] || 'Team 2'}</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: '#1d4ed8' }}>{gameState?.scores?.team2 ?? 0}</div>
+          </div>
+        </div>
+          <button style={styles.button} onClick={() => setTab('game')}>Game</button>
+          <button style={styles.button} onClick={() => setTab('rankings')}>Rankings</button>
+          <button style={styles.button} onClick={() => setTab('settings')}>Settings</button>
+          <button style={styles.button} onClick={createGame} disabled={isLoading}>{gameId ? 'New Game' : 'Start Game'}</button>
+          {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>Refresh</button>}
+          {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>Logout</button>}
+        </div>
+
         {tab === 'game' && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-            <div style={{ width: 800, height: 480, position: 'relative', background: '#f8fafc', borderRadius: 12, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', padding: 12 }}>
+            <div style={{ width: 800, height: 480, position: 'relative', background: '#dcfce7', borderRadius: 12, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', padding: 12, border: '2px solid #16a34a' }}>
               {/* North player (id 2) */}
               <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 120 }}>
                 <div style={{ fontWeight: '600', fontSize: 14, marginBottom: 2 }}>{players.find(p=>p.position==='north')?.name || 'North'} {winnerFlash?.id === (players.find(p=>p.position==='north')?.id) ? <span style={{ marginLeft:8, fontSize: '1.6rem', lineHeight: '1rem' }}>{winnerFlash?.emoji}</span> : null}</div>
