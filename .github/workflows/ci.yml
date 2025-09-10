@@ -11,7 +11,8 @@ permissions:
   pages: write
 
 jobs:
-  build-and-deploy:
+  smoke:
+    name: Smoke (bundles, unit tests, simulator)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,6 +34,26 @@ jobs:
         run: |
           cd web
           npm run smoke
+
+  build-and-deploy:
+    name: Build and Deploy
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: |
+          cd web
+          npm ci
 
       - name: Run production build
         run: |
