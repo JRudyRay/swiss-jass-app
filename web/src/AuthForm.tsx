@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
+import { API_URL } from './config';
 
 interface AuthFormProps {
   onLogin: (token: string, user: any) => void;
 }
-
-const API_URL = 'http://localhost:3000';
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {

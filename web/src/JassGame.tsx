@@ -2,14 +2,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { SwissCard } from './SwissCard';
 import * as Schieber from './engine/schieber';
 import YouTubePlayer from './YouTubePlayer';
+import { API_URL } from './config';
 
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
 // so default to empty string to indicate local-only mode.
 const _meta = (import.meta as any);
-const API_URL = (_meta && _meta.env && _meta.env.VITE_API_URL)
-  ? _meta.env.VITE_API_URL
-  : (typeof location !== 'undefined' && location.hostname === 'localhost' ? 'http://localhost:3000' : '');
 
 type GameState = {
   phase: string;
