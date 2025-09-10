@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "tsc",
+    "build": "rm -rf dist && npx prisma generate && tsc",
     "start": "npm run build && node dist/index.js",
-    "postinstall": "prisma generate"
+    "postinstall": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",
