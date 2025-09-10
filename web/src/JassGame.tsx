@@ -179,6 +179,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [playDelayMs, setPlayDelayMs] = useState<number>(450);
   const [animatingSwoop, setAnimatingSwoop] = useState<{ winnerId: number | null; cards: any[] } | null>(null);
   const [uiPendingResolve, setUiPendingResolve] = useState(false);
+  // Recovery helpers to avoid dead-end states
+  const prevPlayerRef = useRef<number | null>(null);
+  const lastProgressAt = useRef<number>(Date.now());
   const centerRef = useRef<HTMLDivElement | null>(null);
   const seatRefs = {
     south: useRef<HTMLDivElement | null>(null),
@@ -413,6 +416,86 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
+  // When the user switches back to the Game tab, try to restore any running game.
+  // If none is running, show the game options/start UI so user can begin a new match.
+  useEffect(() => {
+    if (tab !== 'game') return;
+
+    // If a server-backed game is active, reload it
+    if (gameId && !isLocal) {
+      loadGameState(gameId);
+      setOptionsVisible(false);
+      return;
+    }
+
+    // Try to resume a local game from localStorage
+    const st = loadLocalState();
+    if (st) {
+      setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores, dealer: st.dealer, weis: st.weis });
+      setPlayers(mapPlayersWithSeats(st.players));
+      setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
+      setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
+      setOptionsVisible(false);
+      setIsLocal(true);
+      setMessage('Resumed local game');
+      return;
+    }
+
+    // No active game: show options to start a new one and clear transient UI state
+    setOptionsVisible(true);
+    setGameState(null);
+    setPlayers([]);
+    setHand([]);
+    setLegalCards([]);
+    setChosenTrump(null);
+    setUiPendingResolve(false);
+    setMessage('No active game — start a new one');
+  }, [tab]);
+
+  // Watchdog: detect stalled local games or UI pending states and recover.
+  useEffect(() => {
+    const id = setInterval(() => {
+      try {
+        // If UI is waiting for a pending resolve for too long, force resolve by calling resolveTrick
+        if (uiPendingResolve) {
+          const st = loadLocalState();
+          if (st && st.pendingResolve) {
+            const age = Date.now() - (st._lastActionAt || Date.now());
+            if (age > 8000) {
+              // Force a resolveTrick to advance the game
+              const resolved = Schieber.resolveTrick(st);
+              saveLocalState(resolved);
+              setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+              setPlayers(mapPlayersWithSeats(resolved.players));
+              setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
+              setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
+              setUiPendingResolve(false);
+              setMessage('Auto-resolved stalled trick');
+            }
+          }
+        }
+
+        // If no visible progress (player didn't change) for long, show hint and allow force resume
+        const st = loadLocalState();
+        if (st) {
+          const now = Date.now();
+          if (prevPlayerRef.current !== st.currentPlayer) {
+            prevPlayerRef.current = st.currentPlayer;
+            lastProgressAt.current = now;
+          } else {
+            if (now - lastProgressAt.current > 20000) {
+              // nudge user with message
+              setMessage('Game appears idle — you can Force Resume or Reset Local to recover');
+            }
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, 2500);
+    return () => clearInterval(id);
+  }, [uiPendingResolve]);
+
   // Load users/totals from server for Rankings and Settings
   useEffect(() => {
     (async () => {
@@ -547,7 +630,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
     setMessage('Local game started — select trump or have bots choose');
     // store engine state in ref-like place (we'll keep in localStorage for now)
-    localStorage.setItem('jassLocalState', JSON.stringify(st));
+  saveLocalState(st);
   };
 
   const startLocalGameWithOptions = () => {
@@ -566,12 +649,21 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     try {
       const raw = localStorage.getItem('jassLocalState');
       if (!raw) return null;
-      return JSON.parse(raw) as Schieber.State;
+      const parsed = JSON.parse(raw) as Schieber.State & { _lastActionAt?: number };
+      // Backfill missing timestamp to avoid huge age values
+      if (!parsed._lastActionAt) parsed._lastActionAt = Date.now();
+      return parsed as Schieber.State;
     } catch { return null; }
   };
 
   const saveLocalState = (st: Schieber.State) => {
-    localStorage.setItem('jassLocalState', JSON.stringify(st));
+    try {
+      // annotate with last action timestamp used by UI watchdog
+      try { (st as any)._lastActionAt = Date.now(); } catch (e) {}
+      localStorage.setItem('jassLocalState', JSON.stringify(st));
+    } catch (e) {
+      // ignore storage errors
+    }
   };
 
   const botsTakeTurns = async () => {
@@ -682,7 +774,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       setGameState({ phase: updatedSt.phase, currentPlayer: updatedSt.currentPlayer, trumpSuit: updatedSt.trump || null, currentTrick: updatedSt.currentTrick || [], scores: updatedSt.scores, weis: updatedSt.weis });
       
       if (weisWinnerResult) {
-        const winnerName = players.find(p => p.id === weisWinnerResult.playerId)?.name;
+  const winnerName = updatedSt.players.find((p:any) => p.id === weisWinnerResult.playerId)?.name;
         setMessage(`Trump: ${chosenTrump} | Weis Winner: ${winnerName} (Team ${weisWinnerResult.teamId})`);
       } else {
         setMessage(`Trump set: ${chosenTrump} - No Weis declared`);
@@ -1009,6 +1101,35 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           <button style={styles.button} onClick={() => setTab('profile')}>{T[lang].profile}</button>
           {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>{T[lang].refresh}</button>}
           {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>{T[lang].logout}</button>}
+          {/* Recovery controls to avoid dead-ends (local only) */}
+          {isLocal && (
+            <>
+              <button style={{ ...styles.button, background: '#f59e0b' }} onClick={() => {
+            // Force resume: attempt to advance stalled local game
+            const st = loadLocalState();
+            if (st && st.pendingResolve) {
+              const resolved = Schieber.resolveTrick(st);
+              saveLocalState(resolved);
+              setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+              setPlayers(mapPlayersWithSeats(resolved.players));
+              setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
+              setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
+              setMessage('Force-resolved trick');
+            } else {
+              setMessage('No pending action to force-resume');
+            }
+          }}>Force Resume</button>
+              <button style={{ ...styles.button, background: '#ef4444' }} onClick={() => {
+                localStorage.removeItem('jassLocalState');
+                setGameState(null);
+                setPlayers([]);
+                setHand([]);
+                setLegalCards([]);
+                setOptionsVisible(true);
+                setMessage('Local state reset');
+              }}>Reset Local</button>
+            </>
+          )}
         </div>
 
         {/* Team scores below tabs - Swiss professional design */}

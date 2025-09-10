@@ -71,10 +71,48 @@ function testLegalPlayEnforcement() {
   assert(legal.length === 1 && legal[0].suit === 'eicheln', 'Player must follow suit when lead suit present');
 }
 
+function testDeclarerMultiplierEffect() {
+  // Ensure multiplier applies only to declarer's team
+  const st = Schieber.startGameLocal();
+  // Clear any Weis to avoid side-effects
+  for (const p of st.players) p.weis = [];
+  st.scores.team1 = 50;
+  st.scores.team2 = 30;
+  st.trumpMultiplier = 2; // double
+  // make player 0 (team1) the declarer
+  st.declarer = 0;
+  const settled = (Schieber as any).settleHand(st);
+  // declarer team (team1) should be doubled, team2 unchanged
+  assert(settled.scores.team1 === 100, 'Declarer multiplier should double declarer team score');
+  assert(settled.scores.team2 === 30, 'Non-declarer team score should remain unchanged by multiplier');
+}
+
+function testMatchAllAward() {
+  // Ensure match bonus is awarded and multiplied appropriately when a team takes all tricks
+  const st = Schieber.startGameLocal();
+  // Clear Weis and base scores
+  for (const p of st.players) { p.weis = []; p.tricks = []; }
+  st.scores.team1 = 0;
+  st.scores.team2 = 0;
+  st.trumpMultiplier = 2; // double
+  // Simulate team1 captured all 36 cards
+  const allCards = new Array(36).fill(0).map((_,i) => ({ id: 'c'+i, suit: 'eicheln', rank: 'A' } as any));
+  // assign all to team1 players (player 0)
+  st.players[0].tricks = allCards;
+  st.players[2].tricks = [];
+  // declarer is on team1
+  st.declarer = 0;
+  const settled = (Schieber as any).settleHand(st);
+  // default match bonus is 100; since declarer is on capturing team and multiplier=2 => +200
+  assert(settled.scores.team1 === 200, 'Match-all bonus should be applied and multiplied for declarer team');
+}
+
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
-  // add new tests
+  // existing extra tests
   tests.push(testObenUndenOrdering, testWeisTieNoScore);
+  // newly added settlement edge-case tests
+  tests.push(testDeclarerMultiplierEffect, testMatchAllAward);
   let passed = 0;
   for (const t of tests) {
     try {
