@@ -8,9 +8,13 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Use Node.js 18
         uses: actions/setup-node@v4
@@ -28,3 +32,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./web/dist
+          # keep history for easier revert/debug
+          keep_files: false
+          # set commit message for published commit
+          commit_message: 'ci: deploy web to gh-pages (auto)'
