@@ -46,9 +46,22 @@ jobs:
 
       - name: Upload artifact for GitHub Pages (zip + curl)
         run: |
+          echo "RAW_UPLOAD_URL='${{ steps.setup_pages.outputs.upload_url }}'"
+          url='${{ steps.setup_pages.outputs.upload_url }}'
+          # Trim CR/LF
+          url=$(printf "%s" "$url" | tr -d '\r\n')
+          echo "TRIMMED_UPLOAD_URL='$url'"
+          if [ -z "$url" ]; then
+            echo "ERROR: upload_url is empty. configure-pages may have failed or returned no upload_url." >&2
+            exit 2
+          fi
+          if ! echo "$url" | grep -E '^https?://'; then
+            echo "ERROR: upload_url does not look like a valid URL: $url" >&2
+            exit 3
+          fi
           cd web
           zip -r ../pages.zip dist
-          curl -X POST -H "Content-Type: application/zip" --data-binary @../pages.zip "${{ steps.setup_pages.outputs.upload_url }}"
+          curl -v -X POST -H "Content-Type: application/zip" --data-binary @../pages.zip "$url"
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
