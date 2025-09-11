@@ -22,6 +22,7 @@ export interface JassPlayer {
   position: 'south' | 'west' | 'north' | 'east';
   isBot: boolean;
   connected: boolean;
+  weis?: WeisDeclaration[];
 }
 
 export interface GameState {
@@ -41,7 +42,19 @@ export interface GameState {
   lastTrickWinner: number | null;
   gameStartTime: Date;
   gameType: 'schieber' | 'handjass' | 'coiffeur' | 'differenzler';
+  // Weis declarations mapped by player id
+  weis?: Record<number, WeisDeclaration[]>;
+  // who declared the contract (player id)
+  declarer?: number | null;
 }
+
+// Weis declaration type for backend
+export type WeisDeclaration = {
+  type: string;
+  cards: SwissCard[];
+  points: number;
+  description: string;
+};
 
 // Swiss Jass Constants with Authentic Values
 export const SWISS_SUITS_INFO = {
@@ -213,6 +226,35 @@ export class SwissJassEngine {
 
     this.gameState.trumpSuit = trump;
     this.gameState.contract = trump;
+    // record who declared the contract
+    this.gameState.declarer = playerId;
+
+    // set multiplier based on contract
+    if (trump === 'schellen' || trump === 'schilten') {
+      // double
+      (this.gameState as any).trumpMultiplier = 2;
+    } else if (trump === 'obenabe') {
+      (this.gameState as any).trumpMultiplier = 3;
+    } else if (trump === 'undenufe') {
+      (this.gameState as any).trumpMultiplier = 4;
+    } else {
+      (this.gameState as any).trumpMultiplier = 1;
+    }
+
+    // detect weis for all players now that trump is known
+    try {
+      const realTrumpSuit = (trump === 'obenabe' || trump === 'undenufe') ? null : trump as SwissSuit;
+      this.gameState.weis = {};
+      for (const p of this.players) {
+        // compute weis using a simple detection function (ported from client engine)
+        const w = this.detectWeisForHand(p.hand, realTrumpSuit);
+        p.weis = w;
+        (this.gameState.weis as any)[p.id] = w;
+      }
+    } catch (e) {
+      // ignore errors in detection, continue
+    }
+
     this.gameState.phase = 'playing';
     this.gameState.currentPlayer = this.gameState.forehand;
     this.gameState.trickLeader = this.gameState.forehand;
@@ -258,6 +300,7 @@ export class SwissJassEngine {
 
   public playCard(cardId: string, playerId: number): boolean {
     if (this.gameState.phase !== 'playing' || playerId !== this.gameState.currentPlayer) {
+  console.warn(`playCard rejected: wrong phase or not player's turn (phase=${this.gameState.phase} playerId=${playerId} currentPlayer=${this.gameState.currentPlayer})`);
       return false;
     }
 
@@ -270,6 +313,7 @@ export class SwissJassEngine {
     
     // Validate legal play according to Swiss Jass rules
     if (!this.isLegalPlay(card, playerId)) {
+      console.warn(`Illegal play attempt by player ${playerId} for card ${card.id}; hand contains ${player.hand.length} cards; currentTrick length ${this.gameState.currentTrick.length}`);
       return false;
     }
 
@@ -480,6 +524,8 @@ export class SwissJassEngine {
       scores: this.gameState.scores,
       roundScores: this.gameState.roundScores,
       dealer: this.gameState.dealer,
+  weis: this.gameState.weis,
+  declarer: this.gameState.declarer,
       gameType: this.gameState.gameType
     };
   }
@@ -488,6 +534,63 @@ export class SwissJassEngine {
     const player = this.players.find(p => p.id === playerId);
     return player ? player.hand : [];
   }
+
+// === WEIS DETECTION (backend helper, simplified port of client logic) ===
+private rankIndex(rank: SwissRank) {
+  const order: SwissRank[] = ['6','7','8','9','10','U','O','K','A'];
+  return order.indexOf(rank);
+}
+
+private findSequencesInSuit(cards: SwissCard[]) : SwissCard[][] {
+  if (!cards || cards.length === 0) return [];
+  const sorted = cards.slice().sort((a,b) => this.rankIndex(a.rank) - this.rankIndex(b.rank));
+  const sequences: SwissCard[][] = [];
+  let cur: SwissCard[] = [sorted[0]];
+  for (let i=1;i<sorted.length;i++) {
+    if (this.rankIndex(sorted[i].rank) === this.rankIndex(sorted[i-1].rank) + 1) {
+      cur.push(sorted[i]);
+    } else {
+      if (cur.length >= 3) sequences.push(cur);
+      cur = [sorted[i]];
+    }
+  }
+  if (cur.length >= 3) sequences.push(cur);
+  return sequences;
+}
+
+private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDeclaration[] {
+  const res: WeisDeclaration[] = [];
+  const bySuit: Record<string, SwissCard[]> = {};
+  hand.forEach(c => { (bySuit[c.suit] = bySuit[c.suit] || []).push(c); });
+  for (const s in bySuit) {
+    const seqs = this.findSequencesInSuit(bySuit[s]);
+    for (const seq of seqs) {
+      if (seq.length >= 5) res.push({ type: 'sequence5plus', cards: seq, points: 100, description: `Sequenz ${seq.length} (${s})` });
+      else if (seq.length === 4) res.push({ type: 'sequence4', cards: seq, points: 50, description: `Sequenz 4 (${s})` });
+      else if (seq.length === 3) res.push({ type: 'sequence3', cards: seq, points: 20, description: `Sequenz 3 (${s})` });
+    }
+  }
+
+  // four-of-a-kind detection
+  const byRank: Record<string, SwissCard[]> = {};
+  hand.forEach(c => { (byRank[c.rank] = byRank[c.rank] || []).push(c); });
+  for (const r in byRank) {
+    if (byRank[r].length === 4) {
+      let pts = 100;
+      if (r === 'U') pts = 200; else if (r === '9') pts = 150; else pts = 100;
+      res.push({ type: `four_${r}`, cards: byRank[r], points: pts, description: `Vier ${r}` });
+    }
+  }
+
+  // Stöck (K + O of trump)
+  if (trump) {
+    const k = hand.find(c => c.rank === 'K' && c.suit === trump);
+    const o = hand.find(c => c.rank === 'O' && c.suit === trump);
+    if (k && o) res.push({ type: 'stoeck', cards: [k,o], points: 20, description: `Stöck (${trump})` });
+  }
+
+  return res;
+}
 
   public getPlayer(playerId: number): Readonly<JassPlayer> | null {
     return this.players.find(p => p.id === playerId) || null;

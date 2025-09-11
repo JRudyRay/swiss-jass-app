@@ -84,6 +84,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   const T: Record<string, Record<string,string>> = {
     en: {
+  welcome: 'Welcome to Swiss Jass!',
+  noCardsPlayed: 'No cards played',
+  weisPoints: 'Weis points',
+  weisNotCount: '(does not count)',
+  weisRulesTitle: 'Weis Rules',
+  weisRulesDesc: 'Only the team with the best Weis scores points. Weis are declared during the first trick and are detected automatically after trump is chosen.',
       currentTrump: 'Current Trump',
       roundScores: 'Round — Team1',
       yourHand: 'Your Hand',
@@ -118,6 +124,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   savePassword: 'Save Password'
     },
     ch: {
+  welcome: 'Willkomme bi Swiss Jass!',
+  noCardsPlayed: 'Keini Chart gspielt',
+  weisPoints: 'Weis Punkt',
+  weisNotCount: '(zählt nicht)',
+  weisRulesTitle: 'Weis Regle',
+  weisRulesDesc: 'Nur d Team mit em bestä Weis kassiert Punkt. Weis wärend em erschte Stich angekündigt und werdet automatisch nach Trump-Auswahl entdeckt.',
       currentTrump: 'Trump jetzt',
       roundScores: 'Rundi — Team1',
       yourHand: 'Dini Chart',
@@ -158,7 +170,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [hand, setHand] = useState<any[]>([]);
   const [legalCards, setLegalCards] = useState<any[]>([]);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [message, setMessage] = useState('Welcome to Swiss Jass!');
+  const [message, setMessage] = useState(T[lang].welcome);
   const [isLoading, setIsLoading] = useState(false);
   const [tab, setTab] = useState<'game'|'rankings'|'settings'|'profile'>('game');
   const [usersList, setUsersList] = useState<Array<{ id: string; username: string; totalPoints: number }>>([]);
@@ -190,7 +202,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     east: useRef<HTMLDivElement | null>(null),
   };
   const [animPositions, setAnimPositions] = useState<Record<string, { left:number; top:number; rot:number }> | null>(null);
-  const [dialect, setDialect] = useState<'zurich'|'grisons'|'lucerne'>('zurich');
+  // dialect selection removed - translations handled via `lang` ('en'|'ch')
   const [teamNames, setTeamNames] = useState<{1:string;2:string}>(() => ({ 1: 'Team 1', 2: 'Team 2' }));
   const [optionsVisible, setOptionsVisible] = useState(true);
 
@@ -430,12 +442,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     const isWinner = winnerFlash?.id === playerId;
     return (
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        {isDealer && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(90deg,#fde68a,#fca5a5)', padding: '6px 10px', borderRadius: 14, boxShadow: '0 6px 18px rgba(0,0,0,0.12)', border: '2px solid rgba(0,0,0,0.06)' }}>
-            <span style={{ fontWeight: 900, color: '#7c2d12', fontSize: 12 }}>DEALER</span>
-            <span style={{ fontSize: 18 }}>🎩</span>
-          </div>
-        )}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: isDealer ? 'linear-gradient(90deg,#fde68a,#fca5a5)' : 'transparent', padding: isDealer ? '6px 10px' : '2px 6px', borderRadius: 14, boxShadow: isDealer ? '0 6px 18px rgba(0,0,0,0.12)' : 'none', border: isDealer ? '2px solid rgba(0,0,0,0.06)' : '1px dashed rgba(0,0,0,0.04)', opacity: isDealer ? 1 : 0.6 }}>
+          <span style={{ fontWeight: 800, color: isDealer ? '#7c2d12' : '#6b7280', fontSize: 12 }}>{T[lang].dealer}</span>
+          <span style={{ fontSize: 18 }}>{isDealer ? '🎩' : ' '}</span>
+        </div>
         {isWinner && winnerFlash && (
           <span style={{ fontSize: 28, lineHeight: 1, display: 'inline-block', animation: 'bounceIn 550ms ease, pulse 1200ms infinite', transformOrigin: 'center' }}>{winnerFlash.emoji}</span>
         )}
@@ -1052,6 +1062,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setGameState(data.state || null);
         setPlayers(data.players || []);
         setHand(data.hand || []);
+        // If backend provided weis, determine winner for UI display
+        try {
+          const weisObj = (data.state && data.state.weis) ? data.state.weis : null;
+          if (weisObj) {
+            const ww = determineWeisWinner(weisObj as Record<number, any[]>);
+            setWeisWinner(ww);
+          }
+        } catch (e) {}
         setMessage(`Trump selected: ${trump}`);
       } else setMessage(data?.message || 'Failed to select trump');
     } catch (err) {
@@ -1418,7 +1436,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
                   {!gameState?.currentTrick?.length && !uiPendingResolve && !isAnimating && (
                     <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: '#6b7280', fontWeight: '500', fontSize: 12 }}>
-                      No cards played
+                      {T[lang].noCardsPlayed}
                     </div>
                   )}
                 </div>
@@ -1436,13 +1454,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                   <option value="schieber">Schieber</option>
                 </select>
               </label>
-              <label style={{ marginLeft: 12 }}>Dialect:
-                <select value={dialect} onChange={e=>setDialect(e.target.value as any)} style={{ marginLeft: 8 }}>
-                  <option value="zurich">Züridütsch</option>
-                  <option value="grisons">Bündnerdütsch</option>
-                  <option value="lucerne">Luzernerdütsch</option>
-                </select>
-              </label>
+              {/* Dialect selection removed - translations use `lang` (en | ch) */}
               <label style={{ marginLeft: 12 }}>Team 1 name:
                 <input value={teamNames[1]} onChange={e=>setTeamNames(s=>({...s,1:e.target.value}))} style={{ marginLeft: 8 }} />
               </label>
@@ -1485,7 +1497,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                   <div style={{ color: '#6b7280', fontStyle: 'italic' }}>No games played yet. Start playing to see rankings!</div>
                 ) : (
                   <ol style={{ margin: 0, paddingLeft: 20 }}>
-                    {Object.entries(totals).sort((a,b) => b[1]-a[1]).map(([name, pts], idx) => (
+                    {((Object.entries(totals) as [string, number][]).sort((a,b) => b[1]-a[1])).map(([name, pts], idx) => (
                       <li key={name} style={{ marginBottom: 6, display: 'flex', alignItems: 'center' }}>
                         <span style={{ fontWeight: idx === 0 ? '700' : '500', color: idx === 0 ? '#059669' : '#374151' }}>
                           {name}: {pts} pts
@@ -1512,11 +1524,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               
               <div style={{ background: '#e0f2fe', padding: 12, borderRadius: 8 }}>
                 <h4 style={{ margin: '0 0 8px 0', color: '#0c4a6e' }}>📊 Game Statistics</h4>
-                <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 14, lineHeight: 1.6 }}>
                   <div><strong>Games Played:</strong> {localStorage.getItem('jassProcessedGames') ? JSON.parse(localStorage.getItem('jassProcessedGames')!).length : 0}</div>
-                  <div><strong>Average Score:</strong> {Object.keys(totals).length > 0 ? Math.round(Object.values(totals).reduce((a,b) => a+b, 0) / Object.keys(totals).length) : 0} pts</div>
-                  <div><strong>Highest Score:</strong> {Object.keys(totals).length > 0 ? Math.max(...Object.values(totals)) : 0} pts</div>
-                  <div><strong>Total Points Awarded:</strong> {Object.values(totals).reduce((a,b) => a+b, 0)} pts</div>
+                  <div><strong>Average Score:</strong> {(Object.keys(totals).length > 0 ? Math.round((Object.values(totals) as number[]).reduce((a,b) => a+b, 0) / Object.keys(totals).length) : 0)} pts</div>
+                  <div><strong>Highest Score:</strong> {Object.keys(totals).length > 0 ? Math.max(...(Object.values(totals) as number[])) : 0} pts</div>
+                  <div><strong>Total Points Awarded:</strong> {(Object.values(totals) as number[]).reduce((a,b) => a+b, 0)} pts</div>
                 </div>
               </div>
             </div>
@@ -1667,9 +1679,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             )}
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-              {Object.entries(gameState.weis).map(([playerId, weis]) => {
+              {Object.entries(gameState.weis as Record<string, any[]>).map(([playerId, weis]) => {
                 const player = players.find(p => p.id === parseInt(playerId));
-                if (!weis || weis.length === 0) return null;
+                const weisArr = weis as any[];
+                if (!weisArr || weisArr.length === 0) return null;
                 
                 const isWinningTeam = weisWinner?.teamId === player?.team;
                 
@@ -1690,7 +1703,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                       {player?.name || `Player ${playerId}`} (Team {player?.team || '?'})
                       {isWinningTeam && <span style={{ marginLeft: 8 }}>👑</span>}
                     </div>
-                    {weis.map((w: any, idx: number) => (
+                    {weisArr.map((w: any, idx: number) => (
                       <div key={idx} style={{ 
                         fontSize: 13, 
                         color: '#374151', 
@@ -1705,11 +1718,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                           color: isWinningTeam ? '#059669' : '#6b7280',
                           marginRight: 8
                         }}>
-                          {w.points} Punkte
+                          {w.points} {T[lang].weisPoints}
                         </span>
                         {w.description}
                         {weisWinner && !isWinningTeam && (
-                          <span style={{ color: '#ef4444', fontSize: 11, fontStyle: 'italic' }}> (zählt nicht)</span>
+                          <span style={{ color: '#ef4444', fontSize: 11, fontStyle: 'italic' }}> {T[lang].weisNotCount}</span>
                         )}
                       </div>
                     ))}
@@ -1727,8 +1740,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               color: '#92400e',
               textAlign: 'center'
             }}>
-              <strong>Swiss Jass Weis Rules:</strong> Only the team with the best Weis scores points. 
-              Weis are declared during the first trick with "gut" (good), "gleich" (equal), or better value.
+              <strong>{T[lang].weisRulesTitle}:</strong> {T[lang].weisRulesDesc}
             </div>
           </div>
         )}

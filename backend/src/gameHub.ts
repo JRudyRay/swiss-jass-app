@@ -135,19 +135,38 @@ class GameHub {
         return;
       }
       
-      // Simple bot strategy: play a random legal card
-      const cardToPlay = this.selectBotCard(legalCards, state);
-      
-      console.log(`[${gameId}] Bot ${currentPlayerId} playing card: ${cardToPlay.id}`);
-      
-      const success = engine.playCard(cardToPlay.id, currentPlayerId);
-      
-      if (success) {
-        // Check if next player is also a bot
-        const newState = engine.getGameState();
-        if (newState.phase === 'playing' && newState.currentPlayer !== 0) {
-          setTimeout(() => this.performBotAction(gameId), 1500);
+      // Try legal cards until one succeeds (defensive against transient mismatches)
+      // Prefer a simple strategy but fall back to trying all legal cards.
+      let played = false;
+      // pick preferred card first
+      const preferred = this.selectBotCard(legalCards, state);
+      const tryOrder = [preferred, ...legalCards.filter(c => c.id !== preferred.id)];
+
+      for (const cardToPlay of tryOrder) {
+        try {
+          console.log(`[${gameId}] Bot ${currentPlayerId} attempting to play: ${cardToPlay.id}`);
+          const success = engine.playCard(cardToPlay.id, currentPlayerId);
+          if (success) {
+            played = true;
+            console.log(`[${gameId}] Bot ${currentPlayerId} played: ${cardToPlay.id}`);
+            break;
+          } else {
+            console.warn(`[${gameId}] Bot ${currentPlayerId} failed to play ${cardToPlay.id}`);
+          }
+        } catch (err) {
+          console.error(`[${gameId}] Error while bot ${currentPlayerId} tried to play ${cardToPlay.id}:`, err);
         }
+      }
+
+      if (!played) {
+        console.warn(`[${gameId}] Bot ${currentPlayerId} could not play any legal cards (count=${legalCards.length}). CurrentPlayer: ${state.currentPlayer}`);
+        return;
+      }
+
+      // If we played successfully, schedule next bot action if needed
+      const newState = engine.getGameState();
+      if (newState.phase === 'playing' && newState.currentPlayer !== 0) {
+        setTimeout(() => this.performBotAction(gameId), 1500);
       }
     } catch (error) {
       console.error(`Error in bot action for game ${gameId}:`, error);
