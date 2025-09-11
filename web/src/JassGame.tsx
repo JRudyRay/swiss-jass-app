@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import logo from './assets/logo.png';
 import { SwissCard } from './SwissCard';
 import * as Schieber from './engine/schieber';
 import YouTubePlayer from './YouTubePlayer';
@@ -32,25 +33,25 @@ const suitSymbols: { [key: string]: string } = {
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: { fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 50%, #fefce8 100%)', paddingBottom: 40 },
-  header: { background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', color: 'white', padding: '1.2rem 1rem', textAlign: 'center' as const, fontSize: 22, fontWeight: 800, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
-  gameArea: { maxWidth: 1200, margin: '2rem auto', background: 'rgba(255, 255, 255, 0.95)', borderRadius: 20, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.08)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' },
+  container: { fontFamily: '"Helvetica Neue", "Arial", sans-serif', minHeight: '100vh', background: '#f5f2e8', paddingBottom: 40 },
+  header: { background: '#D42E2C', color: 'white', padding: '1rem 1rem', textAlign: 'center' as const, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+  gameArea: { maxWidth: 1200, margin: '2rem auto', background: 'rgba(255, 255, 255, 0.8)', borderRadius: 20, padding: 24, boxShadow: '0 10px 40px rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,0,0,0.05)' },
   controls: { display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' as const, justifyContent: 'center' },
   button: { 
-    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', 
+    background: '#1A7A4C', 
     color: 'white', 
     border: 'none', 
-    padding: '12px 20px', 
-    borderRadius: 10, 
+    padding: '10px 18px', 
+    borderRadius: 8, 
     cursor: 'pointer', 
     fontWeight: 600, 
     fontSize: 14,
-    boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3)',
+    boxShadow: '0 2px 8px rgba(26, 122, 76, 0.3)',
     transition: 'all 0.2s ease'
   },
-  message: { textAlign: 'center' as const, marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#1f2937', padding: '12px 16px', background: '#f3f4f6', borderRadius: 10, border: '2px solid #e5e7eb' },
+  message: { textAlign: 'center' as const, marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#3a2e20', padding: '12px 16px', background: 'rgba(255,255,255,0.7)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' },
   hand: { display: 'flex', gap: 10, flexWrap: 'wrap' as const, justifyContent: 'center', padding: '12px 8px' },
-  table: { padding: 14, background: '#f1fff4', borderRadius: 10, minHeight: 140, marginBottom: 12 },
+  table: { padding: 14, background: 'rgba(25, 122, 76, 0.1)', borderRadius: 10, minHeight: 140, marginBottom: 12 },
 };
 
 export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user, onLogout }) => {
@@ -919,6 +920,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   // Persist and update per-player totals stored in localStorage
   const updateTotalsFromGameState = (state: GameState, playersList: Player[], maybeGameId?: string | null) => {
     try {
+  // Prevent double-processing the same finished game (by id)
+  if (maybeGameId) {
+    try {
+      const processedRawCheck = localStorage.getItem('jassProcessedGames');
+      const processedCheck: string[] = processedRawCheck ? JSON.parse(processedRawCheck) : [];
+      if (processedCheck.includes(maybeGameId)) return; // already applied
+    } catch (e) { /* ignore parse errors */ }
+  }
   const currentTotalsRaw = localStorage.getItem('jassTotals');
   const currentTotals: Record<string, number> = currentTotalsRaw ? JSON.parse(currentTotalsRaw) : {};
   const currentUsersRaw = localStorage.getItem('jassUsers');
@@ -994,13 +1003,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
       // Debug message to confirm points are being updated
       if (Object.keys(additions).length > 0) {
-        const team1Total = Object.entries(additions).filter(([name]) => 
-          playersList.find(p => p.name === name)?.team === 1
-        ).map(([,pts]) => pts)[0] || 0;
-        const team2Total = Object.entries(additions).filter(([name]) => 
-          playersList.find(p => p.name === name)?.team === 2
-        ).map(([,pts]) => pts)[0] || 0;
-        
+        // Sum points per team for a clearer message (previously only picked first entry)
+        const team1Total = Object.entries(additions).reduce((acc, [name, pts]) => acc + (playersList.find(p => p.name === name)?.team === 1 ? pts : 0), 0);
+        const team2Total = Object.entries(additions).reduce((acc, [name, pts]) => acc + (playersList.find(p => p.name === name)?.team === 2 ? pts : 0), 0);
+
         console.log('Swiss Jass: Team scores - Team 1:', team1Total, 'Team 2:', team2Total);
         setMessage(`Game finished! Team 1: ${team1Total} pts, Team 2: ${team2Total} pts`);
       }
@@ -1009,6 +1015,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   localStorage.setItem('jassUsers', JSON.stringify(newUsers));
   setTotals(newTotals);
   setJassUsers(newUsers);
+
+  // If there are no server-side users loaded (usersList empty), expose local totals
+  // as a lightweight usersList so the Rankings tab shows local players immediately.
+  try {
+    if (!usersList || usersList.length === 0) {
+      const merged = Object.entries(newTotals).map(([name, pts]) => ({ id: `local-${name}`, username: name, totalPoints: pts }));
+      setUsersList(merged);
+    }
+  } catch (e) { /* ignore */ }
 
       // Best-effort: try to sync totals to backend if available and refresh server-side users list
       (async () => {
@@ -1159,14 +1174,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   };
 
   const resetTotals = () => {
-    localStorage.removeItem('jassTotals');
-    localStorage.removeItem('jassProcessedGames');
-    setTotals({});
+  localStorage.removeItem('jassTotals');
+  localStorage.removeItem('jassProcessedGames');
+  localStorage.removeItem('jassUsers');
+  setTotals({});
+  setJassUsers({});
+  setUsersList([]);
   };
 
   return (
     <div style={styles.container}>
-      <div style={styles.header}>Swiss Jass <span style={{ marginLeft: 8 }}>🇨🇭 🧀🫕🏔️🐄🍫</span></div>
+      <div style={styles.header}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+        <img src={logo} alt="Swiss Jass Logo" style={{ height: 50, borderRadius: 8 }} />
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, letterSpacing: '-0.05em' }}>Swiss Jass</h1>
+      </div></div>
       <div style={styles.gameArea}>
         <div style={styles.message}>{message}</div>
         
@@ -1220,39 +1241,26 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         <div style={{ display: 'flex', justifyContent: 'center', gap: 80, marginTop: 12, marginBottom: 16 }}>
           <div style={{ 
             textAlign: 'center', 
-            background: 'linear-gradient(135deg, #fef3f2 0%, #fee2e2 100%)', 
+            background: '#fff', 
             borderRadius: 12, 
             padding: '12px 20px',
-            border: '2px solid #dc2626',
-            boxShadow: '0 4px 8px rgba(220, 38, 38, 0.1)'
+            border: '2px solid #D42E2C',
+            boxShadow: '0 4px 8px rgba(212, 46, 44, 0.15)'
           }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#7f1d1d', marginBottom: 2 }}>{teamNames[1] || 'Team 1'} 🇨🇭</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: '#991b1b' }}>{gameState?.scores?.team1 ?? 0}</div>
-            {/* Clearer breakdown card for transparency */}
-            <div style={{ marginTop: 8, padding: 8, background: '#fff7f7', borderRadius: 8, border: '1px solid rgba(153,27,27,0.08)', width: 160 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b' }}>Team 1</div>
-              <div style={{ fontSize: 12, color: '#374151' }}>Raw: <strong>{(gameState && gameState.scores) ? gameState.scores.team1 : 0}</strong></div>
-              <div style={{ fontSize: 12, color: '#374151' }}>Weis+Bonus: <strong>{(function(){ try { if (!gameState) return 0; const settled = Schieber.settleHand(gameState as any); return (settled.scores.team1 - (gameState.scores?.team1||0)); } catch(e){ return 0; } })()}</strong></div>
-              <div style={{ fontSize: 13, marginTop: 6 }}>Settled: <strong>{(function(){ try { if (!gameState) return 0; const settled = Schieber.settleHand(gameState as any); return settled.scores.team1; } catch(e){ return gameState?.scores?.team1 ?? 0; } })()}</strong></div>
-            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#A42423', marginBottom: 2 }}>{teamNames[1] || 'Team 1'}</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#D42E2C' }}>{gameState?.scores?.team1 ?? 0}</div>
             <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
           </div>
           <div style={{ 
             textAlign: 'center', 
-            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', 
+            background: '#fff', 
             borderRadius: 12, 
             padding: '12px 20px',
-            border: '2px solid #2563eb',
-            boxShadow: '0 4px 8px rgba(37, 99, 235, 0.1)'
+            border: '2px solid #1A7A4C',
+            boxShadow: '0 4px 8px rgba(26, 122, 76, 0.15)'
           }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a8a', marginBottom: 2 }}>{teamNames[2] || 'Team 2'} 🇨🇭</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: '#1d4ed8' }}>{gameState?.scores?.team2 ?? 0}</div>
-            <div style={{ marginTop: 8, padding: 8, background: '#f0f9ff', borderRadius: 8, border: '1px solid rgba(29,78,216,0.08)', width: 160 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8' }}>Team 2</div>
-              <div style={{ fontSize: 12, color: '#374151' }}>Raw: <strong>{(gameState && gameState.scores) ? gameState.scores.team2 : 0}</strong></div>
-              <div style={{ fontSize: 12, color: '#374151' }}>Weis+Bonus: <strong>{(function(){ try { if (!gameState) return 0; const settled = Schieber.settleHand(gameState as any); return (settled.scores.team2 - (gameState.scores?.team2||0)); } catch(e){ return 0; } })()}</strong></div>
-              <div style={{ fontSize: 13, marginTop: 6 }}>Settled: <strong>{(function(){ try { if (!gameState) return 0; const settled = Schieber.settleHand(gameState as any); return settled.scores.team2; } catch(e){ return gameState?.scores?.team2 ?? 0; } })()}</strong></div>
-            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#135A38', marginBottom: 2 }}>{teamNames[2] || 'Team 2'}</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: '#1A7A4C' }}>{gameState?.scores?.team2 ?? 0}</div>
             <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
           </div>
         </div>
@@ -1260,14 +1268,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         {/* Trump indicator - Swiss professional design */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <div style={{ 
-            background: currentTrump ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', 
-            border: currentTrump ? '2px solid #10b981' : '2px solid #9ca3af', 
+            background: currentTrump ? '#fff' : '#f3f4f6', 
+            border: currentTrump ? '2px solid #1A7A4C' : '2px solid #9ca3af', 
             borderRadius: 12, 
             padding: '10px 18px',
             fontSize: 16,
             fontWeight: 700,
-            color: currentTrump ? '#064e3b' : '#6b7280',
-            boxShadow: currentTrump ? '0 4px 12px rgba(16, 185, 129, 0.2)' : '0 2px 4px rgba(0,0,0,0.1)',
+            color: currentTrump ? '#135A38' : '#6b7280',
+            boxShadow: currentTrump ? '0 4px 12px rgba(26, 122, 76, 0.2)' : '0 2px 4px rgba(0,0,0,0.1)',
             minWidth: 200,
             textAlign: 'center' as const
           }}>
@@ -1303,7 +1311,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   {tab === 'game' && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <div style={{ width: 700, height: 420, position: 'relative', background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)', borderRadius: 16, boxShadow: '0 8px 25px rgba(0,0,0,0.1)', padding: 8, border: '3px solid #16a34a' }}>
+            <div style={{ width: 700, height: 420, position: 'relative', background: 'radial-gradient(circle, rgba(25,122,76,1) 0%, rgba(19,93,58,1) 100%)', borderRadius: 16, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.2)', padding: 8, border: '4px solid #135A38' }}>
               
               {/* North player (id 2) - Compact layout */}
               <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 100 }}>

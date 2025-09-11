@@ -124,7 +124,6 @@ function testTrumpChooserSchieben() {
   assert(final.phase === 'playing', 'After setting trump phase should be playing');
   assert(final.currentPlayer === final.dealer, 'Play should start with the dealer even if partner declared via schieben');
 }
-
 function testTenDoesNotOutrankHighCards() {
   // Setup two cards for same suit trump scenario
   const ten = { id: 'ten', suit: 'eicheln', rank: '10' } as any;
@@ -154,6 +153,49 @@ function testTenDoesNotOutrankHighCards() {
   assert(cmpK_nt >= 0, '10 should not beat King in non-trump same suit');
   assert(cmpO_nt >= 0, '10 should not beat Ober in non-trump same suit');
   assert(cmpU_nt >= 0, '10 should not beat Under in non-trump same suit');
+
+}
+
+// --- Totals persistence tests ---
+function testTotalsUpdateSimple() {
+  // Mock localStorage (node environment)
+  const storage: Record<string,string> = {};
+  (global as any).localStorage = {
+    getItem: (k:string) => storage[k] ?? null,
+    setItem: (k:string, v:string) => { storage[k] = v; },
+    removeItem: (k:string) => { delete storage[k]; }
+  } as any;
+
+  // Minimal players and state
+  const players = [ { id:0, name: 'You', team: 1 } as any, { id:1, name: 'Bot', team: 2 } as any ];
+  const state = { phase: 'finished', scores: { team1: 100, team2: 50 } } as any;
+
+  // Use the lightweight totals helper for tests
+  const mod = require('../src/utils/totals') as any;
+  mod.updateTotalsFromGameStateForTests(state, players, 'test-game-1');
+  const totals = JSON.parse(localStorage.getItem('jassTotals') || '{}');
+  if (totals['You'] !== 100) throw new Error('Expected You to have 100 pts');
+  if (totals['Bot'] !== 50) throw new Error('Expected Bot to have 50 pts');
+}
+
+function testTotalsDuplicateGuard() {
+  const storage: Record<string,string> = {};
+  (global as any).localStorage = {
+    getItem: (k:string) => storage[k] ?? null,
+    setItem: (k:string, v:string) => { storage[k] = v; },
+    removeItem: (k:string) => { delete storage[k]; }
+  } as any;
+
+  const players = [ { id:0, name: 'A', team: 1 } as any, { id:1, name: 'B', team: 2 } as any ];
+  const state = { phase: 'finished', scores: { team1: 10, team2: 20 } } as any;
+  const mod = require('../src/utils/totals') as any;
+  // First update
+  mod.updateTotalsFromGameStateForTests(state, players, 'dup-game-1');
+  // Attempt duplicate update
+  mod.updateTotalsFromGameStateForTests(state, players, 'dup-game-1');
+  const totals = JSON.parse(localStorage.getItem('jassTotals') || '{}');
+  if (totals['A'] !== 10) throw new Error('Duplicate guard failed: A has wrong pts');
+  if (totals['B'] !== 20) throw new Error('Duplicate guard failed: B has wrong pts');
 }
 
 function runAll() {
@@ -164,6 +206,8 @@ function runAll() {
   tests.push(testDeclarerMultiplierEffect, testMatchAllAward);
   // dealer/trump chooser and schieben behavior test
   tests.push(testTrumpChooserSchieben);
+  // Totals persistence tests (localStorage-mocked)
+  tests.push(testTotalsUpdateSimple, testTotalsDuplicateGuard);
   let passed = 0;
   for (const t of tests) {
     try {
