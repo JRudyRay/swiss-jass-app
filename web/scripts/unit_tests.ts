@@ -1,4 +1,4 @@
-import * as Schieber from '../src/engine/schieber';
+import * as Schieber from '../src/engine/schieber.ts';
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
@@ -123,6 +123,37 @@ function testTrumpChooserSchieben() {
   assert(final.declarer === passed.currentPlayer, 'Declarer should be the player who selected trump (the partner)');
   assert(final.phase === 'playing', 'After setting trump phase should be playing');
   assert(final.currentPlayer === final.dealer, 'Play should start with the dealer even if partner declared via schieben');
+}
+
+function testTenDoesNotOutrankHighCards() {
+  // Setup two cards for same suit trump scenario
+  const ten = { id: 'ten', suit: 'eicheln', rank: '10' } as any;
+  const ace = { id: 'ace', suit: 'eicheln', rank: 'A' } as any;
+  const king = { id: 'king', suit: 'eicheln', rank: 'K' } as any;
+  const ober = { id: 'ober', suit: 'eicheln', rank: 'O' } as any;
+  const under = { id: 'under', suit: 'eicheln', rank: 'U' } as any;
+
+  // In trump suit, 10 must NOT outrank A,K,O,U
+  const cmpA = (Schieber as any).compareCards(ten, ace, 'eicheln', 'eicheln');
+  const cmpK = (Schieber as any).compareCards(ten, king, 'eicheln', 'eicheln');
+  const cmpO = (Schieber as any).compareCards(ten, ober, 'eicheln', 'eicheln');
+  const cmpU = (Schieber as any).compareCards(ten, under, 'eicheln', 'eicheln');
+
+  // compareCards returns negative when first argument is stronger; ensure TEN is weaker or equal (>=0)
+  assert(cmpA >= 0, '10 should not beat Ace in trump');
+  assert(cmpK >= 0, '10 should not beat King in trump');
+  assert(cmpO >= 0, '10 should not beat Ober in trump');
+  assert(cmpU >= 0, '10 should not beat Under in trump');
+
+  // Non-trump same-suit comparisons: 10 should not beat A,K,O,U either
+  const cmpA_nt = (Schieber as any).compareCards(ten, ace, 'rosen', 'eicheln');
+  const cmpK_nt = (Schieber as any).compareCards(ten, king, 'rosen', 'eicheln');
+  const cmpO_nt = (Schieber as any).compareCards(ten, ober, 'rosen', 'eicheln');
+  const cmpU_nt = (Schieber as any).compareCards(ten, under, 'rosen', 'eicheln');
+  assert(cmpA_nt >= 0, '10 should not beat Ace in non-trump same suit');
+  assert(cmpK_nt >= 0, '10 should not beat King in non-trump same suit');
+  assert(cmpO_nt >= 0, '10 should not beat Ober in non-trump same suit');
+  assert(cmpU_nt >= 0, '10 should not beat Under in non-trump same suit');
 }
 
 function runAll() {
