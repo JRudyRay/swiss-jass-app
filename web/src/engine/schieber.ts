@@ -303,8 +303,14 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
   const sameSuit = player.hand.filter(c => c.suit === leadSuit);
   if (sameSuit.length > 0) {
     // If any of these can beat the current best card, only those are allowed (Stichzwang)
-  const beating = sameSuit.filter(c => compareCards(c, currentBestCard, trumpContract, leadSuit) < 0);
-    return beating.length > 0 ? beating : sameSuit;
+  // Per user preference, allow any card of the lead suit to be played.
+  // In addition, allow trump cards as an option even when the player can follow suit.
+  const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
+  const trumpCards = suitTrump ? player.hand.filter(c => c.suit === suitTrump) : [];
+  // Return union of sameSuit and trumpCards (avoid duplicates)
+  const union: Card[] = sameSuit.slice();
+  for (const t of trumpCards) if (!union.includes(t)) union.push(t);
+  return union;
   }
 
   // No lead suit: if there is a suit-trump, player must play a trump if they have any

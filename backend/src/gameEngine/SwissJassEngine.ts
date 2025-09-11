@@ -344,7 +344,15 @@ export class SwissJassEngine {
     // Must follow suit if possible (fundamental Swiss Jass rule)
     if (card.suit !== leadCard.suit) {
       const hasSuit = player.hand.some(c => c.suit === leadCard.suit);
-      if (hasSuit) return false;
+      // If player has the lead suit, they may play any card of that suit OR a trump card.
+      if (hasSuit) {
+        // allowed only if card is trump or card is of the lead suit
+        const trump = this.gameState.trumpSuit;
+        const isTrump = trump && card.suit === trump;
+        if (card.suit === leadCard.suit) return true;
+        if (isTrump) return true;
+        return false;
+      }
     }
 
     return true;
@@ -605,6 +613,19 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
     const leadCard = this.gameState.currentTrick[0];
     const followSuit = hand.filter(card => card.suit === leadCard.suit);
     
-    return followSuit.length > 0 ? followSuit : hand;
+    // If player has cards of the lead suit, allow any of those cards.
+    // Also allow trump cards as an option even when the player can follow suit.
+    const result: SwissCard[] = [];
+    if (followSuit.length > 0) {
+      result.push(...followSuit);
+      const trump = this.gameState.trumpSuit;
+      if (trump) {
+        const trumpCards = hand.filter(c => c.suit === trump);
+        for (const t of trumpCards) if (!result.find(r => r.id === t.id)) result.push(t);
+      }
+      return result;
+    }
+
+    return hand;
   }
 }
