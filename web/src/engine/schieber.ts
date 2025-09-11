@@ -66,9 +66,12 @@ function rankValue(rank: Rank, isTrump: boolean): number {
 }
 
 // For ordering cards (not points) we need rank order lists.
-// Swiss Jass trump order: U (Jack) highest, then 9, A, 10, K, O, 8, 7, 6 lowest
-const trumpOrder: Rank[] = ['U','9','A','10','K','O','8','7','6'];
-const normalOrder: Rank[] = ['A','10','K','O','U','9','8','7','6'];
+// Swiss Jass ordering adjusted so '10' does NOT beat Under/Oben/King/Ace.
+// Stronger cards appear earlier in the arrays (lower index = stronger).
+// Trump order: Under highest, then 9, Ace, King, Ober, then 10, 8,7,6
+const trumpOrder: Rank[] = ['U','9','A','K','O','10','8','7','6'];
+// Normal (non-trump) order: Ace, King, Ober, Under, then 10, 9, 8,7,6
+const normalOrder: Rank[] = ['A','K','O','U','10','9','8','7','6'];
 
 // Return index in an order array for comparisons. Lower index = stronger card.
 export function rankOrderIndex(rank: Rank, contract: TrumpContract | null | undefined, isTrumpCard: boolean) {
