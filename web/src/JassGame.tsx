@@ -434,13 +434,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             completeGame(userTeamScore, opponentTeamScore, userWon, totalRounds);
           }
         } else {
-          // start a new round (fresh deal) keeping totals and rotating dealer
+          // start a new hand (fresh deal) keeping totals and rotating dealer
           const fresh = Schieber.startNewHand(newSt);
           saveLocalState(fresh);
           setPlayers(mapPlayersWithSeats(fresh.players));
           setGameState({ phase: fresh.phase, currentPlayer: fresh.currentPlayer, trumpSuit: fresh.trump || null, currentTrick: fresh.currentTrick || [], scores: fresh.scores, dealer: fresh.dealer });
           setHand(fresh.players.find(p=>p.id===0)?.hand || []);
           setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
+          // If the new dealer isn't the human (player 0), immediately let bots proceed to choose trump
+          if (fresh.currentPlayer !== 0) {
+            setTimeout(() => { botsTakeTurns(); }, 150);
+            setMessage(`Waiting for ${fresh.players.find(p=>p.id===fresh.currentPlayer)?.name || 'dealer'} to choose trump...`);
+          } else {
+            setMessage('Your turn to choose trump');
+          }
         }
       }
       return newSt;
@@ -1404,14 +1411,43 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   // Integrate into existing tab bar: add 'tables' and 'friends'
   const renderTabs = () => (
-    <div style={{ display: 'flex', gap: 12, marginBottom: 16, justifyContent: 'center' }}>
-      <button style={{ ...styles.button, background: tab==='game' ? '#1A7A4C' : 'transparent' }} onClick={() => { setTab('game'); setOptionsVisible(true); }}>{T[lang].game}</button>
-      <button style={{ ...styles.button, background: tab==='rankings' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('rankings')}>{T[lang].rankings}</button>
-      <button style={{ ...styles.button, background: tab==='settings' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('settings')}>{T[lang].settings}</button>
-      <button style={{ ...styles.button, background: tab==='profile' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('profile')}>{T[lang].profile}</button>
-      <button style={{ ...styles.button, background: tab==='tables' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('tables')}>🏓 Tables</button>
-      <button style={{ ...styles.button, background: tab==='friends' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('friends')}>👥 Friends</button>
-      {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>{T[lang].refresh}</button>}
+    <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'center', flexWrap:'wrap' }}>
+      {['game','tables','friends','rankings','settings','profile'].map(key => {
+        const labels: Record<string,string> = {
+          game: T[lang].game,
+          rankings: T[lang].rankings,
+          settings: T[lang].settings,
+          profile: T[lang].profile,
+          tables: '🏓 Tables',
+          friends: '👥 Friends'
+        };
+        const active = tab === key;
+        return (
+          <button
+            key={key}
+            onClick={() => {
+              setTab(key as any);
+              if (key==='game') setOptionsVisible(true); else setOptionsVisible(false);
+            }}
+            style={{
+              padding: '8px 14px',
+              borderRadius: 24,
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '.5px',
+              cursor: 'pointer',
+              border: active ? '2px solid #1A7A4C' : '1px solid #d1d5db',
+              background: active ? '#1A7A4C' : '#ffffff',
+              color: active ? '#ffffff' : '#1f2937',
+              boxShadow: active ? '0 4px 10px rgba(26,122,76,0.35)' : '0 2px 4px rgba(0,0,0,0.08)',
+              transition: 'background 120ms, color 120ms, box-shadow 150ms, border-color 150ms'
+            }}
+            onMouseEnter={e=>{ if(!active)(e.currentTarget.style.background='#f3f4f6'); }}
+            onMouseLeave={e=>{ if(!active)(e.currentTarget.style.background='#ffffff'); }}
+          >{labels[key]}</button>
+        );
+      })}
+      {gameId && tab==='game' && <button style={{ ...styles.button, background:'#2563eb' }} onClick={() => loadGameState(gameId)} disabled={isLoading}>{T[lang].refresh}</button>}
       {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>{T[lang].logout}</button>}
       {/* Recovery controls to avoid dead-ends (local only) */}
       {isLocal && (
@@ -1474,76 +1510,43 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           <div style={{ marginBottom:24 }}>{renderFriends()}</div>
         )}
 
-        {/* Team scores below tabs - Swiss professional design */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 80, marginTop: 12, marginBottom: 16 }}>
-          <div style={{ 
-            textAlign: 'center', 
-            background: '#fff', 
-            borderRadius: 12, 
-            padding: '12px 20px',
-            border: '2px solid #D42E2C',
-            boxShadow: '0 4px 8px rgba(212, 46, 44, 0.15)'
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#A42423', marginBottom: 2 }}>{teamNames[1] || 'Team 1'}</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: '#D42E2C' }}>{gameState?.scores?.team1 ?? 0}</div>
-            <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
-          </div>
-          <div style={{ 
-            textAlign: 'center', 
-            background: '#fff', 
-            borderRadius: 12, 
-            padding: '12px 20px',
-            border: '2px solid #1A7A4C',
-            boxShadow: '0 4px 8px rgba(26, 122, 76, 0.15)'
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#135A38', marginBottom: 2 }}>{teamNames[2] || 'Team 2'}</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: '#1A7A4C' }}>{gameState?.scores?.team2 ?? 0}</div>
-            <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
-          </div>
-        </div>
-        
-        {/* Trump indicator - Swiss professional design */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-          <div style={{ 
-            background: currentTrump ? '#fff' : '#f3f4f6', 
-            border: currentTrump ? '2px solid #1A7A4C' : '2px solid #9ca3af', 
-            borderRadius: 12, 
-            padding: '10px 18px',
-            fontSize: 16,
-            fontWeight: 700,
-            color: currentTrump ? '#135A38' : '#6b7280',
-            boxShadow: currentTrump ? '0 4px 12px rgba(26, 122, 76, 0.2)' : '0 2px 4px rgba(0,0,0,0.1)',
-            minWidth: 200,
-            textAlign: 'center' as const
-          }}>
-            <span style={{ fontSize: 12, display: 'block', marginBottom: 2, opacity: 0.8 }}>{T[lang].currentTrump}</span>
-            <span style={{ fontSize: 18 }}>{currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}</span>
-          </div>
-        </div>
-
-        {/* Round-by-round score history */}
-        {roundHistory.length > 0 && (
-          <div style={{ marginBottom: 16, background: '#f9fafb', borderRadius: 8, padding: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>Round History</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {roundHistory.map((round, idx) => (
-                <div key={idx} style={{ 
-                  background: 'white', 
-                  borderRadius: 6, 
-                  padding: '4px 8px', 
-                  fontSize: 12,
-                  border: '1px solid #e5e7eb',
-                  minWidth: 80,
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontWeight: 600 }}>Round {round.round}</div>
-                  <div style={{ color: '#dc2626' }}>{round.team1}</div>
-                  <div style={{ color: '#2563eb' }}>{round.team2}</div>
-                  <div style={{ fontSize: 10, color: '#6b7280' }}>{round.trump}</div>
-                </div>
-              ))}
+        {/* Game-only HUD (scores, trump, history) */}
+        {tab==='game' && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 80, marginTop: 12, marginBottom: 16 }}>
+              <div style={{ textAlign: 'center', background: '#fff', borderRadius: 12, padding: '12px 20px', border: '2px solid #D42E2C', boxShadow: '0 4px 8px rgba(212, 46, 44, 0.15)' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#A42423', marginBottom: 2 }}>{teamNames[1] || 'Team 1'}</div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: '#D42E2C' }}>{gameState?.scores?.team1 ?? 0}</div>
+                <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
+              </div>
+              <div style={{ textAlign: 'center', background: '#fff', borderRadius: 12, padding: '12px 20px', border: '2px solid #1A7A4C', boxShadow: '0 4px 8px rgba(26, 122, 76, 0.15)' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#135A38', marginBottom: 2 }}>{teamNames[2] || 'Team 2'}</div>
+                <div style={{ fontSize: 28, fontWeight: 900, color: '#1A7A4C' }}>{gameState?.scores?.team2 ?? 0}</div>
+                <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
+              </div>
             </div>
-          </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <div style={{ background: currentTrump ? '#fff' : '#f3f4f6', border: currentTrump ? '2px solid #1A7A4C' : '2px solid #9ca3af', borderRadius: 12, padding: '10px 18px', fontSize: 16, fontWeight: 700, color: currentTrump ? '#135A38' : '#6b7280', boxShadow: currentTrump ? '0 4px 12px rgba(26, 122, 76, 0.2)' : '0 2px 4px rgba(0,0,0,0.1)', minWidth: 200, textAlign: 'center' as const }}>
+                <span style={{ fontSize: 12, display: 'block', marginBottom: 2, opacity: 0.8 }}>{T[lang].currentTrump}</span>
+                <span style={{ fontSize: 18 }}>{currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}</span>
+              </div>
+            </div>
+            {roundHistory.length > 0 && (
+              <div style={{ marginBottom: 16, background: '#f9fafb', borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>Round History</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {roundHistory.map((round, idx) => (
+                    <div key={idx} style={{ background: 'white', borderRadius: 6, padding: '4px 8px', fontSize: 12, border: '1px solid #e5e7eb', minWidth: 80, textAlign: 'center' }}>
+                      <div style={{ fontWeight: 600 }}>Round {round.round}</div>
+                      <div style={{ color: '#dc2626' }}>{round.team1}</div>
+                      <div style={{ color: '#2563eb' }}>{round.team2}</div>
+                      <div style={{ fontSize: 10, color: '#6b7280' }}>{round.trump}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
   {tab === 'game' && (
@@ -1881,8 +1884,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </div>
         </div>
 
-        {/* Simple trump selector if phase requests it */}
-        {gameState?.phase === 'trump_selection' && (
+  {/* Trump selector only when it's the human dealer's turn */}
+  {gameState?.phase === 'trump_selection' && gameState.currentPlayer === 0 && (
           <div style={{ marginTop: 12 }}>
             <h4>{T[lang].selectTrump} — Dealer: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`}</h4>
             <div style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}>
