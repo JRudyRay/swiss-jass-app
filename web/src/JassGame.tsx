@@ -1060,6 +1060,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               const u = await r2.json();
               if (u?.success) setUsersList(u.users || []);
             } catch (e) { /* ignore */ }
+            // Always refresh leaderboard after totals sync (wins may have changed via other players)
+            try {
+              const lb = await fetch(`${API_URL}/api/admin/leaderboard`);
+              const lbJson = await lb.json();
+              if (lbJson?.success && Array.isArray(lbJson.leaderboard)) setLeaderboard(lbJson.leaderboard);
+            } catch (_) { /* ignore */ }
           }
 
           // If logged-in, try to report the match per-team for TrueSkill updates
@@ -1074,6 +1080,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               if (loggedIn) {
                 mapNameToId['You'] = loggedIn.id;
               }
+              // Debug mapping
+              console.log('Mapping player names to IDs', { playersList: playersList.map(p=>p.name), mapNameToId });
               const teamAIds = playersList.filter(p => p.team === 1).map(p => mapNameToId[p.name]).filter(Boolean);
               const teamBIds = playersList.filter(p => p.team === 2).map(p => mapNameToId[p.name]).filter(Boolean);
               if (teamAIds.length > 0 && teamBIds.length > 0) {
@@ -1088,6 +1096,18 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                   const lbJson = await lb.json();
                   if (lbJson?.success && Array.isArray(lbJson.leaderboard)) setLeaderboard(lbJson.leaderboard);
                 } catch (_) { /* ignore */ }
+              } else {
+                console.warn('Skipping /games/report due to unmapped players; attempting single-user fallback', { teamAIds, teamBIds });
+                try {
+                  const youWon = ((state.scores as any)?.team1 || 0) >= ((state.scores as any)?.team2 || 0);
+                  await fetch(`${API_URL}/api/games/user-result`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ won: youWon, points: youWon ? 3 : 0, rounds: 0 }) });
+                  const after = await fetch(`${API_URL}/api/admin/users`);
+                  const afterJson = await after.json();
+                  if (afterJson?.success) setUsersList(afterJson.users || []);
+                  const lb2 = await fetch(`${API_URL}/api/admin/leaderboard`);
+                  const lb2Json = await lb2.json();
+                  if (lb2Json?.success && Array.isArray(lb2Json.leaderboard)) setLeaderboard(lb2Json.leaderboard);
+                } catch (fe) { /* ignore */ }
               }
             }
           } catch (e) {

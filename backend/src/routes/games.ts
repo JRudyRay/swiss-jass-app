@@ -56,6 +56,36 @@ router.post('/report', async (req, res) => {
 });
 
 /**
+ * POST /api/games/user-result
+ * Fallback endpoint: update stats for a single authenticated user when other players are bots (no mapped user IDs).
+ * body: { won: boolean, points?: number, rounds?: number }
+ */
+router.post('/user-result', async (req, res) => {
+  try {
+    const authHeader = (req.headers && (req.headers as any).authorization) || null;
+    const token = authHeader ? String(authHeader).split(' ')[1] : null;
+    if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
+    let decoded: any;
+    try { decoded = AuthService.verifyToken(token); } catch { return res.status(401).json({ success: false, message: 'Invalid token' }); }
+    const userId = decoded?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Invalid token user' });
+
+    const { won, points = 0, rounds = 0 } = req.body || {};
+    const { updateUserStats } = require('../services/gameService');
+    await updateUserStats(userId, {
+      gamesPlayed: 1,
+      gamesWon: won ? 1 : 0,
+      totalPoints: Number(points || 0),
+      totalRounds: Number(rounds || 0)
+    });
+    return res.json({ success: true, message: 'User stats updated', won: !!won });
+  } catch (e: any) {
+    console.error('Error in user-result:', e);
+    return res.status(500).json({ success: false, message: 'Failed to update user stats' });
+  }
+});
+
+/**
  * GET /api/games/:id
  * Get game state
  */
