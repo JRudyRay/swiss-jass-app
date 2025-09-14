@@ -230,11 +230,18 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [tableName, setTableName] = useState('');
   const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(false);
+  const [activeTableId, setActiveTableId] = useState<string | null>(null);
   const authToken = useRef<string | null>(null);
   const startTableEarly = async (id: string) => {
     if (!authToken.current) return;
     try {
-      await fetch(`${API_URL}/api/tables/${id}/start`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
+      const res = await fetch(`${API_URL}/api/tables/${id}/start`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
+      const data = await res.json();
+      if (data.success) {
+        setActiveTableId(id);
+        setTab('game');
+        setMessage('Game starting...');
+      }
       fetchTables();
     } catch {}
   };
