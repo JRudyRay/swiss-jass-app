@@ -560,7 +560,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           }
         }
 
-        // If no visible progress (player didn't change) for long, show hint and allow force resume
+        // If no visible progress (player didn't change) for long, attempt gentle auto-recovery then hint
         const st = loadLocalState();
         if (st) {
           const now = Date.now();
@@ -568,9 +568,40 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             prevPlayerRef.current = st.currentPlayer;
             lastProgressAt.current = now;
           } else {
-            if (now - lastProgressAt.current > 20000) {
-              // nudge user with message
-              setMessage('Game appears idle — you can Force Resume or Reset Local to recover');
+            const idleMs = now - lastProgressAt.current;
+            if (idleMs > 15000) {
+              // Attempt auto-play if it's a bot's turn and not waiting on user
+              if (st.currentPlayer !== 0 && st.phase === 'playing' && !st.pendingResolve) {
+                try {
+                  const pick = Schieber.chooseBotCard(st, st.currentPlayer);
+                  if (pick) {
+                    const progressed = Schieber.playCardLocal(st, st.currentPlayer, pick);
+                    saveLocalState(progressed);
+                    setGameState({ phase: progressed.phase, currentPlayer: progressed.currentPlayer, trumpSuit: progressed.trump || null, currentTrick: progressed.currentTrick || [], scores: progressed.scores });
+                    setPlayers(mapPlayersWithSeats(progressed.players));
+                    setHand(progressed.players.find((p:any)=>p.id===0)?.hand || []);
+                    setLegalCards(Schieber.getLegalCardsForPlayer(progressed, 0));
+                    lastProgressAt.current = Date.now();
+                    return; // skip message if we advanced
+                  }
+                } catch {}
+              }
+              // If trick is stuck with 4 cards but not resolved
+              if ((st.currentTrick?.length || 0) === 4 && !st.pendingResolve) {
+                try {
+                  const resolved = Schieber.resolveTrick(st);
+                  saveLocalState(resolved);
+                  setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+                  setPlayers(mapPlayersWithSeats(resolved.players));
+                  setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
+                  setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
+                  lastProgressAt.current = Date.now();
+                  return;
+                } catch {}
+              }
+              if (idleMs > 20000) {
+                setMessage('Game appears idle — you can Force Resume or Reset Local to recover');
+              }
             }
           }
         }

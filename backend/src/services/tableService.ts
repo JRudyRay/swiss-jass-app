@@ -1,4 +1,5 @@
 import prisma from '../prismaClient';
+import { Prisma } from '@prisma/client';
 
 export class TableService {
   static generateCode(length: number = 6) {
@@ -12,23 +13,55 @@ export class TableService {
   }
 
   static async createTable(userId: string, data: { name?: string; maxPlayers?: number; gameType?: string; isPrivate?: boolean; password?: string; }) {
+    // Ensure the user exists to avoid opaque FK errors
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new Error('User not found (token may be invalid or expired). Please re-login.');
+    }
     const code = this.generateCode();
-  const table = await prisma.gameTable.create({
-      data: {
-        code,
-        name: data.name || 'New Table',
-        maxPlayers: data.maxPlayers || 4,
-        gameType: data.gameType || 'schieber',
-        createdById: userId,
-        isPrivate: !!data.isPrivate,
-        password: data.password ? data.password : null,
-        players: {
-          create: [{ userId, isHost: true }]
+    try {
+      const table = await prisma.gameTable.create({
+        data: {
+          code,
+          name: data.name?.trim() || 'New Table',
+          maxPlayers: data.maxPlayers && data.maxPlayers > 0 ? data.maxPlayers : 4,
+          gameType: data.gameType || 'schieber',
+          createdById: userId,
+          isPrivate: !!data.isPrivate,
+          password: data.password ? data.password : null,
+          players: {
+            create: [{ userId, isHost: true }]
+          }
+        },
+        include: { players: { include: { user: true } } }
+      });
+      return table;
+    } catch (err: any) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === 'P2003') { // FK constraint failed
+          throw new Error('Foreign key constraint failed while creating table: user reference invalid. Please re-authenticate.');
         }
-      },
-      include: { players: { include: { user: true } } }
-    });
-    return table;
+        if (err.code === 'P2002') { // unique constraint (rare: code collision)
+          // Retry once with a new code
+          const retryCode = this.generateCode();
+          const table = await prisma.gameTable.create({
+            data: {
+              code: retryCode,
+              name: data.name?.trim() || 'New Table',
+              maxPlayers: data.maxPlayers && data.maxPlayers > 0 ? data.maxPlayers : 4,
+              gameType: data.gameType || 'schieber',
+              createdById: userId,
+              isPrivate: !!data.isPrivate,
+              password: data.password ? data.password : null,
+              players: { create: [{ userId, isHost: true }] }
+            },
+            include: { players: { include: { user: true } } }
+          });
+          return table;
+        }
+      }
+      throw err;
+    }
   }
 
   static async listOpenTables() {
