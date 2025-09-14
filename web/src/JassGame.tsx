@@ -1069,6 +1069,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               // Attempt to map local player names to server userIds from usersList
               const mapNameToId: Record<string,string> = {};
               (usersList || []).forEach((u:any) => { mapNameToId[u.username] = u.id; });
+              // Also map a generic 'You' placeholder to the logged-in user (if present)
+              const loggedIn = (usersList || []).find(u => u.username === currentUserName);
+              if (loggedIn) {
+                mapNameToId['You'] = loggedIn.id;
+              }
               const teamAIds = playersList.filter(p => p.team === 1).map(p => mapNameToId[p.name]).filter(Boolean);
               const teamBIds = playersList.filter(p => p.team === 2).map(p => mapNameToId[p.name]).filter(Boolean);
               if (teamAIds.length > 0 && teamBIds.length > 0) {
@@ -1077,6 +1082,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                 const r3 = await fetch(`${API_URL}/api/admin/users`);
                 const u3 = await r3.json();
                 if (u3?.success) setUsersList(u3.users || []);
+                // fetch leaderboard for wins ranking
+                try {
+                  const lb = await fetch(`${API_URL}/api/admin/leaderboard`);
+                  const lbJson = await lb.json();
+                  if (lbJson?.success && Array.isArray(lbJson.leaderboard)) setLeaderboard(lbJson.leaderboard);
+                } catch (_) { /* ignore */ }
               }
             }
           } catch (e) {

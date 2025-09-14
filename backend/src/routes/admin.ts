@@ -7,7 +7,7 @@ const router = Router();
 // GET /api/admin/users - list users and their totalPoints
 router.get('/users', async (req, res) => {
   try {
-    const users = await prisma.user.findMany({ select: { id: true, username: true, firstName: true, lastName: true, totalPoints: true } });
+    const users = await prisma.user.findMany({ select: { id: true, username: true, firstName: true, lastName: true, totalPoints: true, totalWins: true, totalGames: true } });
     res.json({ success: true, users });
   } catch (e: any) {
     res.status(500).json({ success: false, message: e.message });
