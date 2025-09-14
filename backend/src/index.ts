@@ -3,12 +3,15 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
+import { onlineUsers, setUserOnline, setUserOffline, getOnlineCount } from './presence';
 import dotenv from 'dotenv';
 
 // Import routes
 import authRoutes from './routes/auth';
 import gameRoutes from './routes/games';
 import adminRoutes from './routes/admin';
+import tableRoutes from './routes/tables';
+import friendRoutes from './routes/friends';
 
 dotenv.config();
 
@@ -67,6 +70,8 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/tables', tableRoutes);
+app.use('/api/friends', friendRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -192,19 +197,35 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Simple WebSocket handling
 io.on('connection', (socket: any) => {
   console.log('🔌 Player connected:', socket.id);
-  
-  socket.emit('welcome', {
-    message: '🇨🇭 Welcome to Swiss Jass!',
-    playerId: socket.id
-  });
+  const token = socket.handshake.auth?.token;
+  let userId: string | undefined;
+  if (token) {
+    try {
+      const decoded: any = require('jsonwebtoken').verify(token, process.env.JWT_SECRET || 'swiss-jass-development-secret');
+      userId = decoded.userId;
+  setUserOnline(userId, socket.id, decoded.username);
+    } catch {}
+  }
+
+  socket.emit('welcome', { message: '🇨🇭 Welcome to Swiss Jass!', playerId: socket.id });
+  io.emit('presence:count', { online: getOnlineCount() });
 
   socket.on('disconnect', () => {
+    if (userId) {
+      setUserOffline(userId, socket.id);
+      io.emit('presence:count', { online: getOnlineCount() });
+    }
     console.log('🔌 Player disconnected:', socket.id);
   });
 });
+
+app.get('/api/presence/online-count', (req, res) => {
+  res.json({ success: true, online: getOnlineCount() });
+});
+
+app.set('io', io);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

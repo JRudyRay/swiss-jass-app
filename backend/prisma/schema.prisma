@@ -36,6 +36,14 @@ model User {
   updatedAt DateTime @updatedAt
   lastLogin DateTime?
   
+  // Relations
+  tablesCreated   GameTable[]       @relation("TableCreator")
+  tablePlayers    GameTablePlayer[]
+  friendshipsA    Friendship[]      @relation("FriendshipA")
+  friendshipsB    Friendship[]      @relation("FriendshipB")
+  friendRequestsSent    FriendRequest[] @relation("RequestSender")
+  friendRequestsReceived FriendRequest[] @relation("RequestReceiver")
+  
   @@map("users")
 }
 
@@ -50,3 +58,82 @@ model GameSession {
   
   @@map("game_sessions")
 }
+
+// A multiplayer game lobby/table that users can create and join before/while playing
+model GameTable {
+  id          String            @id @default(cuid())
+  code        String            @unique // short join code / shareable
+  name        String
+  status      TableStatus       @default(OPEN)
+  maxPlayers  Int               @default(4)
+  gameType    String            @default("schieber")
+  createdById String
+  createdBy   User              @relation("TableCreator", fields: [createdById], references: [id])
+  players     GameTablePlayer[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  startedAt   DateTime?
+  endedAt     DateTime?
+  isPrivate   Boolean           @default(false)
+  password    String?           // optional password for private tables
+}
+
+model GameTablePlayer {
+  id        String    @id @default(cuid())
+  tableId   String
+  userId    String
+  seatIndex Int?
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  isHost    Boolean   @default(false)
+  table     GameTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tableId, userId])
+  @@index([userId])
+  @@index([tableId])
+}
+
+// Established friendship (both users accepted)
+model Friendship {
+  id        String   @id @default(cuid())
+  userAId   String
+  userBId   String
+  createdAt DateTime @default(now())
+  userA     User     @relation("FriendshipA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB     User     @relation("FriendshipB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+  @@index([userBId])
+}
+
+// Pending friend requests
+model FriendRequest {
+  id          String            @id @default(cuid())
+  senderId    String
+  receiverId  String
+  status      FriendRequestStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  respondedAt DateTime?
+  sender      User              @relation("RequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User              @relation("RequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+}
+
+enum TableStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+// End of schema - multiplayer & friends models added
