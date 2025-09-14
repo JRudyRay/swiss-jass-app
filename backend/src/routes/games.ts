@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { gameHub } from '../gameHub';
 import { SwissSuit, TrumpContract } from '../gameEngine/SwissJassEngine';
+import { AuthService } from '../services/authService';
 
 const router = Router();
 
@@ -31,6 +32,26 @@ router.post('/create', (req, res) => {
   } catch (e: any) {
     console.error('Error creating game:', e);
     res.status(400).json({ success: false, message: e.message });
+  }
+});
+
+/**
+ * POST /api/games/report
+ * Accepts a match report and updates stats for both teams using TrueSkill
+ * body: { teamA: string[] (userIds), teamB: string[] (userIds), scoreA: number, scoreB: number, rounds?: number }
+ */
+router.post('/report', async (req, res) => {
+  try {
+    const { teamA, teamB, scoreA, scoreB, rounds } = req.body || {};
+    if (!Array.isArray(teamA) || !Array.isArray(teamB)) return res.status(400).json({ success: false, message: 'Invalid teams' });
+
+    const { updateStatsForMatch } = require('../services/gameService');
+    await updateStatsForMatch(teamA, teamB, Number(scoreA || 0), Number(scoreB || 0), Number(rounds || 0));
+
+    res.json({ success: true, message: 'Match report processed' });
+  } catch (e: any) {
+    console.error('Error processing match report:', e);
+    res.status(500).json({ success: false, message: e.message });
   }
 });
 
@@ -167,8 +188,19 @@ router.post('/:id/complete', async (req, res) => {
   try {
     const { id } = req.params;
     const { userTeamScore, opponentTeamScore, userWon, totalRounds } = req.body;
-    const userId = (req as any).userId; // From auth middleware
-    
+    // Try to extract userId from Authorization header (JWT)
+    let userId: string | null = null;
+    try {
+      const authHeader = (req.headers && (req.headers as any).authorization) || null;
+      const token = authHeader ? String(authHeader).split(' ')[1] : null;
+      if (token) {
+        const decoded = AuthService.verifyToken(token) as any;
+        userId = decoded?.userId || null;
+      }
+    } catch (e) {
+      // fall through - userId stays null
+    }
+
     if (!userId) {
       return res.status(401).json({ success: false, message: 'User not authenticated' });
     }
@@ -212,3 +244,4 @@ router.post('/:id/complete', async (req, res) => {
 });
 
 export default router;
+

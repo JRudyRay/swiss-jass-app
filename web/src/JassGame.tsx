@@ -650,7 +650,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     if (!gameId || !API_URL) return; // Only for backend games
 
     try {
-      const token = localStorage.getItem('jassAuthToken');
+      // App stores the JWT under `jassToken`
+      const token = localStorage.getItem('jassToken');
       const res = await fetch(`${API_URL}/api/games/${gameId}/complete`, {
         method: 'POST',
         headers: {
@@ -671,6 +672,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         if (data.pointsEarned > 0) {
           setMessage(`${data.message} (+${data.pointsEarned} points)`);
         }
+        // Refresh server user list so Rankings reflects updated totals
+        try {
+          const r2 = await fetch(`${API_URL}/api/admin/users`);
+          const d2 = await r2.json();
+          if (d2?.success) setUsersList(d2.users || []);
+        } catch (e) { /* ignore */ }
       }
     } catch (err) {
       console.error('Failed to complete game:', err);
@@ -1028,7 +1035,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       // Best-effort: try to sync totals to backend if available and refresh server-side users list
       (async () => {
         try {
-          const res = await fetch(`${API_URL}/api/admin/totals/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ totals: newTotals }) });
+          const token = localStorage.getItem('jassToken');
+          // First, try the admin totals sync (adds points to matching usernames)
+          const res = await fetch(`${API_URL}/api/admin/totals/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ totals: newTotals }) });
           const j = await res.json();
           if (j?.success) {
             // Refresh server user totals for Rankings
@@ -1037,6 +1046,27 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               const u = await r2.json();
               if (u?.success) setUsersList(u.users || []);
             } catch (e) { /* ignore */ }
+          }
+
+          // If logged-in, try to report the match per-team for TrueSkill updates
+          try {
+            const token = localStorage.getItem('jassToken');
+            if (token && playersList && playersList.length > 0 && state.scores) {
+              // Attempt to map local player names to server userIds from usersList
+              const mapNameToId: Record<string,string> = {};
+              (usersList || []).forEach((u:any) => { mapNameToId[u.username] = u.id; });
+              const teamAIds = playersList.filter(p => p.team === 1).map(p => mapNameToId[p.name]).filter(Boolean);
+              const teamBIds = playersList.filter(p => p.team === 2).map(p => mapNameToId[p.name]).filter(Boolean);
+              if (teamAIds.length > 0 && teamBIds.length > 0) {
+                await fetch(`${API_URL}/api/games/report`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ teamA: teamAIds, teamB: teamBIds, scoreA: (state.scores as any).team1, scoreB: (state.scores as any).team2, rounds: 0 }) });
+                // refresh server users after rating change
+                const r3 = await fetch(`${API_URL}/api/admin/users`);
+                const u3 = await r3.json();
+                if (u3?.success) setUsersList(u3.users || []);
+              }
+            }
+          } catch (e) {
+            // non-blocking
           }
         } catch (e) {
           // ignore network errors — backend may not implement this endpoint yet

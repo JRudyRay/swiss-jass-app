@@ -155,10 +155,11 @@ export class AuthService {
         avatarColor: true,
         country: true,
         city: true,
-        totalGames: true,
-        totalWins: true,
-        totalPoints: true,
-        eloRating: true,
+  totalGames: true,
+  totalWins: true,
+  totalPoints: true,
+  trueSkillMu: true,
+  trueSkillSigma: true,
         createdAt: true,
         lastLogin: true
       }
@@ -191,10 +192,11 @@ export class AuthService {
         avatarColor: true,
         country: true,
         city: true,
-        totalGames: true,
-        totalWins: true,
-        totalPoints: true,
-        eloRating: true
+  totalGames: true,
+  totalWins: true,
+  totalPoints: true,
+  trueSkillMu: true,
+  trueSkillSigma: true
       }
     });
 

@@ -1,4 +1,5 @@
-import * as Schieber from '../src/engine/schieber.ts';
+import * as Schieber from '../src/engine/schieber';
+
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);

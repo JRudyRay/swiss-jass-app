@@ -27,7 +27,9 @@ model User {
   totalGames    Int @default(0)
   totalWins     Int @default(0)
   totalPoints   Int @default(0)
-  eloRating     Int @default(1200)
+  // TrueSkill rating (mu, sigma). Replaces legacy eloRating.
+  trueSkillMu    Float @default(25.0)
+  trueSkillSigma Float @default(8.333)
   
   // Timestamps
   createdAt DateTime @default(now())
