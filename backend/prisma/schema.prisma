@@ -14,55 +14,41 @@ model User {
   password  String
   firstName String?
   lastName  String?
-  
-  // User avatar/icon (simple shapes for now)
-  avatarShape String @default("circle") // circle, square, triangle, diamond, star, heart
-  avatarColor String @default("#3B82F6") // hex color
-  
-  // Location
+  avatarShape String @default("circle")
+  avatarColor String @default("#3B82F6")
   country   String @default("CH")
   city      String?
-  
-  // Game stats
   totalGames    Int @default(0)
   totalWins     Int @default(0)
   totalPoints   Int @default(0)
-  // TrueSkill rating (mu, sigma). Replaces legacy eloRating.
   trueSkillMu    Float @default(25.0)
   trueSkillSigma Float @default(8.333)
-  
-  // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lastLogin DateTime?
-  
-  // Relations
   tablesCreated   GameTable[]       @relation("TableCreator")
   tablePlayers    GameTablePlayer[]
   friendshipsA    Friendship[]      @relation("FriendshipA")
   friendshipsB    Friendship[]      @relation("FriendshipB")
   friendRequestsSent    FriendRequest[] @relation("RequestSender")
   friendRequestsReceived FriendRequest[] @relation("RequestReceiver")
-  
   @@map("users")
 }
 
 model GameSession {
   id        String   @id @default(cuid())
   userId    String
-  gameType  String   // "schieber", "handjass", etc.
-  result    String   // "won", "lost", "draw"
+  gameType  String
+  result    String
   points    Int
-  duration  Int      // in minutes
+  duration  Int
   createdAt DateTime @default(now())
-  
   @@map("game_sessions")
 }
 
-// A multiplayer game lobby/table that users can create and join before/while playing
 model GameTable {
   id          String            @id @default(cuid())
-  code        String            @unique // short join code / shareable
+  code        String            @unique
   name        String
   status      TableStatus       @default(OPEN)
   maxPlayers  Int               @default(4)
@@ -78,7 +64,7 @@ model GameTable {
   startedAt   DateTime?
   endedAt     DateTime?
   isPrivate   Boolean           @default(false)
-  password    String?           // optional password for private tables
+  password    String?
 }
 
 model GameTablePlayer {
@@ -92,13 +78,11 @@ model GameTablePlayer {
   isReady   Boolean   @default(false)
   table     GameTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@unique([tableId, userId])
   @@index([userId])
   @@index([tableId])
 }
 
-// Established friendship (both users accepted)
 model Friendship {
   id        String   @id @default(cuid())
   userAId   String
@@ -106,12 +90,10 @@ model Friendship {
   createdAt DateTime @default(now())
   userA     User     @relation("FriendshipA", fields: [userAId], references: [id], onDelete: Cascade)
   userB     User     @relation("FriendshipB", fields: [userBId], references: [id], onDelete: Cascade)
-
   @@unique([userAId, userBId])
   @@index([userBId])
 }
 
-// Pending friend requests
 model FriendRequest {
   id          String            @id @default(cuid())
   senderId    String
@@ -121,7 +103,6 @@ model FriendRequest {
   respondedAt DateTime?
   sender      User              @relation("RequestSender", fields: [senderId], references: [id], onDelete: Cascade)
   receiver    User              @relation("RequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-
   @@unique([senderId, receiverId])
   @@index([receiverId])
 }
@@ -140,5 +121,3 @@ enum FriendRequestStatus {
   DECLINED
   CANCELLED
 }
-
-// End of schema - multiplayer & friends models added
