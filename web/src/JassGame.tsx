@@ -1310,8 +1310,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const createTable = async (nameOverride?: string) => {
     if (!authToken.current) return; setCreatingTable(true);
     try {
-      await fetch(`${API_URL}/api/tables`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ name: nameOverride || 'Table', maxPlayers: 4 }) });
+      const res = await fetch(`${API_URL}/api/tables`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ name: nameOverride || 'Table', maxPlayers: 4 }) });
+      const data = await res.json();
+      if (!data.success) {
+        setMessage(data.message || 'Failed to create table');
+      } else {
+        setMessage(`Table '${data.table?.name || nameOverride || 'Table'}' created`);
+        setTableName('');
+      }
       fetchTables();
+    } catch (e) {
+      setMessage('Error creating table');
     } finally { setCreatingTable(false); }
   };
 
