@@ -140,7 +140,14 @@ export class TableService {
     const toFill = Math.max(0, table.maxPlayers - existingCount);
     for (let i=0;i<toFill;i++) {
       const seatIndex = availableSeats[i] ?? null;
-      await prisma.gameTablePlayer.create({ data: { tableId, userId: `BOT_${i+1}_${Date.now()}`, seatIndex } });
+      // Bots need actual user rows to satisfy FK constraints. Create/find a shared bot user template.
+      const botUsername = `bot_${i+1}`;
+      const botEmail = `bot_${i+1}@bots.local`;
+      let botUser = await prisma.user.findFirst({ where: { username: botUsername } });
+      if (!botUser) {
+        botUser = await prisma.user.create({ data: { username: botUsername, email: botEmail, password: '!' } });
+      }
+      await prisma.gameTablePlayer.create({ data: { tableId, userId: botUser.id, seatIndex, /* @ts-ignore */ isReady: true } as any });
     }
     // Mark host ready
   // @ts-ignore mark host ready
@@ -154,8 +161,16 @@ export class TableService {
         await prisma.gameTablePlayer.update({ where: { id: p.id }, data: { isReady: true } as any });
       }
     }
-    // @ts-ignore STARTING transitional state
-    await prisma.gameTable.update({ where: { id: tableId }, data: { status: 'STARTING', startedAt: new Date() } as any });
+    // If all players (including bots) are ready already, advance straight to IN_PROGRESS
+    const postPlayers = await prisma.gameTablePlayer.findMany({ where: { tableId } });
+    // @ts-ignore
+    const everyoneReady = postPlayers.every(p => p.isReady);
+    if (everyoneReady) {
+      await prisma.gameTable.update({ where: { id: tableId }, data: { status: 'IN_PROGRESS', startedAt: new Date() } as any });
+    } else {
+      // @ts-ignore STARTING transitional state
+      await prisma.gameTable.update({ where: { id: tableId }, data: { status: 'STARTING', startedAt: new Date() } as any });
+    }
     return prisma.gameTable.findUnique({ where: { id: tableId }, include: { players: { include: { user: true } } } });
   }
 
