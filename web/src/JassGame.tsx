@@ -4,6 +4,7 @@ import { SwissCard } from './SwissCard';
 import * as Schieber from './engine/schieber';
 import YouTubePlayer from './YouTubePlayer';
 import { API_URL } from './config';
+import { io, Socket } from 'socket.io-client';
 
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
@@ -173,7 +174,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [message, setMessage] = useState(T[lang].welcome);
   const [isLoading, setIsLoading] = useState(false);
-  const [tab, setTab] = useState<'game'|'rankings'|'settings'|'profile'>('game');
+  const [tab, setTab] = useState<'game'|'rankings'|'settings'|'profile'|'tables'|'friends'>('game');
   const [usersList, setUsersList] = useState<Array<{ id: string; username: string; totalPoints: number; totalWins?: number; totalGames?: number }>>([]);
   const [leaderboard, setLeaderboard] = useState<Array<{ id: string; username: string; totalWins: number; totalGames: number; totalPoints: number; winRate: number }>>([]);
   const [totals, setTotals] = useState<Record<string, number>>(() => {
@@ -218,6 +219,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [currentUserName, setCurrentUserName] = useState<string>(user?.username || 'You');
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [newPasswordInput, setNewPasswordInput] = useState('');
+
+  // multiplayer state
+  const [mode, setMode] = useState<'single'|'multi'>('single');
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [onlineCount, setOnlineCount] = useState<number>(0);
+  const [tables, setTables] = useState<any[]>([]);
+  const [creatingTable, setCreatingTable] = useState(false);
+  const [joiningTableId, setJoiningTableId] = useState<string | null>(null);
+  const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const authToken = useRef<string | null>(null);
 
   // simple SHA-256 helper for local password hashing
   async function sha256(text: string) {
@@ -1257,6 +1269,182 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   setUsersList([]);
   };
 
+  // multiplayer handlers
+  useEffect(() => {
+    try { authToken.current = localStorage.getItem('jassToken'); } catch {}
+    if (mode === 'multi' && !socket) {
+      const s = io(API_URL || 'http://localhost:3000', { auth: { token: authToken.current } });
+      setSocket(s);
+      s.on('connect', () => {});
+      s.on('presence:count', (p: any) => setOnlineCount(p.online));
+      s.on('tables:updated', () => fetchTables());
+      s.on('friends:update', () => fetchFriends());
+      return () => { s.disconnect(); };
+    }
+  }, [mode]);
+
+  const fetchTables = async () => {
+    if (!authToken.current) return;
+    try {
+      const res = await fetch(`${API_URL}/api/tables`, { headers: { Authorization: `Bearer ${authToken.current}` }});
+      const data = await res.json();
+      if (data.success) setTables(data.tables || []);
+    } catch {}
+  };
+
+  const createTable = async () => {
+    if (!authToken.current) return; setCreatingTable(true);
+    try {
+      await fetch(`${API_URL}/api/tables`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ name: 'Table', maxPlayers: 4 }) });
+      fetchTables();
+    } finally { setCreatingTable(false); }
+  };
+
+  const joinTable = async (id: string) => {
+    if (!authToken.current) return; setJoiningTableId(id);
+    try {
+      await fetch(`${API_URL}/api/tables/${id}/join`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
+      fetchTables();
+    } finally { setJoiningTableId(null); }
+  };
+
+  const fetchFriends = async () => {
+    if (!authToken.current) return; setFriendsLoading(true);
+    try {
+      const [friendsRes, reqRes] = await Promise.all([
+        fetch(`${API_URL}/api/friends`, { headers: { Authorization: `Bearer ${authToken.current}` }}),
+        fetch(`${API_URL}/api/friends/requests`, { headers: { Authorization: `Bearer ${authToken.current}` }})
+      ]);
+      const fr = await friendsRes.json();
+      const rq = await reqRes.json();
+      if (fr.success && rq.success) setFriendsTabData({ friends: fr.friends, requests: rq.requests });
+    } finally { setFriendsLoading(false); }
+  };
+
+  const sendFriendRequest = async (username: string) => {
+    if (!authToken.current || !username) return;
+    await fetch(`${API_URL}/api/friends/request`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ username }) });
+    fetchFriends();
+  };
+
+  const respondFriendRequest = async (id: string, accept: boolean) => {
+    if (!authToken.current) return;
+    await fetch(`${API_URL}/api/friends/requests/${id}/respond`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ accept }) });
+    fetchFriends();
+  };
+
+  // Trigger initial fetch when switching to multi tabs
+  useEffect(() => { if (mode==='multi') { fetchTables(); fetchFriends(); } }, [mode]);
+
+  // Rendering helpers
+  const renderModeSwitcher = () => (
+    <div style={{ display:'flex', gap:8, justifyContent:'center', margin:'12px 0' }}>
+      <button style={{ ...styles.button, background: mode==='single'? '#1A7A4C':'#64748b' }} onClick={()=>setMode('single')}>Single Player</button>
+      <button style={{ ...styles.button, background: mode==='multi'? '#1A7A4C':'#64748b' }} onClick={()=>setMode('multi')}>Multiplayer</button>
+      {mode==='multi' && <span style={{ alignSelf:'center', fontSize:12, color:'#374151' }}>Online: {onlineCount}</span>}
+    </div>
+  );
+
+  const renderTables = () => (
+    <div style={{ padding:12 }}>
+      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+        <button disabled={creatingTable} style={styles.button} onClick={createTable}>{creatingTable? 'Creating...':'Create Table'}</button>
+        <button style={styles.button} onClick={fetchTables}>Refresh</button>
+      </div>
+      <div style={{ display:'grid', gap:12, gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))' }}>
+        {tables.map(t => (
+          <div key={t.id} style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:10, background:'#fff' }}>
+            <div style={{ fontWeight:600 }}>{t.name}</div>
+            <div style={{ fontSize:12, color:'#555' }}>Players: {t.players?.length || 0}/{t.maxPlayers}</div>
+            <div style={{ fontSize:12, color:'#555' }}>Status: {t.status}</div>
+            <button disabled={joiningTableId===t.id} style={{ ...styles.button, width:'100%', marginTop:8 }} onClick={()=>joinTable(t.id)}>{joiningTableId===t.id? 'Joining...':'Join'}</button>
+          </div>
+        ))}
+        {!tables.length && <div style={{ fontSize:14, color:'#555' }}>No open tables</div>}
+      </div>
+    </div>
+  );
+
+  const [friendInput, setFriendInput] = useState('');
+  const renderFriends = () => (
+    <div style={{ padding:12 }}>
+      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+        <input value={friendInput} onChange={e=>setFriendInput(e.target.value)} placeholder='Friend username' style={{ flex:1, padding:8, border:'1px solid #ddd', borderRadius:6 }} />
+        <button style={styles.button} onClick={()=>{ sendFriendRequest(friendInput); setFriendInput(''); }}>Add</button>
+        <button style={styles.button} onClick={fetchFriends}>Refresh</button>
+      </div>
+      {friendsLoading && <div style={{ fontSize:12 }}>Loading...</div>}
+      <h4 style={{ margin:'8px 0 4px' }}>Friends</h4>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+        {friendsTabData.friends.map(f => <div key={f.id} style={{ background:'#fff', padding:'6px 10px', borderRadius:20, fontSize:12, border:'1px solid #e5e7eb', display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ width:8, height:8, borderRadius:4, background: f.online? '#10b981':'#9ca3af', display:'inline-block' }} />
+          {f.username}
+        </div>)}
+        {!friendsTabData.friends.length && <div style={{ fontSize:12, color:'#555' }}>No friends yet</div>}
+      </div>
+      <h4 style={{ margin:'12px 0 4px' }}>Requests</h4>
+      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+        {friendsTabData.requests.map(r => (
+          <div key={r.id} style={{ background:'#fff', padding:'8px 10px', borderRadius:8, border:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div style={{ fontSize:12 }}>
+              {r.senderId === user?.id ? `To ${r.receiver?.username}` : `From ${r.sender?.username}`} – {r.status}
+            </div>
+            {r.status==='PENDING' && r.receiverId === user?.id && (
+              <div style={{ display:'flex', gap:6 }}>
+                <button style={{ ...styles.button, background:'#1A7A4C' }} onClick={()=>respondFriendRequest(r.id,true)}>Accept</button>
+                <button style={{ ...styles.button, background:'#D42E2C' }} onClick={()=>respondFriendRequest(r.id,false)}>Decline</button>
+              </div>
+            )}
+          </div>
+        ))}
+        {!friendsTabData.requests.length && <div style={{ fontSize:12, color:'#555' }}>No requests</div>}
+      </div>
+    </div>
+  );
+
+  // Integrate into existing tab bar: add 'tables' and 'friends'
+  const renderTabs = () => (
+    <div style={{ display: 'flex', gap: 12, marginBottom: 16, justifyContent: 'center' }}>
+      <button style={{ ...styles.button, background: tab==='game' ? '#1A7A4C' : 'transparent' }} onClick={() => { setTab('game'); setOptionsVisible(true); }}>{T[lang].game}</button>
+      <button style={{ ...styles.button, background: tab==='rankings' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('rankings')}>{T[lang].rankings}</button>
+      <button style={{ ...styles.button, background: tab==='settings' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('settings')}>{T[lang].settings}</button>
+      <button style={{ ...styles.button, background: tab==='profile' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('profile')}>{T[lang].profile}</button>
+      <button style={{ ...styles.button, background: tab==='tables' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('tables')}>🏓 Tables</button>
+      <button style={{ ...styles.button, background: tab==='friends' ? '#1A7A4C' : 'transparent' }} onClick={() => setTab('friends')}>👥 Friends</button>
+      {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>{T[lang].refresh}</button>}
+      {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>{T[lang].logout}</button>}
+      {/* Recovery controls to avoid dead-ends (local only) */}
+      {isLocal && (
+        <>
+          <button style={{ ...styles.button, background: '#f59e0b' }} onClick={() => {
+        // Force resume: attempt to advance stalled local game
+        const st = loadLocalState();
+        if (st && st.pendingResolve) {
+          const resolved = Schieber.resolveTrick(st);
+          saveLocalState(resolved);
+          setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+          setPlayers(mapPlayersWithSeats(resolved.players));
+          setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
+          setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
+          setMessage('Force-resolved trick');
+        } else {
+          setMessage('No pending action to force-resume');
+        }
+      }}>Force Resume</button>
+          <button style={{ ...styles.button, background: '#ef4444' }} onClick={() => {
+            localStorage.removeItem('jassLocalState');
+            setGameState(null);
+            setPlayers([]);
+            setHand([]);
+            setLegalCards([]);
+            setOptionsVisible(true);
+            setMessage('Local state reset');
+          }}>Reset Local</button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div style={styles.container}>
       <div style={styles.header}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
@@ -1274,43 +1462,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </select>
         </div>
 
-        <div style={styles.controls}>
-          <button style={styles.button} onClick={() => setTab('game')}>{T[lang].game}</button>
-          <button style={styles.button} onClick={() => setTab('rankings')}>{T[lang].rankings}</button>
-          <button style={styles.button} onClick={() => setTab('settings')}>{T[lang].settings}</button>
-          <button style={styles.button} onClick={() => setTab('profile')}>{T[lang].profile}</button>
-          {gameId && <button style={styles.button} onClick={() => loadGameState(gameId)} disabled={isLoading}>{T[lang].refresh}</button>}
-          {onLogout && <button style={{ ...styles.button, background: '#374151' }} onClick={onLogout}>{T[lang].logout}</button>}
-          {/* Recovery controls to avoid dead-ends (local only) */}
-          {isLocal && (
-            <>
-              <button style={{ ...styles.button, background: '#f59e0b' }} onClick={() => {
-            // Force resume: attempt to advance stalled local game
-            const st = loadLocalState();
-            if (st && st.pendingResolve) {
-              const resolved = Schieber.resolveTrick(st);
-              saveLocalState(resolved);
-              setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
-              setPlayers(mapPlayersWithSeats(resolved.players));
-              setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
-              setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
-              setMessage('Force-resolved trick');
-            } else {
-              setMessage('No pending action to force-resume');
-            }
-          }}>Force Resume</button>
-              <button style={{ ...styles.button, background: '#ef4444' }} onClick={() => {
-                localStorage.removeItem('jassLocalState');
-                setGameState(null);
-                setPlayers([]);
-                setHand([]);
-                setLegalCards([]);
-                setOptionsVisible(true);
-                setMessage('Local state reset');
-              }}>Reset Local</button>
-            </>
-          )}
-        </div>
+        {renderModeSwitcher()}
+
+        {renderTabs()}
+
+        {/* Tab content injection for new multiplayer features */}
+        {tab === 'tables' && mode==='multi' && (
+          <div style={{ marginBottom:24 }}>{renderTables()}</div>
+        )}
+        {tab === 'friends' && mode==='multi' && (
+          <div style={{ marginBottom:24 }}>{renderFriends()}</div>
+        )}
 
         {/* Team scores below tabs - Swiss professional design */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 80, marginTop: 12, marginBottom: 16 }}>
@@ -1750,7 +1912,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         {/* Enhanced Weis (Melds) Display with Swiss Authenticity */}
         {gameState?.weis && Object.keys(gameState.weis).length > 0 && (
           <div style={{ marginTop: 16, padding: 16, background: '#f0f9ff', border: '2px solid #10b981', borderRadius: 12 }}>
-            <h4 style={{ margin: '0 0 12px 0', color: '#064e3b', fontSize: 18, textAlign: 'center' }}>
+            <h4 style={{ margin: '0 0 12px 0', color: '#064e3b', fontSize: '18px', textAlign: 'center' }}>
               🎯 Weis (Melds) - Swiss Jass Tradition
             </h4>
             
@@ -1763,12 +1925,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                 marginBottom: 12,
                 textAlign: 'center',
                 fontSize: 14,
-                fontWeight: 600,
+                fontWeight: '600',
                 color: '#064e3b'
               }}>
                 🏆 Weis Winner: {players.find(p => p.id === weisWinner.playerId)?.name} (Team {weisWinner.teamId})
                 <br />
-                <span style={{ fontSize: 12, fontWeight: 400 }}>
+                <span style={{ fontSize: '12px', fontWeight: '400' }}>
                   Only this team's Weis count for scoring (authentic Swiss Jass rules)
                 </span>
               </div>
@@ -1785,7 +1947,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                 return (
                   <div key={playerId} style={{ 
                     padding: 12, 
-                    background: isWinningTeam ? '#ecfdf5' : 'white', 
+                    background: isWinningTeam ? '#ecfdf4' : 'white', 
                     borderRadius: 8, 
                     border: isWinningTeam ? '2px solid #10b981' : '1px solid #e5e7eb',
                     opacity: weisWinner && !isWinningTeam ? 0.6 : 1
