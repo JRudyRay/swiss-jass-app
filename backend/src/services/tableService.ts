@@ -110,15 +110,28 @@ export class TableService {
     const host = table.players.find(p => p.userId === userId && p.isHost);
     if (!host) throw new Error('Only host can start');
     if (table.status !== 'OPEN') throw new Error('Already started');
-    // Fill remaining seats with temporary bot placeholders (userId = 'BOT_x')
-    const existingCount = table.players.length;
-    const toFill = Math.max(0, table.maxPlayers - existingCount);
-    if (toFill > 0) {
-      for (let i=0;i<toFill;i++) {
-        await prisma.gameTablePlayer.create({ data: { tableId, userId: `BOT_${i+1}_${Date.now()}` } });
-      }
+    // Determine seating: ensure two human players (if exactly 2) are opposite (0 & 2)
+    let players = [...table.players];
+    const humanPlayers = players.filter(p => !p.userId.startsWith('BOT_'));
+    // Assign seatIndex baseline
+    if (humanPlayers.length === 2) {
+      // Host -> seat 0, other human -> seat 2
+      await prisma.gameTablePlayer.update({ where: { id: host.id }, data: { seatIndex: 0 } });
+      const other = humanPlayers.find(p => p.id !== host.id)!;
+      await prisma.gameTablePlayer.update({ where: { id: other.id }, data: { seatIndex: 2 } });
     }
-    return prisma.gameTable.update({ where: { id: tableId }, data: { status: 'IN_PROGRESS', startedAt: new Date() } });
+    // Fill remaining seats with bot placeholders; choose remaining indices 1 and 3 first
+    const takenSeats = new Set((await prisma.gameTablePlayer.findMany({ where: { tableId } })).map(p => p.seatIndex).filter(s => s !== null) as number[]);
+    const seatPool = [0,1,2,3];
+    const availableSeats = seatPool.filter(s => !takenSeats.has(s));
+    const existingCount = (await prisma.gameTablePlayer.count({ where: { tableId } }));
+    const toFill = Math.max(0, table.maxPlayers - existingCount);
+    for (let i=0;i<toFill;i++) {
+      const seatIndex = availableSeats[i] ?? null;
+      await prisma.gameTablePlayer.create({ data: { tableId, userId: `BOT_${i+1}_${Date.now()}`, seatIndex } });
+    }
+    await prisma.gameTable.update({ where: { id: tableId }, data: { status: 'IN_PROGRESS', startedAt: new Date() } });
+    return prisma.gameTable.findUnique({ where: { id: tableId }, include: { players: { include: { user: true } } } });
   }
 
   static async completeTable(tableId: string) {

@@ -1324,6 +1324,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       s.on('connect', () => {});
       s.on('presence:count', (p: any) => setOnlineCount(p.online));
       s.on('tables:updated', () => fetchTables());
+      s.on('table:started', (payload: any) => {
+        // Redirect both users to game tab
+        setTab('game');
+        // Placeholder: could initialize synchronized game state here
+        setMessage(`Game started: ${payload?.table?.name || ''}`);
+      });
       s.on('friends:update', () => fetchFriends());
       return () => { s.disconnect(); };
     }

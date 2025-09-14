@@ -79,7 +79,8 @@ router.post('/:id/start', authenticate, async (req: any, res) => {
   try {
     const table = await TableService.startTable(req.params.id, req.user.userId);
     const io = req.app.get('io');
-    io?.emit('tables:updated');
+  io?.emit('tables:updated');
+  io?.emit('table:started', { tableId: table?.id, table });
     res.json({ success: true, table });
   } catch (e: any) {
     res.status(400).json({ success: false, message: e.message });
