@@ -174,7 +174,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [message, setMessage] = useState(T[lang].welcome);
   const [isLoading, setIsLoading] = useState(false);
   const [tab, setTab] = useState<'game'|'rankings'|'settings'|'profile'>('game');
-  const [usersList, setUsersList] = useState<Array<{ id: string; username: string; totalPoints: number }>>([]);
+  const [usersList, setUsersList] = useState<Array<{ id: string; username: string; totalPoints: number; totalWins?: number; totalGames?: number }>>([]);
+  const [leaderboard, setLeaderboard] = useState<Array<{ id: string; username: string; totalWins: number; totalGames: number; totalPoints: number; winRate: number }>>([]);
   const [totals, setTotals] = useState<Record<string, number>>(() => {
     try {
       const raw = localStorage.getItem('jassTotals');
@@ -565,6 +566,19 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       }
     })();
   }, []);
+
+  // Fetch leaderboard when rankings tab is opened
+  useEffect(() => {
+    if (tab === 'rankings' && API_URL) {
+      (async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/admin/leaderboard`);
+          const j = await res.json();
+          if (j?.success && Array.isArray(j.leaderboard)) setLeaderboard(j.leaderboard);
+        } catch (e) { /* ignore */ }
+      })();
+    }
+  }, [tab]);
 
   // Update totals when gameState reaches finished (and avoid double-counting)
   useEffect(() => {
@@ -1519,7 +1533,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             {/* Enhanced Statistics Panel */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
               <div style={{ background: '#f3f4f6', padding: 12, borderRadius: 8 }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#374151' }}>🏆 Total Points Rankings</h4>
+                <h4 style={{ margin: '0 0 8px 0', color: '#374151' }}>🏆 Wins Rankings</h4>
+                {leaderboard.length > 0 && (
+                  <ol style={{ margin: 0, paddingLeft: 20 }}>
+                    {leaderboard.map((u, idx) => (
+                      <li key={u.id} style={{ marginBottom: 6 }}>
+                        <span style={{ fontWeight: idx === 0 ? '700' : '500', color: idx === 0 ? '#d97706' : '#374151' }}>
+                          {u.username}: {u.totalWins} wins ({u.totalGames} games, {(u.winRate * 100).toFixed(0)}% WR)
+                        </span>
+                        {idx === 0 && <span style={{ marginLeft: 6 }}>🥇</span>}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                <h4 style={{ margin: '12px 0 8px 0', color: '#374151' }}>💯 Total Points Rankings</h4>
                 {usersList.length > 0 ? (
                   <ol style={{ margin: 0, paddingLeft: 20 }}>
                     {usersList.sort((a,b) => b.totalPoints - a.totalPoints).map((u, idx) => (

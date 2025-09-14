@@ -14,6 +14,34 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// GET /api/admin/leaderboard - ranking by wins (primary), then games, then points
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        totalWins: true,
+        totalGames: true,
+        totalPoints: true
+      }
+    });
+    const ranked = users
+      .map(u => ({
+        ...u,
+        winRate: u.totalGames > 0 ? (u.totalWins / u.totalGames) : 0
+      }))
+      .sort((a,b) => {
+        if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
+        if (b.totalGames !== a.totalGames) return b.totalGames - a.totalGames;
+        return (b.totalPoints || 0) - (a.totalPoints || 0);
+      });
+    res.json({ success: true, leaderboard: ranked });
+  } catch (e: any) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 // DELETE /api/admin/users/:id - delete a user
 router.delete('/users/:id', async (req, res) => {
   try {
