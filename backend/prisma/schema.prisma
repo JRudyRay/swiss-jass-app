@@ -67,6 +67,9 @@ model GameTable {
   status      TableStatus       @default(OPEN)
   maxPlayers  Int               @default(4)
   gameType    String            @default("schieber")
+  team1Name   String            @default("Team 1")
+  team2Name   String            @default("Team 2")
+  targetPoints Int              @default(1000)
   createdById String
   createdBy   User              @relation("TableCreator", fields: [createdById], references: [id])
   players     GameTablePlayer[]
@@ -86,6 +89,7 @@ model GameTablePlayer {
   joinedAt  DateTime  @default(now())
   leftAt    DateTime?
   isHost    Boolean   @default(false)
+  isReady   Boolean   @default(false)
   table     GameTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -124,6 +128,7 @@ model FriendRequest {
 
 enum TableStatus {
   OPEN
+  STARTING
   IN_PROGRESS
   COMPLETED
   CANCELLED

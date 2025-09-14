@@ -228,6 +228,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [creatingTable, setCreatingTable] = useState(false);
   const [joiningTableId, setJoiningTableId] = useState<string | null>(null);
   const [tableName, setTableName] = useState('');
+  const [newTableGameType, setNewTableGameType] = useState('schieber');
+  const [newTeam1, setNewTeam1] = useState('Team 1');
+  const [newTeam2, setNewTeam2] = useState('Team 2');
+  const [newTargetPoints, setNewTargetPoints] = useState(1000);
   const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
@@ -1330,7 +1334,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       setSocket(s);
       s.on('connect', () => {});
       s.on('presence:count', (p: any) => setOnlineCount(p.online));
-      s.on('tables:updated', () => fetchTables());
+  s.on('tables:updated', () => fetchTables());
+  s.on('table:starting', (_p: any) => { setTab('game'); setMessage('Waiting for players to be ready...'); });
       s.on('table:started', (payload: any) => {
         // Redirect both users to game tab
         setTab('game');
@@ -1354,7 +1359,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const createTable = async (nameOverride?: string) => {
     if (!authToken.current) return; setCreatingTable(true);
     try {
-      const res = await fetch(`${API_URL}/api/tables`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ name: nameOverride || 'Table', maxPlayers: 4 }) });
+      const res = await fetch(`${API_URL}/api/tables`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ name: nameOverride || 'Table', maxPlayers: 4, gameType: newTableGameType, team1Name: newTeam1, team2Name: newTeam2, targetPoints: newTargetPoints }) });
       const data = await res.json();
       if (!data.success) {
         setMessage(data.message || 'Failed to create table');
@@ -1418,6 +1423,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       <div style={{ padding:12 }}>
         <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center', flexWrap:'wrap' }}>
           <input value={tableName} onChange={e=>setTableName(e.target.value)} placeholder='Table name' style={{ padding:8, border:'1px solid #ddd', borderRadius:6 }} />
+          <select value={newTableGameType} onChange={e=>setNewTableGameType(e.target.value)} style={{ padding:8, border:'1px solid #ddd', borderRadius:6 }}>
+            <option value='schieber'>Schieber</option>
+          </select>
+          <input value={newTeam1} onChange={e=>setNewTeam1(e.target.value)} placeholder='Team 1 name' style={{ padding:8, border:'1px solid #ddd', borderRadius:6, width:110 }} />
+          <input value={newTeam2} onChange={e=>setNewTeam2(e.target.value)} placeholder='Team 2 name' style={{ padding:8, border:'1px solid #ddd', borderRadius:6, width:110 }} />
+          <input type='number' value={newTargetPoints} onChange={e=>setNewTargetPoints(parseInt(e.target.value)||1000)} placeholder='Target' style={{ padding:8, border:'1px solid #ddd', borderRadius:6, width:90 }} />
           <button disabled={creatingTable} style={styles.button} onClick={() => createTable(tableName || 'Table')}>{creatingTable? 'Creating...':'Create Table'}</button>
           <button style={styles.button} onClick={fetchTables}>Refresh</button>
           <div style={{ fontSize:12, color:'#555' }}>Online: {onlineCount}</div>
@@ -1501,7 +1512,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             key={key}
             onClick={() => {
               setTab(key as any);
-              if (key==='game') setOptionsVisible(true); else setOptionsVisible(false);
+              if (key==='game') {
+                setOptionsVisible(true);
+                if (mode==='multi' && socket && activeTableId && authToken.current) {
+                  fetch(`${API_URL}/api/tables/${activeTableId}/ready`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }}).catch(()=>{});
+                }
+              } else {
+                setOptionsVisible(false);
+              }
             }}
             style={{
               padding: '8px 14px',

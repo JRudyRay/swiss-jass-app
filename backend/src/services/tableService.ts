@@ -12,7 +12,7 @@ export class TableService {
     return out;
   }
 
-  static async createTable(userId: string, data: { name?: string; maxPlayers?: number; gameType?: string; isPrivate?: boolean; password?: string; }) {
+  static async createTable(userId: string, data: { name?: string; maxPlayers?: number; gameType?: string; team1Name?: string; team2Name?: string; targetPoints?: number; isPrivate?: boolean; password?: string; }) {
     // Ensure the user exists to avoid opaque FK errors
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -26,6 +26,12 @@ export class TableService {
           name: data.name?.trim() || 'New Table',
           maxPlayers: data.maxPlayers && data.maxPlayers > 0 ? data.maxPlayers : 4,
           gameType: data.gameType || 'schieber',
+          // @ts-ignore dynamic schema field
+          team1Name: data.team1Name?.trim() || 'Team 1',
+          // @ts-ignore dynamic schema field
+          team2Name: data.team2Name?.trim() || 'Team 2',
+          // @ts-ignore dynamic schema field
+          targetPoints: data.targetPoints && data.targetPoints > 0 ? data.targetPoints : 1000,
           createdById: userId,
           isPrivate: !!data.isPrivate,
           password: data.password ? data.password : null,
@@ -50,6 +56,12 @@ export class TableService {
               name: data.name?.trim() || 'New Table',
               maxPlayers: data.maxPlayers && data.maxPlayers > 0 ? data.maxPlayers : 4,
               gameType: data.gameType || 'schieber',
+              // @ts-ignore
+              team1Name: data.team1Name?.trim() || 'Team 1',
+              // @ts-ignore
+              team2Name: data.team2Name?.trim() || 'Team 2',
+              // @ts-ignore
+              targetPoints: data.targetPoints && data.targetPoints > 0 ? data.targetPoints : 1000,
               createdById: userId,
               isPrivate: !!data.isPrivate,
               password: data.password ? data.password : null,
@@ -130,7 +142,38 @@ export class TableService {
       const seatIndex = availableSeats[i] ?? null;
       await prisma.gameTablePlayer.create({ data: { tableId, userId: `BOT_${i+1}_${Date.now()}`, seatIndex } });
     }
-    await prisma.gameTable.update({ where: { id: tableId }, data: { status: 'IN_PROGRESS', startedAt: new Date() } });
+    // Mark host ready
+  // @ts-ignore mark host ready
+  await prisma.gameTablePlayer.update({ where: { id: host.id }, data: { isReady: true } as any });
+    // Mark any bots ready immediately
+    const updatedPlayers = await prisma.gameTablePlayer.findMany({ where: { tableId } });
+    for (const p of updatedPlayers) {
+      // @ts-ignore referencing dynamic field
+      if (p.userId.startsWith('BOT_') && !p.isReady) {
+        // @ts-ignore
+        await prisma.gameTablePlayer.update({ where: { id: p.id }, data: { isReady: true } as any });
+      }
+    }
+    // @ts-ignore STARTING transitional state
+    await prisma.gameTable.update({ where: { id: tableId }, data: { status: 'STARTING', startedAt: new Date() } as any });
+    return prisma.gameTable.findUnique({ where: { id: tableId }, include: { players: { include: { user: true } } } });
+  }
+
+  static async setPlayerReady(tableId: string, userId: string) {
+    const player = await prisma.gameTablePlayer.findFirst({ where: { tableId, userId } });
+    if (!player) throw new Error('Player not in table');
+  // @ts-ignore readiness
+  await prisma.gameTablePlayer.update({ where: { id: player.id }, data: { isReady: true } as any });
+    const table = await prisma.gameTable.findUnique({ where: { id: tableId }, include: { players: true } });
+    if (!table) return null;
+    // @ts-ignore dynamic field
+    const allReady = table.players.every(p => (p as any).isReady);
+    // @ts-ignore STARTING comparison
+    if ((table as any).status === 'STARTING' && allReady) {
+      // @ts-ignore
+      await prisma.gameTable.update({ where: { id: tableId }, data: { status: 'IN_PROGRESS' } as any });
+      return prisma.gameTable.findUnique({ where: { id: tableId }, include: { players: { include: { user: true } } } });
+    }
     return prisma.gameTable.findUnique({ where: { id: tableId }, include: { players: { include: { user: true } } } });
   }
 
