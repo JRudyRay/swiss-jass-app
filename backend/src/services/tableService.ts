@@ -77,7 +77,15 @@ export class TableService {
     const host = table.players.find(p => p.userId === userId && p.isHost);
     if (!host) throw new Error('Only host can start');
     if (table.status !== 'OPEN') throw new Error('Already started');
-  return prisma.gameTable.update({ where: { id: tableId }, data: { status: 'IN_PROGRESS', startedAt: new Date() } });
+    // Fill remaining seats with temporary bot placeholders (userId = 'BOT_x')
+    const existingCount = table.players.length;
+    const toFill = Math.max(0, table.maxPlayers - existingCount);
+    if (toFill > 0) {
+      for (let i=0;i<toFill;i++) {
+        await prisma.gameTablePlayer.create({ data: { tableId, userId: `BOT_${i+1}_${Date.now()}` } });
+      }
+    }
+    return prisma.gameTable.update({ where: { id: tableId }, data: { status: 'IN_PROGRESS', startedAt: new Date() } });
   }
 
   static async completeTable(tableId: string) {

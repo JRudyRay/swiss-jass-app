@@ -227,9 +227,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [tables, setTables] = useState<any[]>([]);
   const [creatingTable, setCreatingTable] = useState(false);
   const [joiningTableId, setJoiningTableId] = useState<string | null>(null);
+  const [tableName, setTableName] = useState('');
   const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(false);
   const authToken = useRef<string | null>(null);
+  const startTableEarly = async (id: string) => {
+    if (!authToken.current) return;
+    try {
+      await fetch(`${API_URL}/api/tables/${id}/start`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
+      fetchTables();
+    } catch {}
+  };
 
   // simple SHA-256 helper for local password hashing
   async function sha256(text: string) {
@@ -1299,10 +1307,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     } catch {}
   };
 
-  const createTable = async () => {
+  const createTable = async (nameOverride?: string) => {
     if (!authToken.current) return; setCreatingTable(true);
     try {
-      await fetch(`${API_URL}/api/tables`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ name: 'Table', maxPlayers: 4 }) });
+      await fetch(`${API_URL}/api/tables`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ name: nameOverride || 'Table', maxPlayers: 4 }) });
       fetchTables();
     } finally { setCreatingTable(false); }
   };
@@ -1352,30 +1360,39 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     </div>
   );
 
-  const renderTables = () => (
-    <div style={{ padding:12 }}>
-      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
-        <button disabled={creatingTable} style={styles.button} onClick={createTable}>{creatingTable? 'Creating...':'Create Table'}</button>
-        <button style={styles.button} onClick={fetchTables}>Refresh</button>
+  const renderTables = () => {
+    return (
+      <div style={{ padding:12 }}>
+        <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center', flexWrap:'wrap' }}>
+          <input value={tableName} onChange={e=>setTableName(e.target.value)} placeholder='Table name' style={{ padding:8, border:'1px solid #ddd', borderRadius:6 }} />
+          <button disabled={creatingTable} style={styles.button} onClick={() => createTable(tableName || 'Table')}>{creatingTable? 'Creating...':'Create Table'}</button>
+          <button style={styles.button} onClick={fetchTables}>Refresh</button>
+          <div style={{ fontSize:12, color:'#555' }}>Online: {onlineCount}</div>
+        </div>
+        <div style={{ display:'grid', gap:12, gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))' }}>
+          {tables.map(t => (
+            <div key={t.id} style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:10, background:'#fff', position:'relative' }}>
+              <div style={{ fontWeight:600 }}>{t.name}</div>
+              <div style={{ fontSize:12, color:'#555' }}>Players: {t.players?.length || 0}/{t.maxPlayers}</div>
+              <div style={{ fontSize:12, color:'#555' }}>Status: {t.status}</div>
+              <div style={{ display:'flex', gap:6, marginTop:8 }}>
+                <button disabled={joiningTableId===t.id} style={{ ...styles.button, flex:1 }} onClick={()=>joinTable(t.id)}>{joiningTableId===t.id? 'Joining...':'Join'}</button>
+                {t.status==='OPEN' && t.createdById === user?.id && (
+                  <button style={{ ...styles.button, background:'#f59e0b' }} onClick={()=>startTableEarly(t.id)}>Start Now</button>
+                )}
+              </div>
+            </div>
+          ))}
+          {!tables.length && <div style={{ fontSize:14, color:'#555' }}>No open tables</div>}
+        </div>
       </div>
-      <div style={{ display:'grid', gap:12, gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))' }}>
-        {tables.map(t => (
-          <div key={t.id} style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:10, background:'#fff' }}>
-            <div style={{ fontWeight:600 }}>{t.name}</div>
-            <div style={{ fontSize:12, color:'#555' }}>Players: {t.players?.length || 0}/{t.maxPlayers}</div>
-            <div style={{ fontSize:12, color:'#555' }}>Status: {t.status}</div>
-            <button disabled={joiningTableId===t.id} style={{ ...styles.button, width:'100%', marginTop:8 }} onClick={()=>joinTable(t.id)}>{joiningTableId===t.id? 'Joining...':'Join'}</button>
-          </div>
-        ))}
-        {!tables.length && <div style={{ fontSize:14, color:'#555' }}>No open tables</div>}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const [friendInput, setFriendInput] = useState('');
   const renderFriends = () => (
     <div style={{ padding:12 }}>
-      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+      <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center', flexWrap:'wrap' }}>
         <input value={friendInput} onChange={e=>setFriendInput(e.target.value)} placeholder='Friend username' style={{ flex:1, padding:8, border:'1px solid #ddd', borderRadius:6 }} />
         <button style={styles.button} onClick={()=>{ sendFriendRequest(friendInput); setFriendInput(''); }}>Add</button>
         <button style={styles.button} onClick={fetchFriends}>Refresh</button>
@@ -1410,9 +1427,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   );
 
   // Integrate into existing tab bar: add 'tables' and 'friends'
-  const renderTabs = () => (
+  const renderTabs = () => {
+    const baseSingle = ['game','rankings','settings','profile'];
+    const multiExtra = ['tables','friends'];
+    const keys = mode === 'multi' ? ['game','tables','friends','rankings','settings','profile'] : baseSingle;
+    return (
     <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'center', flexWrap:'wrap' }}>
-      {['game','tables','friends','rankings','settings','profile'].map(key => {
+      {keys.map(key => {
         const labels: Record<string,string> = {
           game: T[lang].game,
           rankings: T[lang].rankings,
@@ -1479,7 +1500,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         </>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <div style={styles.container}>
