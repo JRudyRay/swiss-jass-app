@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { TableService } from '../services/tableService';
+import { multiGameManager } from '../gameEngine/multiGameManager';
 import { AuthService } from '../services/authService';
 
 const router = Router();
@@ -94,6 +95,10 @@ router.post('/:id/ready', authenticate, async (req: any, res) => {
     const io = req.app.get('io');
     io?.emit('tables:updated');
     if ((table as any)?.status === 'IN_PROGRESS') {
+      // Build initial game state
+      const seats = (table as any).players.map((p: any) => ({ userId: p.userId, seatIndex: p.seatIndex ?? 0 }));
+      const state = multiGameManager.startGame(table.id, (table as any).gameType || 'schieber', seats);
+      io?.to(`table:${table.id}`).emit('game:state', { tableId: table.id, state });
       io?.emit('table:started', { tableId: table?.id, table });
     }
     res.json({ success: true, table });

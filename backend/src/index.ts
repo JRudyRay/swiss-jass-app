@@ -12,6 +12,7 @@ import gameRoutes from './routes/games';
 import adminRoutes from './routes/admin';
 import tableRoutes from './routes/tables';
 import friendRoutes from './routes/friends';
+import { multiGameManager } from './gameEngine/multiGameManager';
 
 dotenv.config();
 
@@ -211,6 +212,16 @@ io.on('connection', (socket: any) => {
 
   socket.emit('welcome', { message: '🇨🇭 Welcome to Swiss Jass!', playerId: socket.id });
   io.emit('presence:count', { online: getOnlineCount() });
+
+  socket.on('table:join', (data: { tableId: string }) => {
+    if (!data?.tableId) return;
+    socket.join(`table:${data.tableId}`);
+  });
+
+  socket.on('table:leave', (data: { tableId: string }) => {
+    if (!data?.tableId) return;
+    socket.leave(`table:${data.tableId}`);
+  });
 
   socket.on('disconnect', () => {
     if (userId) {

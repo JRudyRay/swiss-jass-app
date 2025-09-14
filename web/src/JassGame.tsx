@@ -235,6 +235,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
+  const [multiGameState, setMultiGameState] = useState<any | null>(null);
   const authToken = useRef<string | null>(null);
   const startTableEarly = async (id: string) => {
     if (!authToken.current) return;
@@ -1343,6 +1344,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setMessage(`Game started: ${payload?.table?.name || ''}`);
       });
       s.on('friends:update', () => fetchFriends());
+      s.on('game:state', (payload: any) => {
+        if (payload?.tableId === activeTableId) {
+          setMultiGameState(payload.state);
+          setMessage('Multiplayer game state received');
+        }
+      });
       return () => { s.disconnect(); };
     }
   }, [mode]);
@@ -1366,6 +1373,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       } else {
         setMessage(`Table '${data.table?.name || nameOverride || 'Table'}' created`);
         setTableName('');
+  setActiveTableId(data.table.id);
+  socket?.emit('table:join', { tableId: data.table.id });
       }
       fetchTables();
     } catch (e) {
@@ -1377,6 +1386,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     if (!authToken.current) return; setJoiningTableId(id);
     try {
       await fetch(`${API_URL}/api/tables/${id}/join`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
+  setActiveTableId(id);
+  socket?.emit('table:join', { tableId: id });
       fetchTables();
     } finally { setJoiningTableId(null); }
   };
@@ -1624,6 +1635,24 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                 <span style={{ fontSize: 18 }}>{currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}</span>
               </div>
             </div>
+            {mode==='multi' && multiGameState && (
+              <div style={{ margin: '0 auto 16px', maxWidth: 760, background:'#fff', padding:12, borderRadius:12, border:'1px solid #e5e7eb' }}>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:16, alignItems:'center' }}>
+                  <div style={{ fontSize:14, fontWeight:700 }}>Multiplayer State</div>
+                  <div style={{ fontSize:12 }}>Dealer Seat: {multiGameState.dealerSeat}</div>
+                  <div style={{ fontSize:12 }}>Current Player Seat: {multiGameState.currentPlayerSeat}</div>
+                  {activeTableId && <div style={{ fontSize:12, color:'#374151' }}>Table: {activeTableId}</div>}
+                </div>
+                <div style={{ marginTop:8 }}>
+                  <div style={{ fontSize:12, fontWeight:600, marginBottom:4 }}>Your Multiplayer Hand</div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                    {(multiGameState.players||[]).find((p:any)=>p.userId===user?.id)?.hand?.map((c:string,i:number)=>(
+                      <div key={i} style={{ padding:'4px 6px', background:'#1A7A4C', color:'#fff', borderRadius:6, fontSize:12, letterSpacing:.5 }}>{c}</div>
+                    )) || <div style={{ fontSize:12, color:'#6b7280' }}>No hand</div>}
+                  </div>
+                </div>
+              </div>
+            )}
             {roundHistory.length > 0 && (
               <div style={{ marginBottom: 16, background: '#f9fafb', borderRadius: 8, padding: 12 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>Round History</div>
