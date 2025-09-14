@@ -1,9 +1,14 @@
 import prisma from '../prismaClient';
-import { nanoid } from 'nanoid';
 
 export class TableService {
   static generateCode(length: number = 6) {
-    return nanoid(length).replace(/[^A-Z0-9]/gi, '').substring(0, length).toUpperCase();
+    // Simple, deterministic safe code: random base36 chars filtered to alphanumerics & uppercased
+    let out = '';
+    while (out.length < length) {
+      out += Math.random().toString(36).replace(/[^a-z0-9]/gi, '').toUpperCase();
+      out = out.replace(/[^A-Z0-9]/g, '').substring(0, length);
+    }
+    return out;
   }
 
   static async createTable(userId: string, data: { name?: string; maxPlayers?: number; gameType?: string; isPrivate?: boolean; password?: string; }) {
