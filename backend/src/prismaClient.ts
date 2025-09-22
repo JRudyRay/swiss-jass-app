@@ -1,8 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 
-// Ensure single instance in dev (nodemon reload safeguard)
-const globalForPrisma = global as any;
-export const prisma: PrismaClient = globalForPrisma.__prisma || new PrismaClient();
-if (!globalForPrisma.__prisma) globalForPrisma.__prisma = prisma;
-
+const g: any = global;
+if (!g.__prisma) {
+	g.__prisma = new PrismaClient();
+}
+const prisma: PrismaClient = g.__prisma;
+export { prisma };
 export default prisma;

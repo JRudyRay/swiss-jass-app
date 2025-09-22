@@ -75,6 +75,25 @@ class GameHub {
         }
       }, 2000);
     });
+
+    // Listen for game finish to update stats
+    engine.on('gameFinished', async (data: any) => {
+      console.log(`[${gameId}] Game finished:`, data);
+      try {
+        // Import updateStatsForMatch dynamically to avoid circular
+        const { updateStatsForMatch } = require('./services/gameService');
+        const players = engine.getPlayers();
+        // Filter real users
+        const teamA = players.filter(p => p.team === 1 && p.userId).map(p => p.userId!);
+        const teamB = players.filter(p => p.team === 2 && p.userId).map(p => p.userId!);
+        const scoreA = data.finalScores.team1;
+        const scoreB = data.finalScores.team2;
+        await updateStatsForMatch(teamA, teamB, scoreA, scoreB, data.rounds || 0);
+        console.log(`[${gameId}] Stats updated for teams`, teamA, teamB);
+      } catch (err) {
+        console.error(`[${gameId}] Error updating stats:`, err);
+      }
+    });
   }
 
   private handleBotTrumpSelection(gameId: string): void {

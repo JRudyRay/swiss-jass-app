@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
+import prisma from './prismaClient';
 import { onlineUsers, setUserOnline, setUserOffline, getOnlineCount } from './presence';
 import dotenv from 'dotenv';
 
@@ -26,7 +26,6 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const prisma = new PrismaClient();
 
 // Middleware
 app.use(cors());

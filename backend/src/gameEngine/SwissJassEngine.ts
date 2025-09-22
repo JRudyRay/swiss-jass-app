@@ -340,21 +340,22 @@ export class SwissJassEngine {
 
     const leadCard = this.gameState.currentTrick[0];
     const player = this.players[playerId];
+    const hand = player.hand;
+    const trump = this.gameState.trumpSuit;
 
-    // Must follow suit if possible (fundamental Swiss Jass rule)
-    if (card.suit !== leadCard.suit) {
-      const hasSuit = player.hand.some(c => c.suit === leadCard.suit);
-      // If player has the lead suit, they may play any card of that suit OR a trump card.
-      if (hasSuit) {
-        // allowed only if card is trump or card is of the lead suit
-        const trump = this.gameState.trumpSuit;
-        const isTrump = trump && card.suit === trump;
-        if (card.suit === leadCard.suit) return true;
-        if (isTrump) return true;
-        return false;
+    // Must follow suit if possible
+    const hasLeadSuit = hand.some(c => c.suit === leadCard.suit);
+    if (hasLeadSuit) {
+      return card.suit === leadCard.suit;
+    }
+    // If no lead suit, must play trump if possible
+    if (trump) {
+      const hasTrump = hand.some(c => c.suit === trump);
+      if (hasTrump) {
+        return card.suit === trump;
       }
     }
-
+    // Otherwise, any card
     return true;
   }
 

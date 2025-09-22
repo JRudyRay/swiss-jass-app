@@ -26,18 +26,11 @@ export class TableService {
           name: data.name?.trim() || 'New Table',
           maxPlayers: data.maxPlayers && data.maxPlayers > 0 ? data.maxPlayers : 4,
           gameType: data.gameType || 'schieber',
-          // @ts-ignore dynamic schema field
-          team1Name: data.team1Name?.trim() || 'Team 1',
-          // @ts-ignore dynamic schema field
-          team2Name: data.team2Name?.trim() || 'Team 2',
-          // @ts-ignore dynamic schema field
-          targetPoints: data.targetPoints && data.targetPoints > 0 ? data.targetPoints : 1000,
+          // let database defaults apply for team names and targetPoints
           createdById: userId,
           isPrivate: !!data.isPrivate,
           password: data.password ? data.password : null,
-          players: {
-            create: [{ userId, isHost: true }]
-          }
+          players: { create: [{ userId, isHost: true }] }
         },
         include: { players: { include: { user: true } } }
       });
@@ -56,12 +49,7 @@ export class TableService {
               name: data.name?.trim() || 'New Table',
               maxPlayers: data.maxPlayers && data.maxPlayers > 0 ? data.maxPlayers : 4,
               gameType: data.gameType || 'schieber',
-              // @ts-ignore
-              team1Name: data.team1Name?.trim() || 'Team 1',
-              // @ts-ignore
-              team2Name: data.team2Name?.trim() || 'Team 2',
-              // @ts-ignore
-              targetPoints: data.targetPoints && data.targetPoints > 0 ? data.targetPoints : 1000,
+              // let database defaults apply for missing fields
               createdById: userId,
               isPrivate: !!data.isPrivate,
               password: data.password ? data.password : null,

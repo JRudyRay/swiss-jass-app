@@ -5,6 +5,7 @@ import * as Schieber from './engine/schieber';
 import YouTubePlayer from './YouTubePlayer';
 import { API_URL } from './config';
 import { io, Socket } from 'socket.io-client';
+import Rankings from './components/Rankings';
 
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
@@ -176,7 +177,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [isLoading, setIsLoading] = useState(false);
   const [tab, setTab] = useState<'game'|'rankings'|'settings'|'profile'|'tables'|'friends'>('game');
   const [usersList, setUsersList] = useState<Array<{ id: string; username: string; totalPoints: number; totalWins?: number; totalGames?: number }>>([]);
-  const [leaderboard, setLeaderboard] = useState<Array<{ id: string; username: string; totalWins: number; totalGames: number; totalPoints: number; winRate: number }>>([]);
   const [totals, setTotals] = useState<Record<string, number>>(() => {
     try {
       const raw = localStorage.getItem('jassTotals');
@@ -637,18 +637,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     })();
   }, []);
 
-  // Fetch leaderboard when rankings tab is opened
-  useEffect(() => {
-    if (tab === 'rankings' && API_URL) {
-      (async () => {
-        try {
-          const res = await fetch(`${API_URL}/api/admin/leaderboard`);
-          const j = await res.json();
-          if (j?.success && Array.isArray(j.leaderboard)) setLeaderboard(j.leaderboard);
-        } catch (e) { /* ignore */ }
-      })();
-    }
-  }, [tab]);
 
   // Update totals when gameState reaches finished (and avoid double-counting)
   useEffect(() => {
@@ -1130,12 +1118,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               const u = await r2.json();
               if (u?.success) setUsersList(u.users || []);
             } catch (e) { /* ignore */ }
-            // Always refresh leaderboard after totals sync (wins may have changed via other players)
-            try {
-              const lb = await fetch(`${API_URL}/api/admin/leaderboard`);
-              const lbJson = await lb.json();
-              if (lbJson?.success && Array.isArray(lbJson.leaderboard)) setLeaderboard(lbJson.leaderboard);
-            } catch (_) { /* ignore */ }
           }
 
           // If logged-in, try to report the match per-team for TrueSkill updates
@@ -1160,12 +1142,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                 const r3 = await fetch(`${API_URL}/api/admin/users`);
                 const u3 = await r3.json();
                 if (u3?.success) setUsersList(u3.users || []);
-                // fetch leaderboard for wins ranking
-                try {
-                  const lb = await fetch(`${API_URL}/api/admin/leaderboard`);
-                  const lbJson = await lb.json();
-                  if (lbJson?.success && Array.isArray(lbJson.leaderboard)) setLeaderboard(lbJson.leaderboard);
-                } catch (_) { /* ignore */ }
               } else {
                 console.warn('Skipping /games/report due to unmapped players; attempting single-user fallback', { teamAIds, teamBIds });
                 try {
@@ -1174,9 +1150,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                   const after = await fetch(`${API_URL}/api/admin/users`);
                   const afterJson = await after.json();
                   if (afterJson?.success) setUsersList(afterJson.users || []);
-                  const lb2 = await fetch(`${API_URL}/api/admin/leaderboard`);
-                  const lb2Json = await lb2.json();
-                  if (lb2Json?.success && Array.isArray(lb2Json.leaderboard)) setLeaderboard(lb2Json.leaderboard);
                 } catch (fe) { /* ignore */ }
               }
             }
@@ -1841,94 +1814,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         )}
 
         {tab === 'rankings' && (
-          <div style={{ marginTop: 8 }}>
-            <h3>Player Rankings & Statistics</h3>
-            <div style={{ marginBottom: 8 }}>
-              <button style={styles.button} onClick={() => { setTab('game'); }}>{T[lang].backToGame}</button>
-              <button style={{ ...styles.button, background: '#ef4444', marginLeft: 8 }} onClick={resetTotals}>Reset Totals</button>
-            </div>
-            
-            {/* Enhanced Statistics Panel */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-              <div style={{ background: '#f3f4f6', padding: 12, borderRadius: 8 }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#374151' }}>🏆 Wins Rankings</h4>
-                {leaderboard.length > 0 && (
-                  <ol style={{ margin: 0, paddingLeft: 20 }}>
-                    {leaderboard.map((u, idx) => (
-                      <li key={u.id} style={{ marginBottom: 6 }}>
-                        <span style={{ fontWeight: idx === 0 ? '700' : '500', color: idx === 0 ? '#d97706' : '#374151' }}>
-                          {u.username}: {u.totalWins} wins ({u.totalGames} games, {(u.winRate * 100).toFixed(0)}% WR)
-                        </span>
-                        {idx === 0 && <span style={{ marginLeft: 6 }}>🥇</span>}
-                      </li>
-                    ))}
-                  </ol>
-                )}
-                <h4 style={{ margin: '12px 0 8px 0', color: '#374151' }}>💯 Total Points Rankings</h4>
-                {usersList.length > 0 ? (
-                  <ol style={{ margin: 0, paddingLeft: 20 }}>
-                    {usersList.sort((a,b) => b.totalPoints - a.totalPoints).map((u, idx) => (
-                      <li key={u.id} style={{ marginBottom: 6, display: 'flex', alignItems: 'center' }}>
-                        <span style={{ fontWeight: idx === 0 ? '700' : '500', color: idx === 0 ? '#059669' : '#374151' }}>
-                          {u.username}: {u.totalPoints} pts
-                        </span>
-                        {idx === 0 && <span style={{ marginLeft: 8, fontSize: '1.2rem' }}>👑</span>}
-                      </li>
-                    ))}
-                  </ol>
-                ) : Object.keys(totals).length === 0 ? (
-                  <div style={{ color: '#6b7280', fontStyle: 'italic' }}>No games played yet. Start playing to see rankings!</div>
-                ) : (
-                  <ol style={{ margin: 0, paddingLeft: 20 }}>
-                    {((Object.entries(totals) as [string, number][]).sort((a,b) => b[1]-a[1])).map(([name, pts], idx) => (
-                      <li key={name} style={{ marginBottom: 6, display: 'flex', alignItems: 'center' }}>
-                        <span style={{ fontWeight: idx === 0 ? '700' : '500', color: idx === 0 ? '#059669' : '#374151' }}>
-                          {name}: {pts} pts
-                        </span>
-                        {idx === 0 && <span style={{ marginLeft: 8, fontSize: '1.2rem' }}>👑</span>}
-                      </li>
-                    ))}
-                  </ol>
-                )}
-                {/* Local detailed user stats */}
-                {Object.keys(jassUsers).length > 0 && (
-                  <div style={{ marginTop: 12 }}>
-                    <h5 style={{ margin: '6px 0' }}>Local Player Stats</h5>
-                    <ul style={{ margin: 0, paddingLeft: 18 }}>
-                      {Object.entries(jassUsers).sort((a:any,b:any)=> (b[1].totalPoints||0)-(a[1].totalPoints||0)).map(([name, info]: any) => (
-                        <li key={name} style={{ marginBottom: 6 }}>
-                          <strong>{name}</strong>: {info.totalPoints || 0} pts • {info.gamesPlayed || 0} games • {info.wins || 0} wins
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-              
-              <div style={{ background: '#e0f2fe', padding: 12, borderRadius: 8 }}>
-                <h4 style={{ margin: '0 0 8px 0', color: '#0c4a6e' }}>📊 Game Statistics</h4>
-                  <div style={{ fontSize: 14, lineHeight: 1.6 }}>
-                  <div><strong>Games Played:</strong> {localStorage.getItem('jassProcessedGames') ? JSON.parse(localStorage.getItem('jassProcessedGames')!).length : 0}</div>
-                  <div><strong>Average Score:</strong> {(Object.keys(totals).length > 0 ? Math.round((Object.values(totals) as number[]).reduce((a,b) => a+b, 0) / Object.keys(totals).length) : 0)} pts</div>
-                  <div><strong>Highest Score:</strong> {Object.keys(totals).length > 0 ? Math.max(...(Object.values(totals) as number[])) : 0} pts</div>
-                  <div><strong>Total Points Awarded:</strong> {(Object.values(totals) as number[]).reduce((a,b) => a+b, 0)} pts</div>
-                </div>
-              </div>
-            </div>
-            
-            <div style={{ background: '#f0fdf4', padding: 12, borderRadius: 8, border: '1px solid #bbf7d0' }}>
-              <h4 style={{ margin: '0 0 8px 0', color: '#166534' }}>🎯 Swiss Jass Mastery Tips</h4>
-              <div style={{ fontSize: 13, lineHeight: 1.5, color: '#374151' }}>
-                <div>• <strong>Weis Strategy:</strong> Save sequences and four-of-a-kinds for trump selection advantage</div>
-                <div>• <strong>Trump Selection:</strong> Choose wisely - your team's Weis only counts if you have the best!</div>
-                <div>• <strong>Team Play:</strong> Coordinate with your partner - if they're winning a trick, play low to conserve good cards</div>
-                <div>• <strong>Last Trick Bonus:</strong> Remember the +5 points for winning the final trick!</div>
-              </div>
-            </div>
-          </div>
+          <Rankings apiUrl={API_URL!} onBack={() => setTab('game')} onReset={resetTotals} />
         )}
 
-        {tab === 'profile' && (
+  {tab === 'profile' && (
           <div style={{ marginTop: 8 }}>
             <h3>{T[lang].profile}</h3>
             <div style={{ display: 'flex', gap: 16 }}>
