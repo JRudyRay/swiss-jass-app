@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { TableService } from '../services/tableService';
 import { multiGameManager } from '../gameEngine/multiGameManager';
+import { gameHub } from '../gameHub';
 import { AuthService } from '../services/authService';
 
 const router = Router();
@@ -63,18 +64,39 @@ router.post('/:id/join', authenticate, async (req: any, res) => {
   }
 });
 
-// Leave table
-router.post('/:id/leave', authenticate, async (req: any, res) => {
+// Start table and initialize game engine
+router.post('/:id/start', authenticate, async (req: any, res: any) => {
   try {
-    await TableService.leaveTable(req.params.id, req.user.userId);
+    // Start table in DB (status update, seat assignment, bot fill)
+    const table = await TableService.startTable(req.params.id, req.user.userId);
     const io = req.app.get('io');
     io?.emit('tables:updated');
-    res.json({ success: true });
+    io?.emit('table:starting', { tableId: table.id, table });
+
+    // Initialize game engine for this table
+    const userIds = (table.players || []).map(p => p.userId as string);
+    const { id: gameId, engine } = gameHub.create(userIds, table.gameType);
+    // Broadcast state updates on engine events
+    const room = `table:${table.id}`;
+    ['phaseChange', 'cardPlayed', 'trickCompleted', 'gameFinished'].forEach(evt => {
+      engine.on(evt, () => {
+        io?.to(room).emit('game:state', { tableId: table.id, state: engine.getGameState() });
+      });
+    });
+    // Randomly pick dealer among players
+    const dealerIndex = Math.floor(Math.random() * userIds.length);
+    const dealerUserId = userIds[dealerIndex];
+    // Set dealer and forehand in engine state
+    (engine as any).gameState.dealer = dealerIndex;
+    (engine as any).gameState.forehand = (dealerIndex + 1) % userIds.length;
+    // Broadcast dealer assignment to table room
+    io?.to(`table:${table.id}`).emit('game:dealerAssigned', { tableId: table.id, gameId, dealerUserId });
+
+    res.json({ success: true, table, gameId, dealerUserId });
   } catch (e: any) {
     res.status(400).json({ success: false, message: e.message });
   }
 });
-
 // Start table
 router.post('/:id/start', authenticate, async (req: any, res) => {
   try {

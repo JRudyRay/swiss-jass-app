@@ -236,6 +236,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
   const [multiGameState, setMultiGameState] = useState<any | null>(null);
+  // multiplayer table-based game identifiers
+  const [multiplayerGameId, setMultiplayerGameId] = useState<string | null>(null);
+  const [dealerUserId, setDealerUserId] = useState<string | null>(null);
   const authToken = useRef<string | null>(null);
   const startTableEarly = async (id: string) => {
     if (!authToken.current) return;
@@ -847,7 +850,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         if (st.pendingResolve) {
           setUiPendingResolve(true);
           try {
-            // compute animation positions and perform swoop then resolve
+            // compute animation positions and perform swoop then resolve and retrieve resulting state
             st = await startSwoopAndResolve(st);
             if (matchFinished) break;
           } finally {
@@ -1124,7 +1127,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           try {
             const token = localStorage.getItem('jassToken');
             if (token && playersList && playersList.length > 0 && state.scores) {
-              // Attempt to map local player names to server userIds from usersList
+              // Attempt to map local player names to server userId from usersList
               const mapNameToId: Record<string,string> = {};
               (usersList || []).forEach((u:any) => { mapNameToId[u.username] = u.id; });
               // Also map a generic 'You' placeholder to the logged-in user (if present)
@@ -1310,6 +1313,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       s.on('presence:count', (p: any) => setOnlineCount(p.online));
   s.on('tables:updated', () => fetchTables());
   s.on('table:starting', (_p: any) => { setTab('game'); setMessage('Waiting for players to be ready...'); });
+    s.on('game:dealerAssigned', (data: any) => {
+      setMultiplayerGameId(data.gameId);
+      setDealerUserId(data.dealerUserId);
+      setMessage(`Dealer assigned: ${data.dealerUserId}`);
+    });
       s.on('table:started', (payload: any) => {
         // Redirect both users to game tab
         setTab('game');
@@ -1318,9 +1326,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       });
       s.on('friends:update', () => fetchFriends());
       s.on('game:state', (payload: any) => {
-        if (payload?.tableId === activeTableId) {
+        if (payload.tableId === activeTableId) {
           setMultiGameState(payload.state);
-          setMessage('Multiplayer game state received');
+          setMessage(`Game phase: ${payload.state.phase}`);
         }
       });
       return () => { s.disconnect(); };
@@ -1395,7 +1403,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   // Rendering helpers
   const renderModeSwitcher = () => (
-    <div style={{ display:'flex', gap:8, justifyContent:'center', margin:'12px 0' }}>
+    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', margin: '12px 0' }}>
       <button style={{ ...styles.button, background: mode==='single'? '#1A7A4C':'#64748b' }} onClick={()=>setMode('single')}>Single Player</button>
       <button style={{ ...styles.button, background: mode==='multi'? '#1A7A4C':'#64748b' }} onClick={()=>setMode('multi')}>Multiplayer</button>
       {mode==='multi' && <span style={{ alignSelf:'center', fontSize:12, color:'#374151' }}>Online: {onlineCount}</span>}

@@ -14,12 +14,15 @@ class GameHub {
     const id = this.generateGameId();
     const engine = new SwissJassEngine(gameType as any || 'schieber');
     
-    // Set player names if provided
+    // Set player display names and link userIds if provided
     if (playerNames) {
       const players = engine.getPlayers();
-      playerNames.forEach((name, index) => {
-        if (name && players[index]) {
-          players[index].name = name;
+      playerNames.forEach((userId, index) => {
+        if (players[index]) {
+          // store userId for server reporting
+          (players[index] as any).userId = userId;
+          // optionally use userId as display name or leave engine default
+          players[index].name = players[index].name || userId;
         }
       });
     }

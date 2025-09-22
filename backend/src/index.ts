@@ -229,6 +229,22 @@ io.on('connection', (socket: any) => {
     }
     console.log('🔌 Player disconnected:', socket.id);
   });
+  
+  // Handle dealer's trump selection from client
+  socket.on('game:selectTrump', (data: { tableId: string; gameId: string; trump: string }) => {
+    const { tableId, gameId, trump } = data;
+    try {
+      const engine = require('./gameHub').gameHub.get(gameId);
+      const stateBefore = engine.getGameState();
+      // Dealer selects trump
+      engine.selectTrump(trump as any, stateBefore.dealer);
+      const newState = engine.getGameState();
+      // Broadcast updated game state to all clients in the table room
+      io.to(`table:${tableId}`).emit('game:state', { tableId, state: newState });
+    } catch (err) {
+      console.error('Error processing selectTrump:', err);
+    }
+  });
 });
 
 app.get('/api/presence/online-count', (req, res) => {
