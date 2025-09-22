@@ -1326,10 +1326,30 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       });
       s.on('friends:update', () => fetchFriends());
       s.on('game:state', (payload: any) => {
-        if (payload.tableId === activeTableId) {
-          setMultiGameState(payload.state);
-          setMessage(`Game phase: ${payload.state.phase}`);
+        if (payload.tableId !== activeTableId) return;
+        const { state: st, players: pls } = payload;
+        // Set core game state
+        setGameState({
+          phase: st.phase,
+          currentPlayer: st.currentPlayer,
+          trumpSuit: st.trumpSuit,
+          currentTrick: st.currentTrick,
+          scores: st.scores,
+          roundScores: st.roundScores,
+          dealer: st.dealer
+        });
+        // Load players and hands
+        setPlayers(pls.map((p: any) => ({ id: p.id, name: p.name, hand: p.hand, team: p.team, position: p.position })));
+        // Set your hand
+        const me = pls.find((p: any) => p.userId === user?.id || p.id === 0);
+        setHand(me?.hand || []);
+        // Compute legal cards if in playing phase
+        if (st.phase === 'playing' && st.currentPlayer === 0) {
+          setLegalCards((me?.hand || []).filter((c: any) => Schieber.getLegalCardsForPlayer(st, 0).some((lc: any) => lc.id === c.id)));
+        } else {
+          setLegalCards([]);
         }
+        setMessage(`Game phase: ${st.phase}`);
       });
       return () => { s.disconnect(); };
     }
@@ -1565,6 +1585,34 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     </div>
     );
   };
+
+  // Apply multiplayer game state to UI
+  useEffect(() => {
+    if (mode === 'multi' && multiGameState) {
+      // Map engine state to local state hooks
+      setGameState({
+        phase: multiGameState.phase,
+        currentPlayer: multiGameState.currentPlayer,
+        trumpSuit: multiGameState.trump,
+        currentTrick: multiGameState.currentTrick,
+        scores: multiGameState.scores,
+        roundScores: multiGameState.roundScores,
+        dealer: multiGameState.dealer,
+      });
+      // Map players
+      const uiPlayers = multiGameState.players.map((p: any) => ({ id: p.id, name: p.userId === dealerUserId ? 'You (Dealer)' : p.userId, hand: p.hand, team: p.team, position: p.position }));
+      setPlayers(uiPlayers);
+      // Set hand of this user (id matches first player)
+      const me = uiPlayers.find(p => p.userId === user?.id || p.id === 0);
+      setHand(me?.hand || []);
+      // Legal cards for current player
+      if (multiGameState.currentPlayer === 0) {
+        setLegalCards(Schieber.getLegalCardsForPlayer(multiGameState, 0));
+      } else {
+        setLegalCards([]);
+      }
+    }
+  }, [multiGameState]);
 
   return (
     <div style={styles.container}>

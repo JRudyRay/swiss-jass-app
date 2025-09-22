@@ -73,14 +73,19 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     io?.emit('tables:updated');
     io?.emit('table:starting', { tableId: table.id, table });
 
-    // Initialize game engine for this table
-    const userIds = (table.players || []).map(p => p.userId as string);
-    const { id: gameId, engine } = gameHub.create(userIds, table.gameType);
+  // Initialize game engine for this table
+  const userIds = (table.players || []).map(p => p.userId as string);
+  const { id: gameId, engine } = gameHub.create(userIds, table.gameType);
+  // Start the first round: deal cards and enter dealing phase
+  // Deal the initial cards and enter 'dealing' phase
+  engine.startRound();
+  // Send the initial game state and players to all clients
+  io?.to(`table:${table.id}`).emit('game:state', { tableId: table.id, state: engine.getGameState(), players: engine.getPlayers() });
     // Broadcast state updates on engine events
     const room = `table:${table.id}`;
     ['phaseChange', 'cardPlayed', 'trickCompleted', 'gameFinished'].forEach(evt => {
       engine.on(evt, () => {
-        io?.to(room).emit('game:state', { tableId: table.id, state: engine.getGameState() });
+        io?.to(room).emit('game:state', { tableId: table.id, state: engine.getGameState(), players: engine.getPlayers() });
       });
     });
     // Randomly pick dealer among players
