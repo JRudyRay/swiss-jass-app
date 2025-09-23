@@ -1430,7 +1430,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           const leadSuit = trick[0].suit;
           const hasLead = myHand.some(c=>c.suit===leadSuit);
           if (hasLead) return myHand.filter(c=>c.suit===leadSuit);
-          // if no lead suit, allow any (do NOT force trump here; let server enforce advanced rules)
+          // Enforce trump obligation if standard suit trump and player holds trump
+          const trumpSuit = st.trumpSuit && ['eicheln','schellen','rosen','schilten'].includes(st.trumpSuit) ? st.trumpSuit : null;
+          if (trumpSuit) {
+            const tr = myHand.filter(c=>c.suit===trumpSuit);
+            if (tr.length) return tr;
+          }
           return myHand.slice();
         };
         const lc = computeLegal();
@@ -1462,6 +1467,29 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       return () => { s.disconnect(); };
     }
   }, [mode]);
+
+  // Listen globally for server illegal play errors
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (err: any) => {
+      setMessage(err?.message || 'Illegal move');
+    };
+    socket.on('game:error', handler);
+    return () => { socket.off('game:error', handler); };
+  }, [socket]);
+
+  // Render current trick in center using orientedTrick (placeholder; integrate into JSX where center cards shown)
+  function renderCurrentTrick() {
+    if (!orientedTrick.length) return null;
+    // Example minimal rendering; integrate with your styled board center if needed
+    return (
+      <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', display:'flex', gap:12 }}>
+        {orientedTrick.map(c => (
+          <div key={c.id} style={{ padding:6, background:'#fff', borderRadius:8, boxShadow:'0 2px 6px rgba(0,0,0,0.25)' }}>{c.rank}</div>
+        ))}
+      </div>
+    );
+  }
 
   // Ensure we (re)join the table room whenever activeTableId changes in multiplayer mode
   useEffect(() => {

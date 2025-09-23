@@ -611,25 +611,17 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
   public getLegalCards(playerId: number): SwissCard[] {
     const player = this.players[playerId];
     const hand = player.hand;
-    
-    if (this.gameState.currentTrick.length === 0) return hand;
-    
+    if (this.gameState.currentTrick.length === 0) return hand.slice();
     const leadCard = this.gameState.currentTrick[0];
-    const followSuit = hand.filter(card => card.suit === leadCard.suit);
-    
-    // If player has cards of the lead suit, allow any of those cards.
-    // Also allow trump cards as an option even when the player can follow suit.
-    const result: SwissCard[] = [];
-    if (followSuit.length > 0) {
-      result.push(...followSuit);
-      const trump = this.gameState.trumpSuit;
-      if (trump) {
-        const trumpCards = hand.filter(c => c.suit === trump);
-        for (const t of trumpCards) if (!result.find(r => r.id === t.id)) result.push(t);
-      }
-      return result;
+    const leadSuit = leadCard.suit;
+    const followSuit = hand.filter(c => c.suit === leadSuit);
+    if (followSuit.length) return followSuit;
+    // No lead suit; if standard trump suit contract enforce trump if present
+    const trump = this.gameState.trumpSuit;
+    if (trump && ['eicheln','schellen','rosen','schilten'].includes(trump as string)) {
+      const trumps = hand.filter(c => c.suit === trump);
+      if (trumps.length) return trumps;
     }
-
-    return hand;
+    return hand.slice();
   }
 }

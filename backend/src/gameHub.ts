@@ -173,7 +173,12 @@ class GameHub {
       if (!currentPlayer || !currentPlayer.isBot) return;
       
       // Get legal cards for the bot
-      const legalCards = engine.getLegalCards(currentPlayerId);
+      let legalCards = engine.getLegalCards(currentPlayerId);
+      if (!legalCards || legalCards.length === 0) {
+        // Defensive fallback: use full hand to avoid stalling
+        legalCards = engine.getPlayer(currentPlayerId)?.hand.slice() || [];
+        console.warn(`[${gameId}] Bot fallback using full hand (no legal cards computed)`);
+      }
       
       if (legalCards.length === 0) {
         console.log(`[${gameId}] Bot ${currentPlayerId} has no legal cards`);
