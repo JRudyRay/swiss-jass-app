@@ -238,6 +238,23 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   // Ref to avoid stale closure inside initial socket effect
   const activeTableIdRef = useRef<string | null>(null);
   useEffect(() => { activeTableIdRef.current = activeTableId; }, [activeTableId]);
+  // Persist last active table
+  useEffect(() => {
+    try {
+      if (activeTableId) localStorage.setItem('lastActiveTableId', activeTableId);
+    } catch {}
+  }, [activeTableId]);
+  // Restore last active table on mount (before socket join effect)
+  useEffect(() => {
+    try {
+      const prev = localStorage.getItem('lastActiveTableId');
+      if (prev && !activeTableId) {
+        setMode('multi');
+        setActiveTableId(prev);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [multiGameState, setMultiGameState] = useState<any | null>(null);
   // multiplayer table-based game identifiers
   const [multiplayerGameId, setMultiplayerGameId] = useState<string | null>(null);
@@ -1349,7 +1366,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         }
         console.debug('[multiplayer] game:state received', { table: payload.tableId, phase: payload?.state?.phase, gameId: payload?.gameId });
         const { state: st, players: pls, tableConfig, gameId: incomingGameId } = payload;
-        if (incomingGameId && !multiplayerGameId) {
+        if (incomingGameId && (!multiplayerGameId || multiplayerGameId !== incomingGameId)) {
           setMultiplayerGameId(incomingGameId);
         }
         // Set core game state
@@ -1404,8 +1421,28 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           return myHand.slice();
         };
         setLegalCards(computeLegal());
-        setMessage(`Game phase: ${st.phase}`);
+        if (st.phase && st.phase !== 'waiting') {
+          setMessage(`Game phase: ${st.phase}`);
+        }
       });
+      // If we joined late and haven't received state after 1500ms, request it explicitly
+      let lateTimer = setTimeout(() => {
+        if (mode === 'multi' && activeTableIdRef.current && !gameState) {
+          console.debug('[multiplayer] Late join fallback requesting state');
+          s.emit('table:requestState', { tableId: activeTableIdRef.current });
+        }
+      }, 1500);
+      // Periodic retry until we have a phase
+      let retryAttempts = 0;
+      const retryInterval = setInterval(() => {
+        if (gameState?.phase) { clearInterval(retryInterval); return; }
+        if (mode !== 'multi' || !activeTableIdRef.current) { clearInterval(retryInterval); return; }
+        retryAttempts++;
+        if (retryAttempts > 5) { clearInterval(retryInterval); return; }
+        console.debug('[multiplayer] Retry requesting state attempt', retryAttempts);
+        s.emit('table:requestState', { tableId: activeTableIdRef.current });
+      }, 2000);
+      
       return () => { s.disconnect(); };
     }
   }, [mode]);
@@ -1440,6 +1477,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setTableName('');
   setActiveTableId(data.table.id);
   socket?.emit('table:join', { tableId: data.table.id });
+        setMode('multi');
       }
       fetchTables();
     } catch (e) {
@@ -1453,6 +1491,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       await fetch(`${API_URL}/api/tables/${id}/join`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
   setActiveTableId(id);
   socket?.emit('table:join', { tableId: id });
+      setMode('multi');
       fetchTables();
     } finally { setJoiningTableId(null); }
   };

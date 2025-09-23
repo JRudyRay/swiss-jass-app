@@ -51,6 +51,21 @@ router.get('/:id', authenticate, async (req: any, res) => {
   }
 });
 
+// Get current game state for a table (if an active engine exists)
+router.get('/:id/state', authenticate, async (req: any, res) => {
+  try {
+    const { id } = req.params;
+    const entry = gameHub.getByTableId(id);
+    if (!entry) {
+      return res.status(404).json({ success: false, message: 'No active game for table' });
+    }
+    const { engine, gameId, tableConfig } = entry as any;
+    return res.json({ success: true, tableId: id, gameId, state: engine.getGameState(), players: engine.getPlayers(), tableConfig });
+  } catch (e: any) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 // Join table
 router.post('/:id/join', authenticate, async (req: any, res) => {
   try {

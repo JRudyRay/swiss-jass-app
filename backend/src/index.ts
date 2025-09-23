@@ -232,6 +232,30 @@ io.on('connection', (socket: any) => {
     }
   });
 
+  // Explicit state request (client can call if it suspects a missed broadcast)
+  socket.on('table:requestState', (data: { tableId: string }) => {
+    if (!data?.tableId) return;
+    try {
+      const hub = require('./gameHub').gameHub;
+      const entry = hub.getByTableId(data.tableId);
+      if (entry) {
+        const { gameId, engine, tableConfig } = entry;
+        socket.emit('game:state', {
+          tableId: data.tableId,
+          state: engine.getGameState(),
+          players: engine.getPlayers(),
+          gameId,
+          tableConfig,
+          requested: true
+        });
+      } else {
+        socket.emit('table:noState', { tableId: data.tableId });
+      }
+    } catch (err) {
+      console.error('State request error:', err);
+    }
+  });
+
   socket.on('table:leave', (data: { tableId: string }) => {
     if (!data?.tableId) return;
     socket.leave(`table:${data.tableId}`);
