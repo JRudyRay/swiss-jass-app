@@ -1386,13 +1386,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           } catch {}
         }
         // Load players and hands
-        const mapped = pls.map((p: any) => ({ id: p.id, name: p.name, hand: p.hand, team: p.team, position: p.position, userId: (p as any).userId }));
-        setPlayers(mapped);
-        // Set your hand
-        const me = mapped.find((p: any) => p.userId === user?.id) || mapped.find((p: any) => p.id === 0);
+        const rawPlayers = pls.map((p: any) => ({ id: p.id, name: p.name, hand: p.hand, team: p.team, position: p.position, userId: (p as any).userId }));
+        // Determine my seat
+        const me = rawPlayers.find((p: any) => p.userId === user?.id) || rawPlayers.find((p: any) => p.id === 0);
         const mySeatIdx = me ? me.id : null;
         setMySeat(mySeatIdx);
         setHand(me?.hand || []);
+        // Re-orient players so that current user is always south (id kept for logic, position just visual)
+        const remapPosition = (playerId: number): string => {
+          if (mySeatIdx === null) return rawPlayers[playerId]?.position || 'south';
+            const rel = (playerId - mySeatIdx + 4) % 4;
+            return rel === 0 ? 'south' : rel === 1 ? 'west' : rel === 2 ? 'north' : 'east';
+        };
+        const oriented = rawPlayers.map(p => ({ ...p, position: remapPosition(p.id) }));
+        setPlayers(oriented);
+        // Hide options once multiplayer state is active
+        if (mode === 'multi') setOptionsVisible(false);
         // Compute legal cards in multiplayer using server state rules
         const computeLegal = () => {
           const myHand = me?.hand || [];
@@ -1477,6 +1486,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setTableName('');
   setActiveTableId(data.table.id);
   socket?.emit('table:join', { tableId: data.table.id });
+    setOptionsVisible(false);
         setMode('multi');
       }
       fetchTables();
@@ -1491,6 +1501,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       await fetch(`${API_URL}/api/tables/${id}/join`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
   setActiveTableId(id);
   socket?.emit('table:join', { tableId: id });
+      setOptionsVisible(false);
       setMode('multi');
       fetchTables();
     } finally { setJoiningTableId(null); }

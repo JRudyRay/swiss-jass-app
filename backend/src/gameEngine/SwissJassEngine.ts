@@ -256,9 +256,10 @@ export class SwissJassEngine {
       // ignore errors in detection, continue
     }
 
-    this.gameState.phase = 'playing';
-    this.gameState.currentPlayer = this.gameState.forehand;
-    this.gameState.trickLeader = this.gameState.forehand;
+  this.gameState.phase = 'playing';
+  // Dealer (declarer) leads first trick in Schieber variant (your requirement)
+  this.gameState.currentPlayer = this.gameState.dealer;
+  this.gameState.trickLeader = this.gameState.dealer;
 
     this.updateCardValues();
     this.emit('trumpSelected', { trump, playerId });
