@@ -1491,6 +1491,79 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     );
   }
 
+  // Recompute orientedTrick & legal cards on dependency changes (safety net if socket update missed ordering)
+  useEffect(() => {
+    try {
+      if (!gameState) return;
+      if (mySeat == null) return;
+      const st: any = gameState;
+      const trickRaw = st.currentTrick || [];
+      if (trickRaw.length) {
+        const oriented = trickRaw.map((pc:any) => {
+          const rel = (pc.playerId - mySeat + 4) % 4;
+          const pos = rel === 0 ? 'south' : rel === 1 ? 'east' : rel === 2 ? 'north' : 'west';
+          return { ...pc, pos };
+        });
+        setOrientedTrick(oriented);
+      } else if (orientedTrick.length) {
+        setOrientedTrick([]);
+      }
+      // Recompute legal (same logic as computeLegal) if it's our turn
+      const currentPlayer = st.currentPlayer;
+      const me = players.find(p=>p.id===mySeat);
+      if (me && currentPlayer === mySeat && st.phase === 'playing') {
+        const myHand = me.hand || [];
+        let lc: any[] = [];
+        if (myHand.length) {
+          const trick = st.currentTrick || [];
+          if (!trick.length) lc = myHand.slice(); else {
+            const leadSuit = trick[0].suit;
+            const hasLead = myHand.some((c:any)=>c.suit===leadSuit);
+            if (hasLead) lc = myHand.filter((c:any)=>c.suit===leadSuit); else {
+              const trumpSuit = st.trumpSuit && ['eicheln','schellen','rosen','schilten'].includes(st.trumpSuit) ? st.trumpSuit : null;
+              if (trumpSuit) {
+                const tr = myHand.filter((c:any)=>c.suit===trumpSuit);
+                lc = tr.length ? tr : myHand.slice();
+              } else lc = myHand.slice();
+            }
+          }
+        }
+        setLegalCards(lc);
+      }
+    } catch {}
+  }, [gameState, mySeat, players]);
+
+  // Desync watchdog: if it's a bot's turn for >4s with no trick growth, request state; after 2 failed attempts force soft reload.
+  useEffect(() => {
+    let attempts = 0;
+    let lastTrickLen = gameState?.currentTrick?.length || 0;
+    const id = setInterval(() => {
+      const st = gameState;
+      if (!st) return;
+      const trickLen = st.currentTrick?.length || 0;
+      const cp = st.currentPlayer;
+      if (trickLen !== lastTrickLen) {
+        lastTrickLen = trickLen;
+        attempts = 0; // progress detected
+        return;
+      }
+      // If stalled and current player is a bot (not us and flagged in players list)
+      const curPlayer = players.find(p=>p.id===cp);
+      if (st.phase === 'playing' && curPlayer && curPlayer.id !== mySeat && /bot_/i.test(curPlayer.name)) {
+        attempts++;
+        if (attempts === 2 && socket && activeTableId) {
+          socket.emit('table:requestState', { tableId: activeTableId });
+        }
+        if (attempts >= 4) {
+          // Soft reload
+          console.warn('Desync detected – reloading page');
+          window.location.reload();
+        }
+      }
+    }, 2000);
+    return () => clearInterval(id);
+  }, [gameState, players, mySeat, socket, activeTableId]);
+
   // Ensure we (re)join the table room whenever activeTableId changes in multiplayer mode
   useEffect(() => {
     if (mode !== 'multi') return;
