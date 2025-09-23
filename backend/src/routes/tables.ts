@@ -117,8 +117,9 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     // Pick a random dealer BEFORE dealing, set forehand accordingly
     const dealerIndex = Math.floor(Math.random() * Math.max(userIds.length, 1));
     const dealerUserId = userIds[dealerIndex];
-    (engine as any).gameState.dealer = dealerIndex;
-    (engine as any).gameState.forehand = (dealerIndex + 1) % 4;
+  (engine as any).gameState.dealer = dealerIndex;
+  // Counter-clockwise & dealer leads first trick: forehand = dealer
+  (engine as any).gameState.forehand = dealerIndex;
 
     // Start the first round: this will deal cards and progress phases
     engine.startRound();

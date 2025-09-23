@@ -325,8 +325,8 @@ export class SwissJassEngine {
     
     this.emit('cardPlayed', { card, playerId });
 
-    // Move to next player (counter-clockwise)
-    this.gameState.currentPlayer = (this.gameState.currentPlayer + 1) % 4;
+  // Move to next player counter-clockwise (decrement mod 4)
+  this.gameState.currentPlayer = (this.gameState.currentPlayer + 3) % 4;
 
     // Check if trick is complete
     if (this.gameState.currentTrick.length === 4) {
@@ -486,9 +486,10 @@ export class SwissJassEngine {
   }
 
   private prepareNextRound(): void {
-    // Rotate dealer
-    this.gameState.dealer = (this.gameState.dealer + 1) % 4;
-    this.gameState.forehand = (this.gameState.dealer + 1) % 4;
+    // Rotate dealer counter-clockwise
+    this.gameState.dealer = (this.gameState.dealer + 3) % 4;
+    // In this variant dealer leads after trump, so forehand aligns with dealer
+    this.gameState.forehand = this.gameState.dealer;
     
     // Reset round state
     this.gameState.roundScores = { team1: 0, team2: 0 };

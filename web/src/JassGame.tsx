@@ -1395,8 +1395,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         // Re-orient players so that current user is always south (id kept for logic, position just visual)
         const remapPosition = (playerId: number): string => {
           if (mySeatIdx === null) return rawPlayers[playerId]?.position || 'south';
-            const rel = (playerId - mySeatIdx + 4) % 4;
-            return rel === 0 ? 'south' : rel === 1 ? 'west' : rel === 2 ? 'north' : 'east';
+          // Counter-clockwise seating: moving CCW decreases id (mod 4). For UI we map:
+          // rel 0 (me) -> south; rel 1 (one step CCW) -> east; rel 2 -> north; rel 3 -> west
+          const rel = (playerId - mySeatIdx + 4) % 4;
+          return rel === 0 ? 'south' : rel === 1 ? 'east' : rel === 2 ? 'north' : 'west';
         };
         const oriented = rawPlayers.map(p => ({ ...p, position: remapPosition(p.id) }));
         setPlayers(oriented);
