@@ -111,6 +111,9 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     // Prepare room and broadcast initial state + players consistently
     const room = `table:${table.id}`;
     const tableConfig = { team1Name: (fullTable as any)?.team1Name || (table as any)?.team1Name, team2Name: (fullTable as any)?.team2Name || (table as any)?.team2Name, targetPoints: (fullTable as any)?.targetPoints || (table as any)?.targetPoints };
+
+  // Register mapping for late joiners
+  gameHub.registerTableGame(table.id, gameId, engine, tableConfig);
     io?.to(room).emit('game:state', {
       tableId: table.id,
       state: engine.getGameState(),

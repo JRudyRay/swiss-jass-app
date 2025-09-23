@@ -9,6 +9,8 @@ interface GameInstance {
 
 class GameHub {
   private games = new Map<GameId, GameInstance>();
+  // Map a tableId to its active game (for late join / reconnect)
+  private tableGameMap = new Map<string, { gameId: GameId; engine: SwissJassEngine; tableConfig?: any }>();
 
   create(playerNames?: string[], gameType?: string): { id: GameId; engine: SwissJassEngine } {
     const id = this.generateGameId();
@@ -32,6 +34,23 @@ class GameHub {
     
     this.games.set(id, { engine });
     return { id, engine };
+  }
+
+  // Associate a table with a running game so that new sockets joining the table room
+  // can immediately receive the current game state.
+  registerTableGame(tableId: string, gameId: string, engine: SwissJassEngine, tableConfig?: any) {
+    this.tableGameMap.set(tableId, { gameId, engine, tableConfig });
+  }
+
+  getByTableId(tableId: string): { gameId: string; engine: SwissJassEngine; tableConfig?: any } | null {
+    return this.tableGameMap.get(tableId) || null;
+  }
+
+  removeTableGame(tableId: string) {
+    const entry = this.tableGameMap.get(tableId);
+    if (entry) {
+      this.tableGameMap.delete(tableId);
+    }
   }
 
   get(id: GameId): SwissJassEngine {
@@ -227,6 +246,10 @@ class GameHub {
   destroyGame(gameId: string): void {
     this.stopBotPlay(gameId);
     this.games.delete(gameId);
+    // Also remove any table mapping referencing this game
+    for (const [tId, info] of this.tableGameMap.entries()) {
+      if (info.gameId === gameId) this.tableGameMap.delete(tId);
+    }
   }
 }
 

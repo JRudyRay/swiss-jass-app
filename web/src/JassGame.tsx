@@ -1341,7 +1341,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       s.on('friends:update', () => fetchFriends());
       s.on('game:state', (payload: any) => {
         if (payload.tableId !== activeTableId) return;
-        const { state: st, players: pls, tableConfig } = payload;
+        const { state: st, players: pls, tableConfig, gameId: incomingGameId } = payload;
+        if (incomingGameId && !multiplayerGameId) {
+          setMultiplayerGameId(incomingGameId);
+        }
         // Set core game state
         setGameState({
           phase: st.phase,
@@ -1399,6 +1402,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       return () => { s.disconnect(); };
     }
   }, [mode]);
+
+  // Ensure we (re)join the table room whenever activeTableId changes in multiplayer mode
+  useEffect(() => {
+    if (mode !== 'multi') return;
+    if (!socket) return;
+    if (!activeTableId) return;
+    socket.emit('table:join', { tableId: activeTableId });
+  }, [mode, socket, activeTableId]);
 
   const fetchTables = async () => {
     if (!authToken.current) return;

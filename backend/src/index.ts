@@ -214,6 +214,22 @@ io.on('connection', (socket: any) => {
   socket.on('table:join', (data: { tableId: string }) => {
     if (!data?.tableId) return;
     socket.join(`table:${data.tableId}`);
+    try {
+      const hub = require('./gameHub').gameHub;
+      const entry = hub.getByTableId(data.tableId);
+      if (entry) {
+        const { gameId, engine, tableConfig } = entry;
+        socket.emit('game:state', {
+          tableId: data.tableId,
+          state: engine.getGameState(),
+          players: engine.getPlayers(),
+          gameId,
+          tableConfig
+        });
+      }
+    } catch (err) {
+      console.error('Late join state emit error:', err);
+    }
   });
 
   socket.on('table:leave', (data: { tableId: string }) => {
