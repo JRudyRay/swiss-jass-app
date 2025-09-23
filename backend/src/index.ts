@@ -12,7 +12,6 @@ import gameRoutes from './routes/games';
 import adminRoutes from './routes/admin';
 import tableRoutes from './routes/tables';
 import friendRoutes from './routes/friends';
-import { multiGameManager } from './gameEngine/multiGameManager';
 
 dotenv.config();
 
@@ -240,9 +239,28 @@ io.on('connection', (socket: any) => {
       engine.selectTrump(trump as any, stateBefore.dealer);
       const newState = engine.getGameState();
       // Broadcast updated game state to all clients in the table room
-      io.to(`table:${tableId}`).emit('game:state', { tableId, state: newState });
+      io.to(`table:${tableId}`).emit('game:state', { tableId, state: newState, players: engine.getPlayers(), gameId });
     } catch (err) {
       console.error('Error processing selectTrump:', err);
+    }
+  });
+
+  // Handle a player's card play in multiplayer
+  socket.on('game:playCard', (data: { tableId: string; gameId: string; playerId: number; cardId: string }) => {
+    const { tableId, gameId, playerId, cardId } = data;
+    try {
+      const engine = require('./gameHub').gameHub.get(gameId);
+      const ok = engine.playCard(cardId, playerId);
+      if (!ok) {
+        // Optionally, emit an error back only to the player
+        socket.emit('game:error', { message: 'Illegal card play', cardId });
+        return;
+      }
+      // Broadcast updated state to table
+      const newState = engine.getGameState();
+      io.to(`table:${tableId}`).emit('game:state', { tableId, state: newState, players: engine.getPlayers(), gameId });
+    } catch (err) {
+      console.error('Error processing playCard:', err);
     }
   });
 });

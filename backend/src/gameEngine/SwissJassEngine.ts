@@ -203,7 +203,8 @@ export class SwissJassEngine {
       
       setTimeout(() => {
         this.gameState.phase = 'trump_selection';
-        this.gameState.currentPlayer = this.gameState.forehand;
+        // In Schieber, the dealer chooses the trump; set currentPlayer to dealer for selection.
+        this.gameState.currentPlayer = this.gameState.dealer;
         this.emit('phaseChange', 'trump_selection');
       }, 3000);
     }, 2000);

@@ -239,6 +239,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   // multiplayer table-based game identifiers
   const [multiplayerGameId, setMultiplayerGameId] = useState<string | null>(null);
   const [dealerUserId, setDealerUserId] = useState<string | null>(null);
+  const [mySeat, setMySeat] = useState<number | null>(null);
   const authToken = useRef<string | null>(null);
   const startTableEarly = async (id: string) => {
     if (!authToken.current) return;
@@ -923,8 +924,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       return;
     }
 
-    // If server-backed game, submit chosenTrump via API
+    // If server-backed multiplayer game, emit via socket
     if (!chosenTrump) return setMessage('Choose a trump first');
+    if (mode === 'multi' && socket && activeTableId && multiplayerGameId) {
+      socket.emit('game:selectTrump', { tableId: activeTableId, gameId: multiplayerGameId, trump: chosenTrump });
+      setMessage(`Trump submitted: ${chosenTrump}`);
+      return;
+    }
+    // Fallback to HTTP API legacy flow
     selectTrump(chosenTrump);
   };
 
@@ -1216,9 +1223,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   };
 
   const playCard = async (cardId: string) => {
-    // if no backend, route to local play APIs
+    // local or single-player
     if (!API_URL || isLocal) {
       playLocalCard(cardId);
+      return;
+    }
+    // Multiplayer via socket
+    if (mode === 'multi' && socket && activeTableId && multiplayerGameId) {
+      if (mySeat === null || gameState?.currentPlayer !== mySeat) { setMessage("It's not your turn"); return; }
+      socket.emit('game:playCard', { tableId: activeTableId, gameId: multiplayerGameId, playerId: mySeat, cardId });
+      setSelectedCard(null);
       return;
     }
     if (!gameId || !gameState) return;
@@ -1327,7 +1341,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       s.on('friends:update', () => fetchFriends());
       s.on('game:state', (payload: any) => {
         if (payload.tableId !== activeTableId) return;
-        const { state: st, players: pls } = payload;
+        const { state: st, players: pls, tableConfig } = payload;
         // Set core game state
         setGameState({
           phase: st.phase,
@@ -1338,17 +1352,48 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           roundScores: st.roundScores,
           dealer: st.dealer
         });
-        // Load players and hands
-        setPlayers(pls.map((p: any) => ({ id: p.id, name: p.name, hand: p.hand, team: p.team, position: p.position })));
-        // Set your hand
-        const me = pls.find((p: any) => p.userId === user?.id || p.id === 0);
-        setHand(me?.hand || []);
-        // Compute legal cards if in playing phase
-        if (st.phase === 'playing' && st.currentPlayer === 0) {
-          setLegalCards((me?.hand || []).filter((c: any) => Schieber.getLegalCardsForPlayer(st, 0).some((lc: any) => lc.id === c.id)));
-        } else {
-          setLegalCards([]);
+        if (tableConfig) {
+          try {
+            setTeamNames({ 1: tableConfig.team1Name || 'Team 1', 2: tableConfig.team2Name || 'Team 2' });
+            if (typeof tableConfig.targetPoints === 'number') setMaxPoints(tableConfig.targetPoints);
+          } catch {}
         }
+        // Load players and hands
+        const mapped = pls.map((p: any) => ({ id: p.id, name: p.name, hand: p.hand, team: p.team, position: p.position, userId: (p as any).userId }));
+        setPlayers(mapped);
+        // Set your hand
+        const me = mapped.find((p: any) => p.userId === user?.id) || mapped.find((p: any) => p.id === 0);
+        const mySeatIdx = me ? me.id : null;
+        setMySeat(mySeatIdx);
+        setHand(me?.hand || []);
+        // Compute legal cards in multiplayer using server state rules
+        const computeLegal = () => {
+          const myHand = me?.hand || [];
+          if (!myHand || !myHand.length) return [] as any[];
+          if (st.phase !== 'playing') return [] as any[];
+          if (mySeatIdx === null || st.currentPlayer !== mySeatIdx) return [] as any[];
+          const trick = st.currentTrick || [];
+          if (!trick || trick.length === 0) return myHand.slice();
+          const leadSuit = trick[0]?.suit;
+          const suitTrump = ['eicheln','schellen','rosen','schilten'].includes(st.trumpSuit) ? st.trumpSuit : null;
+          const hasLead = myHand.some((c:any) => c.suit === leadSuit);
+          if (hasLead) {
+            const follow = myHand.filter((c:any) => c.suit === leadSuit);
+            if (suitTrump) {
+              const tr = myHand.filter((c:any) => c.suit === suitTrump);
+              const union: any[] = follow.slice();
+              for (const t of tr) if (!union.find(u => u.id === t.id)) union.push(t);
+              return union;
+            }
+            return follow;
+          }
+          if (suitTrump) {
+            const tr = myHand.filter((c:any) => c.suit === suitTrump);
+            if (tr.length) return tr;
+          }
+          return myHand.slice();
+        };
+        setLegalCards(computeLegal());
         setMessage(`Game phase: ${st.phase}`);
       });
       return () => { s.disconnect(); };
@@ -1951,8 +1996,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </div>
         </div>
 
-  {/* Trump selector only when it's the human dealer's turn */}
-  {gameState?.phase === 'trump_selection' && gameState.currentPlayer === 0 && (
+  {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
+  {gameState?.phase === 'trump_selection' && ((mode==='multi' ? (mySeat !== null && gameState.currentPlayer === mySeat) : gameState.currentPlayer === 0)) && (
           <div style={{ marginTop: 12 }}>
             <h4>{T[lang].selectTrump} — Dealer: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`}</h4>
             <div style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}>

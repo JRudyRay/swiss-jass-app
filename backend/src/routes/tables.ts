@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { TableService } from '../services/tableService';
-import { multiGameManager } from '../gameEngine/multiGameManager';
 import { gameHub } from '../gameHub';
 import { AuthService } from '../services/authService';
 
@@ -73,43 +72,70 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     io?.emit('tables:updated');
     io?.emit('table:starting', { tableId: table.id, table });
 
-  // Initialize game engine for this table
-  const userIds = (table.players || []).map(p => p.userId as string);
-  const { id: gameId, engine } = gameHub.create(userIds, table.gameType);
-  // Start the first round: deal cards and enter dealing phase
-  // Deal the initial cards and enter 'dealing' phase
-  engine.startRound();
-  // Send the initial game state and players to all clients
-  io?.to(`table:${table.id}`).emit('game:state', { tableId: table.id, state: engine.getGameState(), players: engine.getPlayers() });
-    // Broadcast state updates on engine events
+    // Re-fetch table with user details for names/bot detection
+    const fullTable = await TableService.getTable(table.id);
+
+    // Build seat-ordered userId list (0..3)
+    const ordered = ((fullTable as any)?.players || [])
+      .slice()
+      .sort((a: any, b: any) => (a.seatIndex ?? 0) - (b.seatIndex ?? 0));
+    const userIds: string[] = ordered.map((p: any) => p.userId as string);
+
+    // Initialize game engine for this table (players in seat order)
+    const { id: gameId, engine } = gameHub.create(userIds, (table as any).gameType);
+
+    // Set target points from table configuration
+    try { (engine as any).gameState.pointsToWin = (fullTable as any)?.targetPoints || (table as any)?.targetPoints || 1000; } catch {}
+
+    // Set player display names and bot flags based on usernames
+    try {
+      const playersWithUsers = ordered.map((p: any) => ({ userId: p.userId, username: p.user?.username || p.userId }));
+      const engPlayers = engine.getPlayers();
+      playersWithUsers.forEach((pu, idx) => {
+        if (!engPlayers[idx]) return;
+        engPlayers[idx].name = pu.username;
+        // mark bots by username convention
+        (engPlayers[idx] as any).isBot = /^bot_/i.test(pu.username);
+      });
+    } catch {}
+
+    // Pick a random dealer BEFORE dealing, set forehand accordingly
+    const dealerIndex = Math.floor(Math.random() * Math.max(userIds.length, 1));
+    const dealerUserId = userIds[dealerIndex];
+    (engine as any).gameState.dealer = dealerIndex;
+    (engine as any).gameState.forehand = (dealerIndex + 1) % 4;
+
+    // Start the first round: this will deal cards and progress phases
+    engine.startRound();
+
+    // Prepare room and broadcast initial state + players consistently
     const room = `table:${table.id}`;
-    ['phaseChange', 'cardPlayed', 'trickCompleted', 'gameFinished'].forEach(evt => {
+    const tableConfig = { team1Name: (fullTable as any)?.team1Name || (table as any)?.team1Name, team2Name: (fullTable as any)?.team2Name || (table as any)?.team2Name, targetPoints: (fullTable as any)?.targetPoints || (table as any)?.targetPoints };
+    io?.to(room).emit('game:state', {
+      tableId: table.id,
+      state: engine.getGameState(),
+      players: engine.getPlayers(),
+      gameId,
+      tableConfig
+    });
+
+    // Broadcast state updates on engine events (always include players)
+    ['phaseChange', 'cardPlayed', 'trickCompleted', 'gameFinished', 'trumpSelected', 'roundCompleted'].forEach(evt => {
       engine.on(evt, () => {
-        io?.to(room).emit('game:state', { tableId: table.id, state: engine.getGameState(), players: engine.getPlayers() });
+        io?.to(room).emit('game:state', {
+          tableId: table.id,
+          state: engine.getGameState(),
+          players: engine.getPlayers(),
+          gameId,
+          tableConfig
+        });
       });
     });
-    // Randomly pick dealer among players
-    const dealerIndex = Math.floor(Math.random() * userIds.length);
-    const dealerUserId = userIds[dealerIndex];
-    // Set dealer and forehand in engine state
-    (engine as any).gameState.dealer = dealerIndex;
-    (engine as any).gameState.forehand = (dealerIndex + 1) % userIds.length;
-    // Broadcast dealer assignment to table room
-    io?.to(`table:${table.id}`).emit('game:dealerAssigned', { tableId: table.id, gameId, dealerUserId });
+
+    // Inform clients which seat/user is dealer for trump selection UI
+    io?.to(room).emit('game:dealerAssigned', { tableId: table.id, gameId, dealerUserId });
 
     res.json({ success: true, table, gameId, dealerUserId });
-  } catch (e: any) {
-    res.status(400).json({ success: false, message: e.message });
-  }
-});
-// Start table
-router.post('/:id/start', authenticate, async (req: any, res) => {
-  try {
-    const table = await TableService.startTable(req.params.id, req.user.userId);
-    const io = req.app.get('io');
-  io?.emit('tables:updated');
-    io?.emit('table:starting', { tableId: table?.id, table });
-    res.json({ success: true, table });
   } catch (e: any) {
     res.status(400).json({ success: false, message: e.message });
   }
@@ -122,10 +148,7 @@ router.post('/:id/ready', authenticate, async (req: any, res) => {
     const io = req.app.get('io');
     io?.emit('tables:updated');
     if ((table as any)?.status === 'IN_PROGRESS') {
-      // Build initial game state
-      const seats = (table as any).players.map((p: any) => ({ userId: p.userId, seatIndex: p.seatIndex ?? 0 }));
-      const state = multiGameManager.startGame(table.id, (table as any).gameType || 'schieber', seats);
-      io?.to(`table:${table.id}`).emit('game:state', { tableId: table.id, state });
+      // Notify table that gameplay is active; ongoing engine broadcasts will keep clients in sync
       io?.emit('table:started', { tableId: table?.id, table });
     }
     res.json({ success: true, table });

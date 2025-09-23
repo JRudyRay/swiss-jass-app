@@ -104,7 +104,9 @@ class GameHub {
     const state = engine.getGameState();
     
     // If it's a bot's turn to select trump
-    if (state.currentPlayer !== 0) {
+  const players = engine.getPlayers();
+  const cur = players[state.currentPlayer];
+  if (cur && cur.isBot) {
       setTimeout(() => {
         const trumpOptions: TrumpContract[] = ['eicheln', 'schellen', 'rosen', 'schilten', 'obenabe', 'undenufe'];
         const selectedTrump = trumpOptions[Math.floor(Math.random() * trumpOptions.length)];
@@ -126,8 +128,10 @@ class GameHub {
     const state = engine.getGameState();
     
     // If it's a bot's turn, trigger their action
-    if (state.phase === 'playing' && state.currentPlayer !== 0) {
-      setTimeout(() => this.performBotAction(gameId), 1500);
+    if (state.phase === 'playing') {
+      const players = engine.getPlayers();
+      const cur = players[state.currentPlayer];
+      if (cur && cur.isBot) setTimeout(() => this.performBotAction(gameId), 1500);
     }
   }
 
