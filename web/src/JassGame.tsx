@@ -172,6 +172,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [players, setPlayers] = useState<Player[]>([]);
   const [hand, setHand] = useState<any[]>([]);
   const [legalCards, setLegalCards] = useState<any[]>([]);
+  const [orientedTrick, setOrientedTrick] = useState<any[]>([]); // cards positioned by perspective
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [message, setMessage] = useState(T[lang].welcome);
   const [isLoading, setIsLoading] = useState(false);
@@ -380,6 +381,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     const tricksWon = Math.floor((p?.tricks?.length || 0) / 4);
     const stack = [] as any[];
     for (let i = 0; i < Math.min(tricksWon, 4); i++) stack.push(i);
+    // orientedTrick state now holds current trick cards mapped to perspective positions
     
     return (
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
@@ -1404,34 +1406,37 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setPlayers(oriented);
         // Hide options once multiplayer state is active
         if (mode === 'multi') setOptionsVisible(false);
-        // Compute legal cards in multiplayer using server state rules
+        // Compute perspective oriented trick (map each played card to its seat relative to me)
+        const trickRaw = st.currentTrick || [];
+        if (trickRaw.length) {
+          const oriented = trickRaw.map((pc:any) => {
+            const rel = (pc.playerId - mySeatIdx + 4) % 4; // 0 self,1 east,2 north,3 west (CCW mapping used earlier)
+            const pos = rel === 0 ? 'south' : rel === 1 ? 'east' : rel === 2 ? 'north' : 'west';
+            return { ...pc, pos };
+          });
+          setOrientedTrick(oriented);
+        } else {
+          setOrientedTrick([]);
+        }
+
+        // Legal cards (simpler, server authority): only evaluate when it's actually my turn
         const computeLegal = () => {
           const myHand = me?.hand || [];
-          if (!myHand || !myHand.length) return [] as any[];
+          if (!myHand.length) return [] as any[];
           if (st.phase !== 'playing') return [] as any[];
           if (mySeatIdx === null || st.currentPlayer !== mySeatIdx) return [] as any[];
           const trick = st.currentTrick || [];
-          if (!trick || trick.length === 0) return myHand.slice();
-          const leadSuit = trick[0]?.suit;
-          const suitTrump = ['eicheln','schellen','rosen','schilten'].includes(st.trumpSuit) ? st.trumpSuit : null;
-          const hasLead = myHand.some((c:any) => c.suit === leadSuit);
-          if (hasLead) {
-            const follow = myHand.filter((c:any) => c.suit === leadSuit);
-            if (suitTrump) {
-              const tr = myHand.filter((c:any) => c.suit === suitTrump);
-              const union: any[] = follow.slice();
-              for (const t of tr) if (!union.find(u => u.id === t.id)) union.push(t);
-              return union;
-            }
-            return follow;
-          }
-          if (suitTrump) {
-            const tr = myHand.filter((c:any) => c.suit === suitTrump);
-            if (tr.length) return tr;
-          }
+          if (trick.length === 0) return myHand.slice();
+          const leadSuit = trick[0].suit;
+          const hasLead = myHand.some(c=>c.suit===leadSuit);
+          if (hasLead) return myHand.filter(c=>c.suit===leadSuit);
+          // if no lead suit, allow any (do NOT force trump here; let server enforce advanced rules)
           return myHand.slice();
         };
-        setLegalCards(computeLegal());
+        const lc = computeLegal();
+        setLegalCards(lc);
+        // Debug window binding
+        try { (window as any).gameDebug = { state: st, mySeat: mySeatIdx, legal: lc, trick: st.currentTrick }; } catch {}
         if (st.phase && st.phase !== 'waiting') {
           setMessage(`Game phase: ${st.phase}`);
         }
