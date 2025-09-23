@@ -235,6 +235,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
+  // Ref to avoid stale closure inside initial socket effect
+  const activeTableIdRef = useRef<string | null>(null);
+  useEffect(() => { activeTableIdRef.current = activeTableId; }, [activeTableId]);
   const [multiGameState, setMultiGameState] = useState<any | null>(null);
   // multiplayer table-based game identifiers
   const [multiplayerGameId, setMultiplayerGameId] = useState<string | null>(null);
@@ -1340,7 +1343,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       });
       s.on('friends:update', () => fetchFriends());
       s.on('game:state', (payload: any) => {
-        if (payload.tableId !== activeTableId) return;
+        if (payload?.tableId && payload.tableId !== activeTableIdRef.current) {
+          console.debug('[multiplayer] Ignoring game:state for other table', payload.tableId, 'expected', activeTableIdRef.current);
+          return;
+        }
+        console.debug('[multiplayer] game:state received', { table: payload.tableId, phase: payload?.state?.phase, gameId: payload?.gameId });
         const { state: st, players: pls, tableConfig, gameId: incomingGameId } = payload;
         if (incomingGameId && !multiplayerGameId) {
           setMultiplayerGameId(incomingGameId);
@@ -1408,6 +1415,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     if (mode !== 'multi') return;
     if (!socket) return;
     if (!activeTableId) return;
+    console.debug('[multiplayer] Emitting table:join', activeTableId);
     socket.emit('table:join', { tableId: activeTableId });
   }, [mode, socket, activeTableId]);
 
