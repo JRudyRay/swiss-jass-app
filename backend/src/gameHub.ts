@@ -80,8 +80,10 @@ class GameHub {
       
       // Trigger next bot action after a human plays
       const state = engine.getGameState();
-      if (state.phase === 'playing' && state.currentPlayer !== 0) {
-        setTimeout(() => this.performBotAction(gameId), 1500);
+      if (state.phase === 'playing') {
+        const players = engine.getPlayers();
+        const cur = players[state.currentPlayer];
+        if (cur && cur.isBot) setTimeout(() => this.performBotAction(gameId), 1200);
       }
     });
 
@@ -92,8 +94,10 @@ class GameHub {
       // Continue bot play after trick
       setTimeout(() => {
         const state = engine.getGameState();
-        if (state.phase === 'playing' && state.currentPlayer !== 0) {
-          this.performBotAction(gameId);
+        if (state.phase === 'playing') {
+          const players = engine.getPlayers();
+          const cur = players[state.currentPlayer];
+          if (cur && cur.isBot) this.performBotAction(gameId);
         }
       }, 2000);
     });

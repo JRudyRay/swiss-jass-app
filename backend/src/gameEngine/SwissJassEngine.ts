@@ -350,12 +350,10 @@ export class SwissJassEngine {
     if (hasLeadSuit) {
       return card.suit === leadCard.suit;
     }
-    // If no lead suit, must play trump if possible
-    if (trump) {
+    // If no lead suit, must play trump if possible (only for standard suit trump)
+    if (trump && trump !== 'obenabe' && trump !== 'undenufe') {
       const hasTrump = hand.some(c => c.suit === trump);
-      if (hasTrump) {
-        return card.suit === trump;
-      }
+      if (hasTrump) return card.suit === trump;
     }
     // Otherwise, any card
     return true;
