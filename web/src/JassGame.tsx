@@ -437,7 +437,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       const handCards = hand || [];
       const hasLeadSuit = handCards.some((h:any) => h.suit === leadSuit);
       // If player has lead suit but card isn't of that suit -> must follow suit
-      if (hasLeadSuit && card.suit !== leadSuit) return T[lang].pleaseChooseTrump ? 'Must follow suit' : 'Must follow suit';
+      if (hasLeadSuit && card.suit !== leadSuit) return 'Must follow suit';
       // If player has lead suit and this card is of that suit but not in legalCards -> must beat current winner
       if (hasLeadSuit && card.suit === leadSuit && !legalCards.some((c:any) => c.id === card.id)) return 'Must beat current winning card (Stichzwang)';
       // If no lead suit but a suit-trump exists and player has trumps, require trump
@@ -445,6 +445,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       if (!hasLeadSuit && suitTrump) {
         const hasTrump = handCards.some((h:any) => h.suit === suitTrump);
         if (hasTrump && card.suit !== suitTrump) return 'Must play trump when void in lead suit';
+        if (hasTrump && card.suit === suitTrump && !legalCards.some((c:any) => c.id === card.id)) return 'Must play higher trump (Stichzwang)';
       }
       return 'Card not legal right now';
     } catch (e) { return null; }

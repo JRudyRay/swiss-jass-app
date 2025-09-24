@@ -297,20 +297,18 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
 
   // Helper: determine current best card in trick so far
   const currentBestIdx = state.currentTrick.length > 0 ? winnerOfTrick(state.currentTrick as any, trumpContract as any, leadSuit) : 0;
-  const currentBestCard = state.currentTrick[currentBestIdx];
+  const currentBestCard = state.currentTrick[currentBestIdx] as Card | undefined;
 
   // If player has cards of the lead suit, they must follow suit.
   const sameSuit = player.hand.filter(c => c.suit === leadSuit);
   if (sameSuit.length > 0) {
-    // If any of these can beat the current best card, only those are allowed (Stichzwang)
-  // Per user preference, allow any card of the lead suit to be played.
-  // In addition, allow trump cards as an option even when the player can follow suit.
-  const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
-  const trumpCards = suitTrump ? player.hand.filter(c => c.suit === suitTrump) : [];
-  // Return union of sameSuit and trumpCards (avoid duplicates)
-  const union: Card[] = sameSuit.slice();
-  for (const t of trumpCards) if (!union.includes(t)) union.push(t);
-  return union;
+    // If the current best card is also of the lead suit, enforce Stichzwang by requiring a winning card when possible
+    if (currentBestCard && currentBestCard.suit === leadSuit) {
+      const beatingCards = sameSuit.filter(card => isCardBetter(card, currentBestCard, trumpContract, leadSuit));
+      if (beatingCards.length > 0) return beatingCards;
+    }
+    // Otherwise any card of the lead suit satisfies the follow-suit requirement
+    return sameSuit;
   }
 
   // No lead suit: if there is a suit-trump, player must play a trump if they have any
@@ -319,7 +317,9 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
     const trumpCards = player.hand.filter(c => c.suit === suitTrump);
     if (trumpCards.length > 0) {
       // If any trump can beat currentBestCard, only those are allowed
-      const beatingTrumps = trumpCards.filter(c => compareCards(c, currentBestCard, trumpContract, leadSuit) < 0);
+      const beatingTrumps = currentBestCard
+        ? trumpCards.filter(card => isCardBetter(card, currentBestCard, trumpContract, leadSuit))
+        : trumpCards;
       return beatingTrumps.length > 0 ? beatingTrumps : trumpCards;
     }
   }
