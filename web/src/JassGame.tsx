@@ -96,8 +96,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       currentTrump: 'Current Trump',
       roundScores: 'Round — Team1',
       yourHand: 'Your Hand',
-      launchLocal: 'Launch Local Game',
-      launchServer: 'Launch Server Game',
+  singleSetupTitle: 'Local match setup',
+  singleSetupSubtitle: 'Play a solo Swiss Jass match against three classic bots. Choose your team names and race to your preferred target score.',
+  offlineBadge: 'Offline friendly',
+  startLocalMatch: 'Start local match',
+  autosaveHint: 'Matches autosave locally, so you can leave and resume later.',
+  singleModeHint: 'Configure your local match to begin playing.',
+  multiModeHint: 'Join or create a table to start multiplayer.',
+  multiTablesBlurb: 'Multiplayer runs through live tables. Open the Tables tab to host or join, then return here once the match begins.',
       selectTrump: 'Select Trump',
       submitTrump: 'Submit Trump',
       scoringDetails: 'Scoring Details',
@@ -136,8 +142,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       currentTrump: 'Trump jetzt',
       roundScores: 'Rundi — Team1',
       yourHand: 'Dini Chart',
-      launchLocal: 'Lokal starte',
-      launchServer: 'Server starte',
+  singleSetupTitle: 'Lokal-Spiel iirichte',
+  singleSetupSubtitle: 'Spil e Solo-Jass mit drü klassischä Bots. Wähl d Teamname und s Ziel zum starte.',
+  offlineBadge: 'Offline freundlich',
+  startLocalMatch: 'Lokal Match starte',
+  autosaveHint: 'Spili werde lokal gspeicheret – du chasch spöter wiiterspiele.',
+  singleModeHint: 'Richte dis lokal Spiel ii zum starte.',
+  multiModeHint: 'Erstell oder tritt eme Tisch bi zum Multiplayer starte.',
+  multiTablesBlurb: 'Multiplayer lauft über live Tische. Gang uf d «Tables»-Register, hoste oder tritt bi und chomm däno zrugg, woni Fokus im Spiel ligt.',
       selectTrump: 'Trump wähle',
       submitTrump: 'Trump bestätigt',
       scoringDetails: 'Punktetabelle',
@@ -261,6 +273,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [multiplayerGameId, setMultiplayerGameId] = useState<string | null>(null);
   const [dealerUserId, setDealerUserId] = useState<string | null>(null);
   const [mySeat, setMySeat] = useState<number | null>(null);
+  const mySeatRef = useRef<number | null>(null);
+  useEffect(() => { mySeatRef.current = mySeat; }, [mySeat]);
   const authToken = useRef<string | null>(null);
   const startTableEarly = async (id: string) => {
     if (!authToken.current) return;
@@ -574,6 +588,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     setUiPendingResolve(false);
     setMessage('No active game — start a new one');
   }, [tab]);
+
+  useEffect(() => {
+    if (mode === 'single' && optionsVisible) {
+      setMessage(T[lang].singleModeHint);
+    } else if (mode === 'multi' && optionsVisible) {
+      setMessage(T[lang].multiModeHint);
+    }
+  }, [lang, mode, optionsVisible]);
 
   // Watchdog: detect stalled local games or UI pending states and recover.
   useEffect(() => {
@@ -1388,12 +1410,30 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           } catch {}
         }
         // Load players and hands
-  const rawPlayers = pls.map((p: any) => ({ id: p.id, name: p.name, hand: p.hand, team: p.team, position: p.position, userId: (p as any).userId }));
-        // Determine my seat
-        const me = rawPlayers.find((p: any) => p.userId === user?.id) || rawPlayers.find((p: any) => p.id === 0);
-        const mySeatIdx = me ? me.id : null;
-        setMySeat(mySeatIdx);
-        setHand(me?.hand || []);
+        const rawPlayers = pls.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          hand: p.hand,
+          team: p.team,
+          position: p.position,
+          userId: (p as any).userId
+        }));
+        const previousSeatIdx = typeof mySeatRef.current === 'number' ? mySeatRef.current : null;
+        const playerByUser = user?.id ? rawPlayers.find((p: any) => p.userId === user.id) : null;
+        const previousSeatPlayer = previousSeatIdx !== null ? rawPlayers.find((p: any) => p.id === previousSeatIdx) : null;
+        const fallbackSeatPlayer = !user?.id ? rawPlayers.find((p: any) => p.id === 0) : null;
+        const seatSource = playerByUser || previousSeatPlayer || fallbackSeatPlayer || null;
+        const mySeatIdx = typeof (playerByUser?.id ?? seatSource?.id ?? previousSeatIdx) === 'number'
+          ? (playerByUser?.id ?? seatSource?.id ?? previousSeatIdx)! : null;
+
+        if (playerByUser && playerByUser.id !== previousSeatIdx) {
+          setMySeat(playerByUser.id);
+        } else if (!playerByUser && previousSeatIdx === null && typeof seatSource?.id === 'number') {
+          setMySeat(seatSource.id);
+        }
+
+        const handSource = playerByUser || seatSource;
+        setHand(handSource?.hand || []);
         // Re-orient players so that current user is always south (consistent mapping across clients)
         // CCW mapping: rel 0 -> south, 1 -> east, 2 -> north, 3 -> west
         const remapPosition = (playerId: number): string => {
@@ -1409,6 +1449,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         const trickRaw = st.currentTrick || [];
         if (trickRaw.length) {
           const oriented = trickRaw.map((pc:any) => {
+            if (mySeatIdx === null) {
+              const fallbackPos = rawPlayers[pc.playerId]?.position || 'south';
+              return { ...pc, pos: fallbackPos };
+            }
             const rel = (pc.playerId - mySeatIdx + 4) % 4; // 0 self,1 east,2 north,3 west (CCW mapping used earlier)
             const pos = rel === 0 ? 'south' : rel === 1 ? 'east' : rel === 2 ? 'north' : 'west';
             return { ...pc, pos };
@@ -1420,7 +1464,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
         // Legal cards (simpler, server authority): only evaluate when it's actually my turn
         const computeLegal = () => {
-          const myHand = me?.hand || [];
+          const myHand = handSource?.hand || [];
           if (!myHand.length) return [] as any[];
           if (st.phase !== 'playing') return [] as any[];
           if (mySeatIdx === null || st.currentPlayer !== mySeatIdx) return [] as any[];
@@ -1476,6 +1520,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     socket.on('game:error', handler);
     return () => { socket.off('game:error', handler); };
   }, [socket]);
+
+  useEffect(() => {
+    if (!user?.id || !players.length) return;
+    const seatPlayer = players.find((p:any) => p.userId === user.id);
+    if (!seatPlayer) return;
+    if (seatPlayer.id !== mySeatRef.current) {
+      setMySeat(seatPlayer.id);
+    }
+    setHand(prev => {
+      const newHand = seatPlayer.hand || [];
+      if (prev.length === newHand.length && prev.every((card:any, idx:number) => card?.id === newHand[idx]?.id)) {
+        return prev;
+      }
+      return newHand;
+    });
+  }, [players, user?.id]);
 
   // Render current trick in center using orientedTrick (placeholder; integrate into JSX where center cards shown)
   function renderCurrentTrick() {
@@ -1642,45 +1702,98 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   // Trigger initial fetch when switching to multi tabs
   useEffect(() => { if (mode==='multi') { fetchTables(); fetchFriends(); } }, [mode]);
 
+  const handleSwitchMode = (nextMode: 'single' | 'multi') => {
+    if (nextMode === mode) return;
+    if (nextMode === 'single') {
+      setTab('game');
+      setMode('single');
+      setOptionsVisible(true);
+      setActiveTableId(null);
+      setMultiplayerGameId(null);
+      setDealerUserId(null);
+      setMessage(T[lang].singleModeHint);
+      return;
+    }
+
+    setTab('game');
+    setMode('multi');
+    setOptionsVisible(false);
+    setMessage(T[lang].multiModeHint);
+  };
+
   // Rendering helpers
   const renderModeSwitcher = () => (
     <div style={{ display: 'flex', gap: 8, justifyContent: 'center', margin: '12px 0' }}>
-      <button style={{ ...styles.button, background: mode==='single'? '#1A7A4C':'#64748b' }} onClick={()=>setMode('single')}>Single Player</button>
-      <button style={{ ...styles.button, background: mode==='multi'? '#1A7A4C':'#64748b' }} onClick={()=>setMode('multi')}>Multiplayer</button>
+      <button style={{ ...styles.button, background: mode==='single'? '#1A7A4C':'#64748b' }} onClick={() => handleSwitchMode('single')}>Single Player</button>
+      <button style={{ ...styles.button, background: mode==='multi'? '#1A7A4C':'#64748b' }} onClick={() => handleSwitchMode('multi')}>Multiplayer</button>
       {mode==='multi' && <span style={{ alignSelf:'center', fontSize:12, color:'#374151' }}>Online: {onlineCount}</span>}
     </div>
   );
 
   const renderTables = () => {
+    const statusTheme: Record<string, { bg: string; color: string; label: string }> = {
+      OPEN: { bg: '#dcfce7', color: '#166534', label: 'Open' },
+      STARTING: { bg: '#fef9c3', color: '#92400e', label: 'Starting' },
+      IN_PROGRESS: { bg: '#e0f2fe', color: '#1d4ed8', label: 'In progress' },
+      COMPLETED: { bg: '#ede9fe', color: '#5b21b6', label: 'Completed' },
+      CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Cancelled' }
+    };
     return (
       <div style={{ padding:12 }}>
-        <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center', flexWrap:'wrap' }}>
-          <input value={tableName} onChange={e=>setTableName(e.target.value)} placeholder='Table name' style={{ padding:8, border:'1px solid #ddd', borderRadius:6 }} />
-          <select value={newTableGameType} onChange={e=>setNewTableGameType(e.target.value)} style={{ padding:8, border:'1px solid #ddd', borderRadius:6 }}>
+        <div style={{ display:'flex', gap:10, marginBottom:14, alignItems:'center', flexWrap:'wrap' }}>
+          <input value={tableName} onChange={e=>setTableName(e.target.value)} placeholder='Table name' style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10, minWidth:180 }} />
+          <select value={newTableGameType} onChange={e=>setNewTableGameType(e.target.value)} style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10 }}>
             <option value='schieber'>Schieber</option>
           </select>
-          <input value={newTeam1} onChange={e=>setNewTeam1(e.target.value)} placeholder='Team 1 name' style={{ padding:8, border:'1px solid #ddd', borderRadius:6, width:110 }} />
-          <input value={newTeam2} onChange={e=>setNewTeam2(e.target.value)} placeholder='Team 2 name' style={{ padding:8, border:'1px solid #ddd', borderRadius:6, width:110 }} />
-          <input type='number' value={newTargetPoints} onChange={e=>setNewTargetPoints(parseInt(e.target.value)||1000)} placeholder='Target' style={{ padding:8, border:'1px solid #ddd', borderRadius:6, width:90 }} />
-          <button disabled={creatingTable} style={styles.button} onClick={() => createTable(tableName || 'Table')}>{creatingTable? 'Creating...':'Create Table'}</button>
-          <button style={styles.button} onClick={fetchTables}>Refresh</button>
-          <div style={{ fontSize:12, color:'#555' }}>Online: {onlineCount}</div>
+          <input value={newTeam1} onChange={e=>setNewTeam1(e.target.value)} placeholder='Team 1 name' style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10, width:140 }} />
+          <input value={newTeam2} onChange={e=>setNewTeam2(e.target.value)} placeholder='Team 2 name' style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10, width:140 }} />
+          <input type='number' value={newTargetPoints} onChange={e=>setNewTargetPoints(parseInt(e.target.value)||1000)} placeholder='Target' style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10, width:110 }} />
+          <button disabled={creatingTable} style={{ ...styles.button, background: creatingTable ? '#94a3b8' : '#1A7A4C', padding: '10px 18px' }} onClick={() => createTable(tableName || 'Table')}>{creatingTable? 'Creating…':'Create table'}</button>
+          <button style={{ ...styles.button, background:'#2563eb', padding: '10px 18px' }} onClick={fetchTables}>Refresh list</button>
+          <div style={{ fontSize:12, color:'#4b5563' }}>Online: {onlineCount}</div>
         </div>
-        <div style={{ display:'grid', gap:12, gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))' }}>
+        <div style={{ fontSize:12, color:'#6b7280', marginBottom: 14 }}>Host a public table or join an existing lobby below. Tables automatically upgrade to live games when everyone is ready.</div>
+        <div style={{ display:'grid', gap:14, gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))' }}>
           {tables.map(t => (
-            <div key={t.id} style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:10, background:'#fff', position:'relative' }}>
-              <div style={{ fontWeight:600 }}>{t.name}</div>
-              <div style={{ fontSize:12, color:'#555' }}>Players: {t.players?.length || 0}/{t.maxPlayers}</div>
-              <div style={{ fontSize:12, color:'#555' }}>Status: {t.status}</div>
-              <div style={{ display:'flex', gap:6, marginTop:8 }}>
-                <button disabled={joiningTableId===t.id} style={{ ...styles.button, flex:1 }} onClick={()=>joinTable(t.id)}>{joiningTableId===t.id? 'Joining...':'Join'}</button>
+            <div key={t.id} style={{ border:'1px solid #e5e7eb', borderRadius:14, padding:16, background:'#ffffff', boxShadow:'0 10px 24px rgba(15,23,42,0.08)', display:'flex', flexDirection:'column', gap:12 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+                <div style={{ fontWeight:700, fontSize:16, color:'#111827' }}>{t.name}</div>
+                {(() => {
+                  const theme = statusTheme[t.status] || { bg: '#e5e7eb', color: '#374151', label: t.status };
+                  return <span style={{ background: theme.bg, color: theme.color, padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, textTransform:'uppercase', letterSpacing: '.6px' }}>{theme.label}</span>;
+                })()}
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:6, fontSize:12, color:'#4b5563' }}>
+                <div><strong>Host:</strong> {t.players?.find((p:any)=>p.isHost)?.user?.username || 'Unknown'}</div>
+                <div><strong>Teams:</strong> {(t.team1Name || 'Team 1')} vs {(t.team2Name || 'Team 2')}</div>
+                <div><strong>Target:</strong> {t.targetPoints || newTargetPoints} pts • <strong>Players:</strong> {(t.players?.length || 0)}/{t.maxPlayers}</div>
+              </div>
+              {t.players && t.players.length > 0 && (
+                <div style={{ display:'flex', gap:6, flexWrap:'wrap', fontSize:11, color:'#6b7280' }}>
+                  {t.players.map((p:any) => (
+                    <span key={p.id} style={{ background:'#f3f4f6', borderRadius:999, padding:'4px 8px', border: p.isHost ? '1px solid #1A7A4C' : '1px solid #e5e7eb' }}>
+                      {p.user?.username || p.userId}{p.isHost ? ' ★' : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div style={{ display:'flex', gap:8, marginTop:'auto' }}>
+                <button
+                  disabled={joiningTableId===t.id || (t.status !== 'OPEN' && t.status !== 'STARTING')}
+                  style={{
+                    ...styles.button,
+                    flex: 1,
+                    background: joiningTableId===t.id ? '#94a3b8' : '#1A7A4C'
+                  }}
+                  onClick={()=>joinTable(t.id)}
+                >{joiningTableId===t.id? 'Joining…':'Join table'}</button>
                 {t.status==='OPEN' && t.createdById === user?.id && (
-                  <button style={{ ...styles.button, background:'#f59e0b' }} onClick={()=>startTableEarly(t.id)}>Start Now</button>
+                  <button style={{ ...styles.button, background:'#f59e0b' }} onClick={()=>startTableEarly(t.id)}>Start now</button>
                 )}
               </div>
             </div>
           ))}
-          {!tables.length && <div style={{ fontSize:14, color:'#555' }}>No open tables</div>}
+          {!tables.length && <div style={{ fontSize:14, color:'#6b7280', background:'#fff', border:'1px dashed #d1d5db', padding:'28px 32px', borderRadius:14, textAlign:'center' }}>No public tables yet — be the first to create one!</div>}
         </div>
       </div>
     );
@@ -1725,9 +1838,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   // Integrate into existing tab bar: add 'tables' and 'friends'
   const renderTabs = () => {
-    const baseSingle = ['game','rankings','settings','profile'];
-    const multiExtra = ['tables','friends'];
-    const keys = mode === 'multi' ? ['game','tables','friends','rankings','settings','profile'] : baseSingle;
+    const singleTabs = ['game','settings','profile'];
+    const multiTabs = ['game','tables','friends','rankings','settings','profile'];
+    const keys = mode === 'multi' ? multiTabs : singleTabs;
     return (
     <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'center', flexWrap:'wrap' }}>
       {keys.map(key => {
@@ -1835,6 +1948,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     }
   }, [multiGameState]);
 
+  const showPlaySurface = tab === 'game' && (!optionsVisible || (mode === 'multi' && !!gameState));
+
   return (
     <div style={styles.container}>
       <div style={styles.header}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
@@ -1865,7 +1980,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         )}
 
         {/* Game-only HUD (scores, trump, history) */}
-        {tab==='game' && (
+        {showPlaySurface && (
           <>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 80, marginTop: 12, marginBottom: 16 }}>
               <div style={{ textAlign: 'center', background: '#fff', borderRadius: 12, padding: '12px 20px', border: '2px solid #D42E2C', boxShadow: '0 4px 8px rgba(212, 46, 44, 0.15)' }}>
@@ -1921,7 +2036,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </>
         )}
 
-  {tab === 'game' && (
+  {showPlaySurface && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
             <div style={{ width: 700, height: 420, position: 'relative', background: 'radial-gradient(circle, rgba(25,122,76,1) 0%, rgba(19,93,58,1) 100%)', borderRadius: 16, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.2)', padding: 8, border: '4px solid #135A38' }}>
               
@@ -2065,32 +2180,51 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </div>
         )}
 
-  {tab === 'game' && optionsVisible && (
-          <div style={{ marginTop: 12 }}>
-            <h4>Game Options</h4>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <label>Type:
-                <select value={gameType} onChange={e=>setGameType(e.target.value)} style={{ marginLeft: 8 }}>
-                  <option value="schieber">Schieber</option>
-                </select>
-              </label>
-              {/* Dialect selection removed - translations use `lang` (en | ch) */}
-              <label style={{ marginLeft: 12 }}>Team 1 name:
-                <input value={teamNames[1]} onChange={e=>setTeamNames(s=>({...s,1:e.target.value}))} style={{ marginLeft: 8 }} />
-              </label>
-              <label style={{ marginLeft: 12 }}>Team 2 name:
-                <input value={teamNames[2]} onChange={e=>setTeamNames(s=>({...s,2:e.target.value}))} style={{ marginLeft: 8 }} />
-              </label>
-              <label style={{ marginLeft: 12 }}>Max Points:
-                <input type="number" value={maxPoints} onChange={e=>setMaxPoints(Number(e.target.value))} style={{ marginLeft: 8, width: 100 }} />
-              </label>
-              <button style={styles.button} onClick={startLocalGameWithOptions}>{T[lang].launchLocal}</button>
-              <button style={styles.button} onClick={() => createGameWithOptions({ gameType, maxPoints })}>{T[lang].launchServer}</button>
+        {tab === 'game' && optionsVisible && mode === 'single' && (
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 760, background: '#ffffff', borderRadius: 16, padding: '24px 28px', boxShadow: '0 18px 40px rgba(17, 24, 39, 0.12)', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1f2937' }}>{T[lang].singleSetupTitle}</h3>
+                  <p style={{ margin: '6px 0 0', fontSize: 13, color: '#4b5563' }}>{T[lang].singleSetupSubtitle}</p>
+                </div>
+                <div style={{ background: '#1A7A4C', color: '#fff', borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600 }}>{T[lang].offlineBadge}</div>
+              </div>
+              <div style={{ display: 'grid', gap: 16, marginTop: 20, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Game type
+                  <select value={gameType} onChange={e => setGameType(e.target.value)} style={{ marginTop: 6, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 500 }}>
+                    <option value="schieber">Schieber</option>
+                  </select>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Team 1 name
+                  <input value={teamNames[1]} onChange={e => setTeamNames(s => ({ ...s, 1: e.target.value }))} style={{ marginTop: 6, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 500 }} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Team 2 name
+                  <input value={teamNames[2]} onChange={e => setTeamNames(s => ({ ...s, 2: e.target.value }))} style={{ marginTop: 6, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 500 }} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Target score
+                  <input type="number" value={maxPoints} min={100} onChange={e => setMaxPoints(Number(e.target.value))} style={{ marginTop: 6, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 500 }} />
+                </label>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>{T[lang].autosaveHint}</div>
+                <button style={{ ...styles.button, padding: '12px 24px', fontSize: 15 }} onClick={startLocalGameWithOptions}>{T[lang].startLocalMatch}</button>
+              </div>
             </div>
           </div>
         )}
 
-        {tab === 'rankings' && (
+        {tab === 'game' && optionsVisible && mode === 'multi' && (
+          <div style={{ marginTop: 12, background: '#f9fafb', borderRadius: 14, padding: '16px 20px', border: '1px solid #e5e7eb', color: '#374151', fontSize: 13 }}>
+            {T[lang].multiTablesBlurb}
+          </div>
+        )}
+
+        {tab === 'rankings' && mode === 'multi' && (
           <Rankings apiUrl={API_URL!} onBack={() => setTab('game')} onReset={resetTotals} />
         )}
 
