@@ -14,7 +14,17 @@ export type Card = {
 
 export type Player = { id: number; name: string; team: number; hand: Card[]; tricks: Card[]; points?: number; weis?: WeisDeclaration[] };
 
-export type WeisType = 'sequence3' | 'sequence4' | 'sequence5plus' | 'four_jacks' | 'four_nines' | 'four_aces' | 'four_kings' | 'four_queens' | 'four_tens' | 'stoeck';
+export type WeisType =
+  | 'sequence3'
+  | 'sequence4'
+  | 'sequence5plus'
+  | 'four_jacks'
+  | 'four_nines'
+  | 'four_aces'
+  | 'four_kings'
+  | 'four_queens'
+  | 'four_tens'
+  | 'four_misc';
 
 export type WeisDeclaration = {
   type: WeisType;
@@ -28,6 +38,7 @@ export type State = {
   trump?: TrumpContract | null;
   currentPlayer: number; // 0..3
   dealer: number; // 0..3, rotates after each hand
+  forehand?: number | null;
   // currentTrick entries now include playerId so UI can show origin
   currentTrick: (Card & { playerId: number })[]; // up to 4
   // lastTrick holds the last completed trick (used by UI to display before clearing)
@@ -39,6 +50,8 @@ export type State = {
   pendingResolve?: boolean;
   // Weis declarations for each player after trump is selected
   weis?: Record<number, WeisDeclaration[]>; // playerId -> declarations
+  // Pending Stöck declarations (tracked once trump is known)
+  stoeckPending?: Record<number, { remaining: number; awarded: boolean }>;
   // Swiss Jass authentic features
   trumpMultiplier?: number; // 1x, 2x (Schellen/Schilten), 3x (Oben-abe), 4x (Unden-ufe)
   matchBonus?: number; // 100 for taking all 9 tricks
@@ -126,12 +139,14 @@ export function startGameLocal(previousDealer?: number): State {
   const players = deal();
   // Dealer rotates clockwise each hand (0->1->2->3->0)
   const dealer = previousDealer !== undefined ? (previousDealer + 1) % 4 : 0;
+  const forehand = (dealer + 1) % 4;
   // Dealer now chooses trump (user requested): currentPlayer set to dealer
   const st: State = { 
     phase: 'trump_selection', 
     trump: null, 
-    currentPlayer: dealer, 
+    currentPlayer: forehand, 
     dealer,
+    forehand,
     currentTrick: [], 
     trickLead: null, 
     players, 
@@ -145,12 +160,14 @@ export function startNewHand(previousState: State): State {
   const players = deal();
   // Dealer rotates clockwise each hand
   const dealer = (previousState.dealer + 1) % 4;
+  const forehand = (dealer + 1) % 4;
   // Dealer chooses trump for the new hand
   const st: State = { 
     phase: 'trump_selection', 
     trump: null, 
-    currentPlayer: dealer, 
+    currentPlayer: forehand, 
     dealer,
+    forehand,
     currentTrick: [], 
     trickLead: null, 
     players, 
@@ -252,6 +269,8 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
     st.currentPlayer = (state.currentPlayer + 2) % 4;
     // remain in trump_selection phase
     st.phase = 'trump_selection';
+    st.declarer = null;
+    st.trump = null;
     return st;
   }
   // Narrow to proper TrumpContract before assigning
@@ -259,6 +278,12 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
   st.trump = realTrump;
   // record who declared the contract (the player who selected trump)
   st.declarer = state.currentPlayer;
+  // Track the original forehand seat for first lead
+  if (typeof state.forehand === 'number') {
+    st.forehand = state.forehand;
+  } else {
+    st.forehand = (state.dealer + 1) % 4;
+  }
   
   // Set multiplier based on trump contract (authentic Swiss Jass rules)
   if (trump === 'schellen' || trump === 'schilten') {
@@ -270,18 +295,32 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
   } else {
     st.trumpMultiplier = 1; // Normal for Eicheln/Rosen
   }
+  st.matchBonus = 100;
   
   // Detect Weis for all players now that trump is known
   st.weis = {};
   for (const player of st.players) {
     // For no-trump contracts, pass null to detectWeis
-  const trumpSuit = (realTrump === 'oben-abe' || realTrump === 'unden-ufe') ? null : realTrump as any;
+    const trumpSuit = (realTrump === 'oben-abe' || realTrump === 'unden-ufe') ? null : realTrump as any;
     player.weis = detectWeis(player.hand, trumpSuit);
     st.weis[player.id] = player.weis;
   }
+  // Initialise pending Stöck declarations (only for suit contracts)
+  st.stoeckPending = {};
+  const trumpSuit = (realTrump === 'oben-abe' || realTrump === 'unden-ufe') ? null : (realTrump as Suit);
+  if (trumpSuit) {
+    for (const player of st.players) {
+      const hasKing = player.hand.some(c => c.suit === trumpSuit && c.rank === 'K');
+      const hasQueen = player.hand.some(c => c.suit === trumpSuit && c.rank === 'O');
+      if (hasKing && hasQueen) {
+        st.stoeckPending[player.id] = { remaining: 2, awarded: false };
+      }
+    }
+  }
   // After trump selection, play always starts with the dealer (even if partner chose via schieben)
   st.phase = 'playing';
-  st.currentPlayer = st.dealer;
+  st.currentPlayer = typeof st.forehand === 'number' ? st.forehand : st.dealer;
+  st.trickLead = null;
   return st;
 }
 
@@ -295,37 +334,20 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
   const leadSuit = state.trickLead!;
   const trumpContract = state.trump as TrumpContract | null | undefined;
 
-  // Helper: determine current best card in trick so far
-  const currentBestIdx = state.currentTrick.length > 0 ? winnerOfTrick(state.currentTrick as any, trumpContract as any, leadSuit) : 0;
-  const currentBestCard = state.currentTrick[currentBestIdx] as Card | undefined;
-
   // If player has cards of the lead suit, they must follow suit.
   const sameSuit = player.hand.filter(c => c.suit === leadSuit);
-  if (sameSuit.length > 0) {
-    // If the current best card is also of the lead suit, enforce Stichzwang by requiring a winning card when possible
-    if (currentBestCard && currentBestCard.suit === leadSuit) {
-      const beatingCards = sameSuit.filter(card => isCardBetter(card, currentBestCard, trumpContract, leadSuit));
-      if (beatingCards.length > 0) return beatingCards;
-    }
-    // Otherwise any card of the lead suit satisfies the follow-suit requirement
-    return sameSuit;
-  }
+  if (sameSuit.length > 0) return sameSuit;
 
   // No lead suit: if there is a suit-trump, player must play a trump if they have any
   const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
   if (suitTrump) {
     const trumpCards = player.hand.filter(c => c.suit === suitTrump);
-    if (trumpCards.length > 0) {
-      // If any trump can beat currentBestCard, only those are allowed
-      const beatingTrumps = currentBestCard
-        ? trumpCards.filter(card => isCardBetter(card, currentBestCard, trumpContract, leadSuit))
-        : trumpCards;
-      return beatingTrumps.length > 0 ? beatingTrumps : trumpCards;
-    }
+    if (trumpCards.length > 0) return trumpCards;
   }
 
   // Otherwise any card allowed
-  return player.hand.slice();
+  const fallback = player.hand.slice();
+  return fallback.length > 0 ? fallback : [];
 }
 
 // compare two cards with knowledge of trump and lead suit
@@ -394,6 +416,21 @@ export function playCardLocal(state: State, playerId: number, cardId: string): S
   if (idx === -1) return st; // illegal
   const card = player.hand.splice(idx,1)[0];
   if (st.currentTrick.length===0) st.trickLead = card.suit;
+  // Handle Stöck declarations: award 20 points when both trump king and queen are played
+  const suitTrump: Suit | null = (st.trump && (suits as any).includes(st.trump)) ? st.trump as Suit : null;
+  if (suitTrump && card.suit === suitTrump && (card.rank === 'K' || card.rank === 'O') && st.stoeckPending) {
+    const pending = st.stoeckPending[playerId];
+    if (pending && !pending.awarded) {
+      pending.remaining = Math.max(0, pending.remaining - 1);
+      if (pending.remaining === 0) {
+        pending.awarded = true;
+        const team = st.players.find(p => p.id === playerId)?.team;
+        if (team === 1) st.scores.team1 += 20;
+        else if (team === 2) st.scores.team2 += 20;
+      }
+      st.stoeckPending[playerId] = pending;
+    }
+  }
   // include who played the card so UI can label it
   st.currentTrick.push({ ...card, playerId });
 
@@ -437,29 +474,23 @@ export function detectWeis(hand: Card[], trump?: string | null): WeisDeclaration
   for (const suit in bySuit) {
     const cards = bySuit[suit];
     if (cards.length >= 3) {
-      // Find consecutive sequences
       const sequences = findSequences(cards);
       for (const seq of sequences) {
-        if (seq.length >= 5) {
+        const length = seq.length;
+        if (length >= 3) {
+          const points = length === 3 ? 20
+            : length === 4 ? 50
+            : length === 5 ? 100
+            : length === 6 ? 150
+            : length === 7 ? 200
+            : length === 8 ? 250
+            : 300; // length 9
+          const type: WeisType = length >= 5 ? 'sequence5plus' : (length === 4 ? 'sequence4' : 'sequence3');
           weis.push({
-            type: 'sequence5plus',
+            type,
             cards: seq,
-            points: 100,
-            description: `Sequenz ${seq.length} (${seq[0].rank}-${seq[seq.length-1].rank} ${suit})`
-          });
-        } else if (seq.length === 4) {
-          weis.push({
-            type: 'sequence4',
-            cards: seq,
-            points: 50,
-            description: `Sequenz 4 (${seq[0].rank}-${seq[seq.length-1].rank} ${suit})`
-          });
-        } else if (seq.length === 3) {
-          weis.push({
-            type: 'sequence3',
-            cards: seq,
-            points: 20,
-            description: `Sequenz 3 (${seq[0].rank}-${seq[seq.length-1].rank} ${suit})`
+            points,
+            description: `Sequenz ${length} (${seq[0].rank}-${seq[length-1].rank} ${suit})`
           });
         }
       }
@@ -476,62 +507,19 @@ export function detectWeis(hand: Card[], trump?: string | null): WeisDeclaration
   // Check for four of a kind
   for (const rank in byRank) {
     if (byRank[rank].length === 4) {
-      if (rank === 'U') {
-        weis.push({
-          type: 'four_jacks',
-          cards: byRank[rank],
-          points: 200,
-          description: 'Vier Buben'
-        });
-      } else if (rank === '9') {
-        weis.push({
-          type: 'four_nines',
-          cards: byRank[rank],
-          points: 150,
-          description: 'Vier Neuner'
-        });
-      } else if (rank === 'A') {
-        weis.push({
-          type: 'four_aces',
-          cards: byRank[rank],
-          points: 100,
-          description: 'Vier Asse'
-        });
-      } else if (rank === 'K') {
-        weis.push({
-          type: 'four_kings',
-          cards: byRank[rank],
-          points: 100,
-          description: 'Vier Könige'
-        });
-      } else if (rank === 'O') {
-        weis.push({
-          type: 'four_queens',
-          cards: byRank[rank],
-          points: 100,
-          description: 'Vier Damen'
-        });
-      } else if (rank === '10') {
-        weis.push({
-          type: 'four_tens',
-          cards: byRank[rank],
-          points: 100,
-          description: 'Vier Zehner'
-        });
-      }
-    }
-  }
-  
-  // Check for Stöck (King and Queen of trump)
-  if (trump && byRank['K'] && byRank['O']) {
-    const trumpKing = byRank['K'].find(c => c.suit === trump);
-    const trumpQueen = byRank['O'].find(c => c.suit === trump);
-    if (trumpKing && trumpQueen) {
+      const cards = byRank[rank];
+      const base = rank === 'U' ? { type: 'four_jacks' as WeisType, points: 200, label: 'Vier Buben' }
+        : rank === '9' ? { type: 'four_nines' as WeisType, points: 150, label: 'Vier Neuner' }
+        : rank === 'A' ? { type: 'four_aces' as WeisType, points: 100, label: 'Vier Asse' }
+        : rank === 'K' ? { type: 'four_kings' as WeisType, points: 100, label: 'Vier Könige' }
+        : rank === 'O' ? { type: 'four_queens' as WeisType, points: 100, label: 'Vier Damen' }
+        : rank === '10' ? { type: 'four_tens' as WeisType, points: 100, label: 'Vier Zehner' }
+        : { type: 'four_misc' as WeisType, points: 100, label: 'Vier Gleiche' };
       weis.push({
-        type: 'stoeck',
-        cards: [trumpKing, trumpQueen],
-        points: 20,
-        description: `Stöck (${trump})`
+        type: base.type,
+        cards,
+        points: base.points,
+        description: base.label
       });
     }
   }
@@ -718,16 +706,8 @@ export function settleHand(state: State): State {
   }
 
   // Apply contract multiplier only to the declarer's team (authentic Schieber semantics)
-  const declarerTeam = (typeof st.declarer === 'number') ? st.players.find(p => p.id === st.declarer)!.team : null;
-  if (declarerTeam === 1) {
-    t1 = t1 * multiplier;
-  } else if (declarerTeam === 2) {
-    t2 = t2 * multiplier;
-  } else {
-    // If no declarer (shouldn't happen), apply multiplier to both as fallback
-    t1 = t1 * multiplier;
-    t2 = t2 * multiplier;
-  }
+  t1 = t1 * multiplier;
+  t2 = t2 * multiplier;
 
   try {
     console.log('  after multiplier: t1=', t1, 't2=', t2);
@@ -739,9 +719,9 @@ export function settleHand(state: State): State {
     const team2Cards = st.players.filter(p=>p.team===2).reduce((s,p)=>s + (p.tricks?.length||0), 0);
     const matchBonus = st.matchBonus || 100;
     if (team1Cards === 36) {
-      t1 += (declarerTeam === 1 ? (matchBonus * multiplier) : matchBonus);
+      t1 += matchBonus * multiplier;
     } else if (team2Cards === 36) {
-      t2 += (declarerTeam === 2 ? (matchBonus * multiplier) : matchBonus);
+      t2 += matchBonus * multiplier;
     }
   } catch (e) {
     // ignore
@@ -759,7 +739,10 @@ export function settleHand(state: State): State {
 // Enhanced bot choice: strategic Swiss Jass AI
 export function chooseBotCard(state: State, botId: number): string | null {
   const legal = getLegalCardsForPlayer(state, botId);
-  if (legal.length === 0) return null;
+  if (legal.length === 0) {
+    const fallback = state.players.find(p => p.id === botId)?.hand?.[0];
+    return fallback ? fallback.id : null;
+  }
   
   const bot = state.players.find(p => p.id === botId)!;
   const trumpSuit = state.trump;

@@ -20,6 +20,7 @@ type GameState = {
   scores?: { team1: number; team2: number };
   roundScores?: { team1: number; team2: number };
   dealer?: number;
+  forehand?: number | null;
   weis?: Record<number, any[]>; // playerId -> Weis declarations
 };
 
@@ -196,6 +197,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
   });
+  const toGameState = (st: Schieber.State): GameState => ({
+    phase: st.phase,
+    currentPlayer: st.currentPlayer,
+    trumpSuit: st.trump || null,
+    currentTrick: st.currentTrick || [],
+    scores: st.scores,
+    dealer: st.dealer,
+    weis: st.weis,
+    forehand: st.forehand ?? null
+  });
   // richer local user store: name -> { totalPoints, gamesPlayed, wins, lastSeen, passwordHash }
   const [jassUsers, setJassUsers] = useState<Record<string, any>>(() => {
     try { return JSON.parse(localStorage.getItem('jassUsers') || '{}'); } catch { return {}; }
@@ -322,6 +333,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     const seats = ['south', 'west', 'north', 'east'];
     return seats[id] || 'south';
   };
+  const positionForPlayerId = (id: number) => {
+    const oriented = players.find(p => p.id === id);
+    if (oriented?.position) return oriented.position;
+    if (mySeat != null) {
+      const rel = (id - mySeat + 4) % 4;
+      return rel === 0 ? 'south' : rel === 1 ? 'east' : rel === 2 ? 'north' : 'west';
+    }
+    return seatForId(id);
+  };
   const mapPlayersWithSeats = (pls: any[]) => (pls || []).map(p => {
     // Normalize tricks array: engine-local uses p.tricks (array of cards).
     // Server may not include p.tricks; try to infer from gameState.playedTricks or stored local state.
@@ -439,13 +459,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       // If player has lead suit but card isn't of that suit -> must follow suit
       if (hasLeadSuit && card.suit !== leadSuit) return 'Must follow suit';
       // If player has lead suit and this card is of that suit but not in legalCards -> must beat current winner
-      if (hasLeadSuit && card.suit === leadSuit && !legalCards.some((c:any) => c.id === card.id)) return 'Must beat current winning card (Stichzwang)';
-      // If no lead suit but a suit-trump exists and player has trumps, require trump
-      const suitTrump = gameState.trumpSuit && ['eicheln','schellen','rosen','schilten'].includes(gameState.trumpSuit) ? gameState.trumpSuit : null;
+      const contract = gameState.trumpSuit as any;
+      const suitTrump = contract && ['eicheln','schellen','rosen','schilten'].includes(contract) ? contract : null;
       if (!hasLeadSuit && suitTrump) {
         const hasTrump = handCards.some((h:any) => h.suit === suitTrump);
         if (hasTrump && card.suit !== suitTrump) return 'Must play trump when void in lead suit';
-        if (hasTrump && card.suit === suitTrump && !legalCards.some((c:any) => c.id === card.id)) return 'Must play higher trump (Stichzwang)';
       }
       return 'Card not legal right now';
     } catch (e) { return null; }
@@ -462,7 +480,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   await new Promise(r=>setTimeout(r, 1000));
   const newSt = Schieber.resolveTrick(st);
       saveLocalState(newSt);
-      setGameState({ phase: newSt.phase, currentPlayer: newSt.currentPlayer, trumpSuit: newSt.trump || null, currentTrick: newSt.currentTrick || [], scores: newSt.scores });
+      setGameState(toGameState(newSt));
       setPlayers(mapPlayersWithSeats(newSt.players));
       setHand(newSt.players.find(p=>p.id===0)?.hand || []);
       setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
@@ -480,7 +498,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           setMessage('Match finished — max points reached');
           // mark match finished and update state so UI can react
           setMatchFinished(true);
-          setGameState({ phase: 'finished', currentPlayer: newSt.currentPlayer, trumpSuit: newSt.trump || null, currentTrick: newSt.currentTrick || [], scores: newSt.scores });
+          setGameState({ ...toGameState(newSt), phase: 'finished' });
           
           // Update backend stats if this is an online game
           if (gameId && API_URL) {
@@ -499,7 +517,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           const fresh = Schieber.startNewHand(newSt);
           saveLocalState(fresh);
           setPlayers(mapPlayersWithSeats(fresh.players));
-          setGameState({ phase: fresh.phase, currentPlayer: fresh.currentPlayer, trumpSuit: fresh.trump || null, currentTrick: fresh.currentTrick || [], scores: fresh.scores, dealer: fresh.dealer });
+          setGameState(toGameState(fresh));
           setHand(fresh.players.find(p=>p.id===0)?.hand || []);
           setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
           // If the new dealer isn't the human (player 0), immediately let bots proceed to choose trump
@@ -560,7 +578,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         const fresh = Schieber.startNewHand(st);
         saveLocalState(fresh);
         setPlayers(mapPlayersWithSeats(fresh.players));
-        setGameState({ phase: fresh.phase, currentPlayer: fresh.currentPlayer, trumpSuit: fresh.trump || null, currentTrick: fresh.currentTrick || [], scores: fresh.scores, dealer: fresh.dealer });
+  setGameState(toGameState(fresh));
         setHand(fresh.players.find((p: any) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
         setOptionsVisible(false);
@@ -569,7 +587,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         return;
       }
 
-      setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores, dealer: st.dealer, weis: st.weis });
+  setGameState(toGameState(st));
       setPlayers(mapPlayersWithSeats(st.players));
       setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
       setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
@@ -611,7 +629,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               // Force a resolveTrick to advance the game
               const resolved = Schieber.resolveTrick(st);
               saveLocalState(resolved);
-              setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+              setGameState(toGameState(resolved));
               setPlayers(mapPlayersWithSeats(resolved.players));
               setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
               setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
@@ -638,7 +656,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                   if (pick) {
                     const progressed = Schieber.playCardLocal(st, st.currentPlayer, pick);
                     saveLocalState(progressed);
-                    setGameState({ phase: progressed.phase, currentPlayer: progressed.currentPlayer, trumpSuit: progressed.trump || null, currentTrick: progressed.currentTrick || [], scores: progressed.scores });
+                    setGameState(toGameState(progressed));
                     setPlayers(mapPlayersWithSeats(progressed.players));
                     setHand(progressed.players.find((p:any)=>p.id===0)?.hand || []);
                     setLegalCards(Schieber.getLegalCardsForPlayer(progressed, 0));
@@ -652,7 +670,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                 try {
                   const resolved = Schieber.resolveTrick(st);
                   saveLocalState(resolved);
-                  setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+                  setGameState(toGameState(resolved));
                   setPlayers(mapPlayersWithSeats(resolved.players));
                   setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
                   setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
@@ -810,7 +828,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     const st = Schieber.startGameLocal();
     // map engine players to our UI players
   setPlayers(mapPlayersWithSeats(st.players));
-    setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores, dealer: st.dealer });
+    setGameState(toGameState(st));
     setHand(st.players.find(p=>p.id===0)?.hand || []);
     setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
     setMessage('Local game started — select trump or have bots choose');
@@ -861,7 +879,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       if (st.phase === 'trump_selection') {
         if (st.currentPlayer === 0) {
           // player's turn to pick trump — update UI and wait for human
-          setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
+          setGameState(toGameState(st));
           setMessage(T[lang].pleaseChooseTrump);
           break;
         }
@@ -873,7 +891,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         const botPlayer = newState.players.find(p => p.id === newState.currentPlayer);
         setMessage(`${botPlayer?.name || 'Bot'} chose trump: ${chosen}`);
         saveLocalState(newState);
-        setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
+  setGameState(toGameState(st));
         // update UI players and hand
         setPlayers(mapPlayersWithSeats(st.players));
         setHand(st.players.find(p=>p.id===0)?.hand || []);
@@ -887,7 +905,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         if (!pick) break;
   st = Schieber.playCardLocal(st, id, pick);
         saveLocalState(st);
-        setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
+  setGameState(toGameState(st));
   setPlayers(mapPlayersWithSeats(st.players));
         // refresh human's hand and legal cards
         setHand(st.players.find(p=>p.id===0)?.hand || []);
@@ -911,7 +929,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       // if it's our turn (0), wait for player action — return to let UI handle double-click plays
       if (st.currentPlayer === 0) {
         // update UI to reflect it's player's turn
-        setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
+  setGameState(toGameState(st));
         setHand(st.players.find(p=>p.id===0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
         break;
@@ -937,7 +955,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         st.currentPlayer = partnerId;
         setMessage(`Trump decision passed to ${st.players.find(p => p.id === partnerId)?.name || 'partner'} (Schieben)`);
         saveLocalState(st);
-        setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
+        setGameState(toGameState(st));
         setChosenTrump(null); // Reset selection
         // Let bot partner choose trump
         setTimeout(()=>botsTakeTurns(), 200);
@@ -956,7 +974,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       
       saveLocalState(updatedSt);
       setPlayers(mapPlayersWithSeats(updatedSt.players));
-      setGameState({ phase: updatedSt.phase, currentPlayer: updatedSt.currentPlayer, trumpSuit: updatedSt.trump || null, currentTrick: updatedSt.currentTrick || [], scores: updatedSt.scores, weis: updatedSt.weis });
+  setGameState(toGameState(updatedSt));
       
       if (weisWinnerResult) {
   const winnerName = updatedSt.players.find((p:any) => p.id === weisWinnerResult.playerId)?.name;
@@ -997,8 +1015,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       setUiPendingResolve(true);
       try {
         // save immediate state so UI shows the just-played card
-        saveLocalState(newSt);
-        setGameState({ phase: newSt.phase, currentPlayer: newSt.currentPlayer, trumpSuit: newSt.trump || null, currentTrick: newSt.currentTrick || [], scores: newSt.scores });
+  saveLocalState(newSt);
+  setGameState(toGameState(newSt));
     setPlayers(mapPlayersWithSeats(newSt.players));
     setHand(newSt.players.find(p=>p.id===0)?.hand || []);
     setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
@@ -1009,8 +1027,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   // ensure we persist resolved state
   saveLocalState(resolved);
     // refresh UI with resolved state so trick counters update
-    setPlayers(mapPlayersWithSeats(resolved.players));
-    setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+  setPlayers(mapPlayersWithSeats(resolved.players));
+  setGameState(toGameState(resolved));
     setHand(resolved.players.find(p=>p.id===0)?.hand || []);
     setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
       } finally {
@@ -1023,7 +1041,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     // normal play: persist and update UI, then let bots act
     saveLocalState(newSt);
   setPlayers(mapPlayersWithSeats(newSt.players));
-  setGameState({ phase: newSt.phase, currentPlayer: newSt.currentPlayer, trumpSuit: newSt.trump || null, currentTrick: newSt.currentTrick || [], scores: newSt.scores });
+  setGameState(toGameState(newSt));
   setHand(newSt.players.find(p=>p.id===0)?.hand || []);
   setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
     // let bots respond
@@ -1239,7 +1257,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         st.trump = trump as any;
         st.phase = 'playing';
         saveLocalState(st);
-        setGameState({ phase: st.phase, currentPlayer: st.currentPlayer, trumpSuit: st.trump || null, currentTrick: st.currentTrick || [], scores: st.scores });
+  setGameState(toGameState(st));
         setMessage(`Trump selected: ${trump}`);
         setTimeout(()=>botsTakeTurns(),200);
         return;
@@ -1402,7 +1420,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           currentTrick: st.currentTrick,
           scores: st.scores,
           roundScores: st.roundScores,
-          dealer: st.dealer
+          dealer: st.dealer,
+          forehand: st.forehand ?? null,
+          weis: st.weis
         });
         if (tableConfig) {
           try {
@@ -1897,7 +1917,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         if (st && st.pendingResolve) {
           const resolved = Schieber.resolveTrick(st);
           saveLocalState(resolved);
-          setGameState({ phase: resolved.phase, currentPlayer: resolved.currentPlayer, trumpSuit: resolved.trump || null, currentTrick: resolved.currentTrick || [], scores: resolved.scores });
+          setGameState(toGameState(resolved));
           setPlayers(mapPlayersWithSeats(resolved.players));
           setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
           setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
@@ -1933,6 +1953,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         scores: multiGameState.scores,
         roundScores: multiGameState.roundScores,
         dealer: multiGameState.dealer,
+        forehand: multiGameState.forehand ?? null,
+        weis: multiGameState.weis
       });
       // Map players
       const uiPlayers = multiGameState.players.map((p: any) => ({ id: p.id, name: p.userId === dealerUserId ? 'You (Dealer)' : p.userId, hand: p.hand, team: p.team, position: p.position }));
@@ -2119,7 +2141,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                   {/* If showing last trick at round end, render that first (override) */}
                   {showLastTrick && showLastTrick.length > 0 ? (
                     showLastTrick.map((c:any, i:number) => {
-                      const seat = seatForId(c.playerId ?? i);
+                      const seat = positionForPlayerId(c.playerId ?? i);
                       const posMap = {
                         south: { left: '50%', top: '75%', rot: 0 },
                         north: { left: '50%', top: '25%', rot: 180 },
@@ -2140,7 +2162,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                     // Render current trick cards - show them during resolving so all 4 cards remain visible
                     !isAnimating && gameState?.currentTrick && gameState.currentTrick.length > 0 && (
                       gameState.currentTrick.map((c:any, i:number) => {
-                        const seat = seatForId(c.playerId ?? i);
+                        const seat = positionForPlayerId(c.playerId ?? i);
                           const posMap = {
                             south: { left: '50%', top: '75%', rot: 0 },
                             north: { left: '50%', top: '25%', rot: 180 },
