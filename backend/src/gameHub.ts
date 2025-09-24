@@ -74,6 +74,16 @@ class GameHub {
       }
     });
 
+    // After trump selected the game immediately enters playing; if it's a bot's lead, start it
+    engine.on('trumpSelected', () => {
+      const state = engine.getGameState();
+      if (state.phase === 'playing') {
+        const players = engine.getPlayers();
+        const cur = players[state.currentPlayer];
+        if (cur && cur.isBot) setTimeout(() => this.performBotAction(gameId), 1000);
+      }
+    });
+
     // Listen for card played events
     engine.on('cardPlayed', (data: any) => {
       console.log(`[${gameId}] Card played:`, data);
@@ -167,10 +177,7 @@ class GameHub {
       if (state.phase !== 'playing') return;
       
       const currentPlayerId = state.currentPlayer;
-      
-      // Don't play for human player
-      if (currentPlayerId === 0) return;
-      
+
       const players = engine.getPlayers();
       const currentPlayer = players[currentPlayerId];
       
