@@ -5,9 +5,10 @@
     "dev": "nodemon src/index.ts",
     "build": "rimraf dist node_modules/.prisma && npx prisma generate && tsc",
     "start": "npm run build && node dist/index.js",
+    "start:prod": "node dist/index.js",
     "smoke": "ts-node src/tests/friendAndTable.test.ts",
-  "reset:smoke": "ts-node scripts/resetAndSmoke.ts",
-  "multi": "ts-node src/tests/multiplayerFlow.test.ts",
+    "reset:smoke": "ts-node scripts/resetAndSmoke.ts",
+    "multi": "ts-node src/tests/multiplayerFlow.test.ts",
     "postinstall": "npx prisma generate"
   },
   "dependencies": {
@@ -34,8 +35,8 @@
     "@types/node": "^20.4.0",
     "nodemon": "^3.0.0",
     "rimraf": "^5.0.0",
-  "ts-node": "^10.9.0",
-  "supertest": "^7.0.0",
-  "@types/supertest": "^2.0.16"
+    "ts-node": "^10.9.0",
+    "supertest": "^7.0.0",
+    "@types/supertest": "^2.0.16"
   }
 }

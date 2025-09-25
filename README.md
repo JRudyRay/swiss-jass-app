@@ -153,16 +153,28 @@ backend/
 3. **Automatic deployment** via GitHub Actions
 4. **Live in minutes** at `https://yourusername.github.io/swiss-jass-app`
 
-### 🔧 **Backend Deployment (Railway)**
+### 🔧 **Backend Deployment (Raspberry Pi)**
 
-1. **Connect to Railway**: Import from GitHub
-2. **Environment Variables**:
-   ```env
-   DATABASE_URL="file:./swiss_jass.db"
-   NODE_ENV="production"
-   ```
-3. **Automatic deployment** on every push
-4. **Scaling**: Railway handles everything automatically
+1. **Prepare the Pi**
+   - Install the latest LTS Node.js (e.g. via [`nvm`](https://github.com/nvm-sh/nvm)) and Git.
+   - Install `pm2` globally (`npm install -g pm2`) or create a `systemd` service for long-running use.
+   - Open the backend port (default `3000`) on your network/router.
+2. **Initial checkout** (one-time)
+   - SSH into the Pi and run `bash deploy/raspberry-pi/deploy-backend.sh /home/pi/apps/swiss-jass-app` to clone the repo, install dependencies, and build once.
+   - Create `backend/.env` with at least:
+     ```env
+     PORT=3000
+     JWT_SECRET=replace-with-strong-secret
+     DATABASE_URL="file:./swiss_jass.db"
+     NODE_ENV=production
+     ```
+   - Start the process with pm2 (`pm2 start dist/index.js --name swiss-jass-backend`) or enable your service unit.
+3. **Configure GitHub Actions secrets** (Repository → Settings → Secrets and variables):
+   - Secrets → `PI_HOST` (public IP or DNS), `PI_SSH_USER`, `PI_SSH_KEY` (private key with access to the Pi), optional `PI_SSH_PORT`.
+   - (Optional) Variables → override `PI_APP_DIR` or `PI_BRANCH` in `.github/workflows/deploy-backend-pi.yml` if your paths differ.
+4. **Automated deploy**
+   - On every push to `main` that touches backend code, `.github/workflows/deploy-backend-pi.yml` will SSH into the Pi, run the deployment script (`npm ci`, `npm run build`), and restart the pm2/systemd process.
+   - Manual runs are available via the *Run workflow* button in the Actions tab.
 
 ## 🤝 Contributing
 
