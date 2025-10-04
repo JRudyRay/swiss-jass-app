@@ -7,10 +7,14 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+backend/dist/
+web/dist/
+web/dist_scripts/
 
 # Cache directories
 .cache/
 .vite/
+.turbo/
 
 # Environment variables
 .env
@@ -26,6 +30,12 @@ build/
 *.swo
 *~
 
+# Temporary and old files
+*.old
+*.tmp
+*.bak
+*.log
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -37,5 +47,8 @@ Thumbs.db
 
 # gh-pages cache
 web/node_modules/.cache/gh-pages/
-web/dist
-web/dist_scripts
+
+# Database files (keep schema, ignore db files)
+*.db
+*.db-journal
+!prisma/schema.prisma

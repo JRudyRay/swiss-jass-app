@@ -45,6 +45,8 @@ npm install
 npm run dev
 ```
 
+> 📂 **New to the project?** See [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) for a complete guide to the codebase organization.
+
 ## 🎪 Features
 
 ### 🃏 **Authentic Schieber Jass Experience**

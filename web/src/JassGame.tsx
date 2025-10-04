@@ -9,6 +9,7 @@ import Rankings from './components/Rankings';
 import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
 import GameHeader from './components/GameHeader';
+import { Loading, Spinner, SkeletonCard, EmptyState } from './components/Loading';
 
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
@@ -1849,7 +1850,26 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               </div>
             </div>
           ))}
-          {!tables.length && <div style={{ fontSize:14, color:'#6b7280', background:'#fff', border:'1px dashed #d1d5db', padding:'28px 32px', borderRadius:14, textAlign:'center' }}>No public tables yet — be the first to create one!</div>}
+          {!tables.length && (
+            <EmptyState
+              icon="🎴"
+              title="No Active Tables"
+              description="Be the first to create a public table and invite friends to play!"
+              action={
+                <button 
+                  onClick={() => createTable('My Table')}
+                  disabled={creatingTable}
+                  style={{
+                    ...styles.button,
+                    padding: '12px 24px',
+                    fontSize: '1rem'
+                  }}
+                >
+                  {creatingTable ? <><Spinner size="sm" /> Creating...</> : '+ Create First Table'}
+                </button>
+              }
+            />
+          )}
         </div>
       </div>
     );
@@ -1863,32 +1883,43 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         <button style={styles.button} onClick={()=>{ sendFriendRequest(friendInput); setFriendInput(''); }}>Add</button>
         <button style={styles.button} onClick={fetchFriends}>Refresh</button>
       </div>
-      {friendsLoading && <div style={{ fontSize:12 }}>Loading...</div>}
-      <h4 style={{ margin:'8px 0 4px' }}>Friends</h4>
-      <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-        {friendsTabData.friends.map(f => <div key={f.id} style={{ background:'#fff', padding:'6px 10px', borderRadius:20, fontSize:12, border:'1px solid #e5e7eb', display:'flex', alignItems:'center', gap:6 }}>
-          <span style={{ width:8, height:8, borderRadius:4, background: f.online? '#10b981':'#9ca3af', display:'inline-block' }} />
-          {f.username}
-        </div>)}
-        {!friendsTabData.friends.length && <div style={{ fontSize:12, color:'#555' }}>No friends yet</div>}
-      </div>
-      <h4 style={{ margin:'12px 0 4px' }}>Requests</h4>
-      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-        {friendsTabData.requests.map(r => (
-          <div key={r.id} style={{ background:'#fff', padding:'8px 10px', borderRadius:8, border:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <div style={{ fontSize:12 }}>
-              {r.senderId === user?.id ? `To ${r.receiver?.username}` : `From ${r.sender?.username}`} – {r.status}
-            </div>
-            {r.status==='PENDING' && r.receiverId === user?.id && (
-              <div style={{ display:'flex', gap:6 }}>
-                <button style={{ ...styles.button, background:'#1A7A4C' }} onClick={()=>respondFriendRequest(r.id,true)}>Accept</button>
-                <button style={{ ...styles.button, background:'#D42E2C' }} onClick={()=>respondFriendRequest(r.id,false)}>Decline</button>
-              </div>
+      {friendsLoading && <Loading message="Loading friends..." />}
+      {!friendsLoading && (
+        <>
+          <h4 style={{ margin:'8px 0 4px' }}>Friends</h4>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {friendsTabData.friends.map(f => <div key={f.id} style={{ background:'#fff', padding:'6px 10px', borderRadius:20, fontSize:12, border:'1px solid #e5e7eb', display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ width:8, height:8, borderRadius:4, background: f.online? '#10b981':'#9ca3af', display:'inline-block' }} />
+              {f.username}
+            </div>)}
+            {!friendsTabData.friends.length && (
+              <EmptyState
+                icon="👥"
+                title="No Friends Yet"
+                description="Add friends to play multiplayer games together"
+                style={{ gridColumn: '1 / -1' }}
+              />
             )}
           </div>
-        ))}
-        {!friendsTabData.requests.length && <div style={{ fontSize:12, color:'#555' }}>No requests</div>}
-      </div>
+          <h4 style={{ margin:'12px 0 4px' }}>Requests</h4>
+          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            {friendsTabData.requests.map(r => (
+              <div key={r.id} style={{ background:'#fff', padding:'8px 10px', borderRadius:8, border:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div style={{ fontSize:12 }}>
+                  {r.senderId === user?.id ? `To ${r.receiver?.username}` : `From ${r.sender?.username}`} – {r.status}
+                </div>
+                {r.status==='PENDING' && r.receiverId === user?.id && (
+                  <div style={{ display:'flex', gap:6 }}>
+                    <button style={{ ...styles.button, background:'#1A7A4C' }} onClick={()=>respondFriendRequest(r.id,true)}>Accept</button>
+                    <button style={{ ...styles.button, background:'#D42E2C' }} onClick={()=>respondFriendRequest(r.id,false)}>Decline</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {!friendsTabData.requests.length && <div style={{ fontSize:12, color:'#555' }}>No pending requests</div>}
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -2509,11 +2540,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                     ...styles.button, 
                     background: '#059669', color: 'white', 
                     padding: '12px 24px', fontSize: '1rem', fontWeight: '600',
-                    boxShadow: '0 4px 12px rgba(5,150,105,0.3)'
+                    boxShadow: '0 4px 12px rgba(5,150,105,0.3)',
+                    opacity: isLoading ? 0.7 : 1,
+                    cursor: isLoading ? 'not-allowed' : 'pointer'
                   }} 
                   onClick={() => { setMatchFinished(false); createGame(); }}
+                  disabled={isLoading}
                 >
-                  🎮 {T[lang].playAgain}
+                  {isLoading ? <><Spinner size="sm" /> Creating...</> : `🎮 ${T[lang].playAgain}`}
                 </button>
                 <button 
                   style={{ 
