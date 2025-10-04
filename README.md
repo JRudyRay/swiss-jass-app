@@ -172,33 +172,57 @@ npm run reset:smoke    # Reset DB + smoke test
 
 ### 📱 **Frontend Deployment (GitHub Pages)**
 
+**Status**: ✅ **Automatic deployment configured**
+
 1. **Fork the repository** on GitHub
 2. **Enable GitHub Pages** in repository settings
-3. **Automatic deployment** via GitHub Actions
-4. **Live in minutes** at `https://yourusername.github.io/swiss-jass-app`
+   - Go to Settings → Pages
+   - Source: GitHub Actions
+3. **Automatic deployment** via GitHub Actions (`.github/workflows/deploy.yml`)
+   - Every push to `main` triggers automatic build and deployment
+   - Live in minutes at `https://yourusername.github.io/swiss-jass-app`
+4. **Manual deployment** (if needed)
+   - Go to Actions tab → "Deploy to GitHub Pages" → "Run workflow"
 
-### 🔧 **Backend Deployment (Raspberry Pi)**
+### ⚡ **Backend Deployment (Railway)**
 
-1. **Prepare the Pi**
-   - Install the latest LTS Node.js (e.g. via [`nvm`](https://github.com/nvm-sh/nvm)) and Git.
-   - Install `pm2` globally (`npm install -g pm2`) or create a `systemd` service for long-running use.
-   - Open the backend port (default `3000`) on your network/router.
-2. **Initial checkout** (one-time)
-   - SSH into the Pi and run `bash deploy/raspberry-pi/deploy-backend.sh /home/pi/apps/swiss-jass-app` to clone the repo, install dependencies, and build once.
-   - Create `backend/.env` with at least:
-     ```env
-     PORT=3000
-     JWT_SECRET=replace-with-strong-secret
-     DATABASE_URL="file:./swiss_jass.db"
-     NODE_ENV=production
-     ```
-   - Start the process with pm2 (`pm2 start dist/index.js --name swiss-jass-backend`) or enable your service unit.
-3. **Configure GitHub Actions secrets** (Repository → Settings → Secrets and variables):
-   - Secrets → `PI_HOST` (public IP or DNS), `PI_SSH_USER`, `PI_SSH_KEY` (private key with access to the Pi), optional `PI_SSH_PORT`.
-   - (Optional) Variables → override `PI_APP_DIR` or `PI_BRANCH` in `.github/workflows/deploy-backend-pi.yml` if your paths differ.
-4. **Automated deploy**
-   - On every push to `main` that touches backend code, `.github/workflows/deploy-backend-pi.yml` will SSH into the Pi, run the deployment script (`npm ci`, `npm run build`), and restart the pm2/systemd process.
-   - Manual runs are available via the *Run workflow* button in the Actions tab.
+**Status**: ✅ **Automatic deployment via Railway**
+
+Railway automatically deploys your backend when connected to this GitHub repository:
+
+1. **Connect to Railway** (one-time setup)
+   - Visit [railway.app](https://railway.app) and sign in with GitHub
+   - Create new project → "Deploy from GitHub repo"
+   - Select `swiss-jass-app` repository
+   - Railway auto-detects the backend and deploys
+
+2. **Environment Variables** (set in Railway dashboard)
+   ```env
+   PORT=3001
+   JWT_SECRET=your-strong-secret-here
+   DATABASE_URL=file:./swiss_jass.db
+   NODE_ENV=production
+   ```
+
+3. **Automatic Updates**
+   - Every push to `main` triggers automatic Railway deployment
+   - No GitHub Actions configuration needed (Railway handles it)
+
+4. **Check Deployment Status**
+   - Railway dashboard shows build logs and deployment status
+   - Backend URL: `https://your-project.up.railway.app`
+
+### 🔗 **Connecting Frontend to Backend**
+
+Update `web/src/config.ts` with your Railway backend URL:
+
+```typescript
+export const API_BASE_URL = import.meta.env.PROD 
+  ? 'https://your-project.up.railway.app'
+  : 'http://localhost:3001';
+```
+
+Then rebuild and push to trigger GitHub Pages deployment.
 
 ## 📊 Rankings & Statistics
 

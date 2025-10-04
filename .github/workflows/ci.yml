@@ -35,8 +35,8 @@ jobs:
           cd web
           npm run smoke
 
-  build-and-deploy:
-    name: Build and Deploy
+  build:
+    name: Build Frontend
     needs: smoke
     runs-on: ubuntu-latest
     steps:
@@ -59,9 +59,6 @@ jobs:
         run: |
           cd web
           npm run build
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./web/dist
+      
+      - name: Build successful
+        run: echo "✅ Frontend build successful! GitHub Pages deployment handled by deploy.yml"
