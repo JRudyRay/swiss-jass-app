@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { JassGame } from './JassGame';
 import { AuthForm } from './AuthForm';
+import './GameTable.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -44,7 +45,7 @@ function App() {
   }
 
   return (
-    <div>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
       <JassGame user={user} onLogout={handleLogout} />
     </div>
   );

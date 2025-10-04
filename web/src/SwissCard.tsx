@@ -45,51 +45,43 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
   };
 
   const getCardStyle = () => {
-    let backgroundColor = 'white';
-    let border = '2px solid #e5e7eb';
-    let cursor = 'default';
-    let transform = 'none';
-    let boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+    const baseStyle: React.CSSProperties = {
+      width: '80px',
+      height: '112px',
+      backgroundColor: imageLoaded && !imageError ? 'transparent' : 'white',
+      borderRadius: '10px',
+      padding: imageLoaded && !imageError ? '0' : '6px',
+      margin: '2px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      fontSize: '14px',
+      position: 'relative',
+      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+      overflow: 'hidden',
+      cursor: isPlayable ? 'pointer' : 'default',
+      border: '2px solid #e5e7eb',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+      color: isSelected ? 'white' : 'black',
+      opacity: isPlayable === false ? 0.5 : 1,
+      filter: isPlayable === false ? 'grayscale(40%)' : 'none',
+    };
     
     if (isSelected) {
-      backgroundColor = '#3B82F6';
-      transform = 'translateY(-10px)';
-      boxShadow = '0 10px 20px rgba(59, 130, 246, 0.4)';
+      baseStyle.transform = 'translateY(-16px) scale(1.1)';
+      baseStyle.boxShadow = '0 20px 40px rgba(245, 158, 11, 0.6), 0 0 0 3px #f59e0b';
+      baseStyle.border = '2px solid #f59e0b';
+      baseStyle.zIndex = 101;
+    } else if (isPlayable && !isSelected) {
+      baseStyle.border = '2px solid #10b981';
     }
     
     if (card.isTrump) {
-      border = '3px solid #FFD700';
-      boxShadow = '0 0 10px rgba(255, 215, 0, 0.3)';
+      baseStyle.boxShadow = '0 4px 20px rgba(255, 215, 0, 0.5), 0 0 15px rgba(255, 215, 0, 0.3)';
+      baseStyle.border = '3px solid #FFD700';
     }
     
-    if (isPlayable) {
-      cursor = 'pointer';
-      if (!isSelected) {
-        border = '2px solid #10b981';
-      }
-    }
-    
-    return {
-      width: '70px',
-      height: '100px',
-      backgroundColor: imageLoaded && !imageError ? 'transparent' : backgroundColor,
-      border,
-      borderRadius: '10px',
-      padding: imageLoaded && !imageError ? '0' : '6px', // No padding for images
-      margin: '2px',
-      cursor,
-      display: 'flex',
-      flexDirection: 'column' as const,
-      justifyContent: 'space-between',
-      fontSize: '14px',
-      color: isSelected ? 'white' : 'black',
-      position: 'relative' as const,
-      transform,
-      transition: 'all 0.2s ease',
-      boxShadow,
-      opacity: isPlayable === false ? 0.6 : 1,
-      overflow: 'hidden', // Clip image to card bounds
-    };
+    return baseStyle;
   };
 
   const displayRank = rankDisplay[card.rank] || card.rank;
