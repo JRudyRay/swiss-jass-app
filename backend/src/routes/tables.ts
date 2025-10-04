@@ -84,9 +84,7 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     // Start table in DB (status update, seat assignment, bot fill)
     const table = await TableService.startTable(req.params.id, req.user.userId);
     const io = req.app.get('io');
-    io?.emit('tables:updated');
-    io?.emit('table:starting', { tableId: table.id, table });
-
+    
     // Re-fetch table with user details for names/bot detection
     const fullTable = await TableService.getTable(table.id);
 
@@ -117,9 +115,9 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     // Pick a random dealer BEFORE dealing, set forehand accordingly
     const dealerIndex = Math.floor(Math.random() * Math.max(userIds.length, 1));
     const dealerUserId = userIds[dealerIndex];
-  (engine as any).gameState.dealer = dealerIndex;
-  // Counter-clockwise & dealer leads first trick: forehand = dealer
-  (engine as any).gameState.forehand = dealerIndex;
+    (engine as any).gameState.dealer = dealerIndex;
+    // Counter-clockwise & dealer leads first trick: forehand = dealer
+    (engine as any).gameState.forehand = dealerIndex;
 
     // Start the first round: this will deal cards and progress phases
     engine.startRound();
@@ -128,8 +126,15 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     const room = `table:${table.id}`;
     const tableConfig = { team1Name: (fullTable as any)?.team1Name || (table as any)?.team1Name, team2Name: (fullTable as any)?.team2Name || (table as any)?.team2Name, targetPoints: (fullTable as any)?.targetPoints || (table as any)?.targetPoints };
 
-  // Register mapping for late joiners
-  gameHub.registerTableGame(table.id, gameId, engine, tableConfig);
+    // Register mapping for late joiners
+    gameHub.registerTableGame(table.id, gameId, engine, tableConfig);
+    
+    // CRITICAL FIX: Emit to ALL connected clients first, then to room
+    // This ensures joined players who might not be in the room yet still get notified
+    io?.emit('table:starting', { tableId: table.id, table, gameId });
+    io?.emit('tables:updated');
+    
+    // Then emit initial game state to the room
     io?.to(room).emit('game:state', {
       tableId: table.id,
       state: engine.getGameState(),

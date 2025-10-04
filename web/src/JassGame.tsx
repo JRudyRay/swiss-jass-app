@@ -6,6 +6,9 @@ import YouTubePlayer from './YouTubePlayer';
 import { API_URL } from './config';
 import { io, Socket } from 'socket.io-client';
 import Rankings from './components/Rankings';
+import VictoryModal from './components/VictoryModal';
+import Toast from './components/Toast';
+import GameHeader from './components/GameHeader';
 
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
@@ -259,6 +262,18 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
+  
+  // New UX components state
+  const [showVictory, setShowVictory] = useState(false);
+  const [winningTeam, setWinningTeam] = useState<number>(1);
+  const [toast, setToast] = useState<{ message: string; type: 'default' | 'success' | 'error' | 'warning' } | null>(null);
+  
+  // Toast helper function
+  const showToast = (message: string, type: 'default' | 'success' | 'error' | 'warning' = 'default') => {
+    setToast({ message, type });
+    setMessage(message); // Also update old message display for now
+  };
+  
   // Ref to avoid stale closure inside initial socket effect
   const activeTableIdRef = useRef<string | null>(null);
   useEffect(() => { activeTableIdRef.current = activeTableId; }, [activeTableId]);
@@ -490,15 +505,18 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setShowLastTrick(newSt.lastTrick || null);
         await new Promise(r=>setTimeout(r, 2000));
         setShowLastTrick(null);
-  // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
-  // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
+        // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
+        // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
         // if maxPoints reached by either team, stop; else start a fresh local round
         const t1 = newSt.scores.team1 || 0; const t2 = newSt.scores.team2 || 0;
         if (t1 >= maxPoints || t2 >= maxPoints) {
-          setMessage('Match finished — max points reached');
-          // mark match finished and update state so UI can react
+          // NEW UX: Show victory modal with confetti!
+          const winner = t1 >= maxPoints ? 1 : 2;
+          setWinningTeam(winner);
+          setShowVictory(true);
           setMatchFinished(true);
           setGameState({ ...toGameState(newSt), phase: 'finished' });
+          setToast({ message: `${teamNames[winner]} wins!`, type: 'success' });
           
           // Update backend stats if this is an online game
           if (gameId && API_URL) {
@@ -1388,13 +1406,30 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       setSocket(s);
       s.on('connect', () => {});
       s.on('presence:count', (p: any) => setOnlineCount(p.online));
-  s.on('tables:updated', () => fetchTables());
-  s.on('table:starting', (_p: any) => { setTab('game'); setMessage('Waiting for players to be ready...'); });
-    s.on('game:dealerAssigned', (data: any) => {
-      setMultiplayerGameId(data.gameId);
-      setDealerUserId(data.dealerUserId);
-      setMessage(`Dealer assigned: ${data.dealerUserId}`);
-    });
+      s.on('tables:updated', () => fetchTables());
+      
+      // CRITICAL FIX: Handle table:starting for ALL players (including non-room members)
+      s.on('table:starting', (payload: any) => {
+        console.debug('[multiplayer] table:starting received', payload);
+        // If this is the table we're in, switch to game tab and set gameId
+        if (payload?.tableId === activeTableIdRef.current) {
+          setTab('game');
+          setMode('multi');
+          if (payload?.gameId) {
+            setMultiplayerGameId(payload.gameId);
+          }
+          setMessage('Game starting...');
+          // Ensure we're in the socket room
+          s.emit('table:join', { tableId: payload.tableId });
+        }
+      });
+      
+      s.on('game:dealerAssigned', (data: any) => {
+        setMultiplayerGameId(data.gameId);
+        setDealerUserId(data.dealerUserId);
+        setMessage(`Dealer assigned: ${data.dealerUserId}`);
+      });
+      
       s.on('table:started', (payload: any) => {
         // Redirect both users to game tab
         setTab('game');
@@ -1975,20 +2010,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   return (
     <div style={styles.container}>
-      <div style={styles.header}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-        <img src={logo} alt="Swiss Jass Logo" style={{ height: 50, borderRadius: 8 }} />
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, letterSpacing: '-0.05em' }}>Swiss Jass</h1>
-      </div></div>
+      <GameHeader 
+        lang={lang} 
+        onLangChange={(newLang) => setLang(newLang)}
+      />
       <div style={styles.gameArea}>
         <div style={styles.message}>{message}</div>
-        
-        {/* Language selector in top right */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <select value={lang} onChange={e=>setLang(e.target.value as any)} style={{ padding:6, borderRadius:6 }} title="Language">
-            <option value="en">🇺🇸 English</option>
-            <option value="ch">🇨🇭 Schwiizerdütsch</option>
-          </select>
-        </div>
 
         {renderModeSwitcher()}
 
@@ -2562,6 +2589,41 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </div>
         </div>
       </div>
+      
+      {/* NEW UX COMPONENTS */}
+      {/* Victory Modal with Confetti */}
+      {showVictory && (
+        <VictoryModal
+          isOpen={showVictory}
+          winningTeam={winningTeam}
+          teamNames={teamNames}
+          finalScores={{ team1: gameState?.scores?.team1 || 0, team2: gameState?.scores?.team2 || 0 }}
+          roundHistory={roundHistory}
+          onPlayAgain={() => {
+            setShowVictory(false);
+            setMatchFinished(false);
+            if (isLocal) {
+              startLocalGameWithOptions();
+            } else {
+              setTab('tables');
+            }
+          }}
+          onClose={() => {
+            setShowVictory(false);
+            setTab('rankings');
+          }}
+        />
+      )}
+      
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3000}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };
