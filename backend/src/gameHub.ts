@@ -116,15 +116,37 @@ class GameHub {
     engine.on('gameFinished', async (data: any) => {
       console.log(`[${gameId}] Game finished:`, data);
       try {
+        // ✅ Get table config to determine if multiplayer
+        const tableEntry = Array.from(this.tableGameMap.values()).find(e => e.gameId === gameId);
+        const isMultiplayer = tableEntry?.tableConfig?.gameMode === 'MULTIPLAYER';
+
+        if (!isMultiplayer) {
+          console.log(`[${gameId}] Offline game - skipping stats update`);
+          return;
+        }
+
         // Import updateStatsForMatch dynamically to avoid circular
         const { updateStatsForMatch } = require('./services/gameService');
         const players = engine.getPlayers();
-        // Filter real users
-        const teamA = players.filter(p => p.team === 1 && p.userId).map(p => p.userId!);
-        const teamB = players.filter(p => p.team === 2 && p.userId).map(p => p.userId!);
+        
+        // ✅ Filter to only human players (exclude bots)
+        const teamA = players
+          .filter(p => p.team === 1 && p.userId && !p.isBot)
+          .map(p => p.userId!);
+        const teamB = players
+          .filter(p => p.team === 2 && p.userId && !p.isBot)
+          .map(p => p.userId!);
+        
+        if (teamA.length === 0 && teamB.length === 0) {
+          console.log(`[${gameId}] All bots - skipping stats update`);
+          return;
+        }
+
         const scoreA = data.finalScores.team1;
         const scoreB = data.finalScores.team2;
-        await updateStatsForMatch(teamA, teamB, scoreA, scoreB, data.rounds || 0);
+        
+        // ✅ Pass isMultiplayer=true
+        await updateStatsForMatch(teamA, teamB, scoreA, scoreB, data.rounds || 0, true);
         console.log(`[${gameId}] Stats updated for teams`, teamA, teamB);
       } catch (err) {
         console.error(`[${gameId}] Error updating stats:`, err);

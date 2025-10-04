@@ -38,15 +38,28 @@ router.post('/create', (req, res) => {
 /**
  * POST /api/games/report
  * Accepts a match report and updates stats for both teams using TrueSkill
- * body: { teamA: string[] (userIds), teamB: string[] (userIds), scoreA: number, scoreB: number, rounds?: number }
+ * body: { teamA: string[] (userIds), teamB: string[] (userIds), scoreA: number, scoreB: number, rounds?: number, isMultiplayer?: boolean }
  */
 router.post('/report', async (req, res) => {
   try {
-    const { teamA, teamB, scoreA, scoreB, rounds } = req.body || {};
-    if (!Array.isArray(teamA) || !Array.isArray(teamB)) return res.status(400).json({ success: false, message: 'Invalid teams' });
+    const { teamA, teamB, scoreA, scoreB, rounds, isMultiplayer } = req.body || {};
+    
+    if (!Array.isArray(teamA) || !Array.isArray(teamB)) {
+      return res.status(400).json({ success: false, message: 'Invalid teams' });
+    }
+
+    // ✅ Validate isMultiplayer flag (default to false for safety)
+    const isMultiplayerGame = isMultiplayer === true;
 
     const { updateStatsForMatch } = require('../services/gameService');
-    await updateStatsForMatch(teamA, teamB, Number(scoreA || 0), Number(scoreB || 0), Number(rounds || 0));
+    await updateStatsForMatch(
+      teamA, 
+      teamB, 
+      Number(scoreA || 0), 
+      Number(scoreB || 0), 
+      Number(rounds || 0),
+      isMultiplayerGame  // ✅ Pass flag
+    );
 
     res.json({ success: true, message: 'Match report processed' });
   } catch (e: any) {
@@ -77,7 +90,7 @@ router.post('/user-result', async (req, res) => {
       gamesWon: won ? 1 : 0,
       totalPoints: Number(points || 0),
       totalRounds: Number(rounds || 0)
-    });
+    }, false);  // ✅ Explicitly mark as offline (single-user endpoint is for offline games)
     return res.json({ success: true, message: 'User stats updated', won: !!won });
   } catch (e: any) {
     console.error('Error in user-result:', e);
@@ -220,6 +233,8 @@ router.post('/:id/complete', async (req, res) => {
     const { userTeamScore, opponentTeamScore, userWon, totalRounds } = req.body;
     // Try to extract userId from Authorization header (JWT)
     let userId: string | null = null;
+    let isMultiplayer = false;  // ✅ Track mode
+
     try {
       const authHeader = (req.headers && (req.headers as any).authorization) || null;
       const token = authHeader ? String(authHeader).split(' ')[1] : null;
@@ -227,6 +242,11 @@ router.post('/:id/complete', async (req, res) => {
         const decoded = AuthService.verifyToken(token) as any;
         userId = decoded?.userId || null;
       }
+
+      // ✅ Check if this is a multiplayer game via gameHub
+      const engine = gameHub.get(id);
+      const tableEntry = Array.from((gameHub as any)['tableGameMap'].values()).find((e: any) => e.gameId === id);
+      isMultiplayer = tableEntry?.tableConfig?.gameMode === 'MULTIPLAYER';
     } catch (e) {
       // fall through - userId stays null
     }
@@ -251,13 +271,13 @@ router.post('/:id/complete', async (req, res) => {
       }
     }
     
-    // Update user stats
+    // ✅ Update user stats with isMultiplayer flag
     await updateUserStats(userId, {
       gamesPlayed: 1,
       gamesWon: userWon ? 1 : 0,
       totalPoints: pointsEarned,
       totalRounds: totalRounds || 0
-    });
+    }, isMultiplayer);
     
     // Clean up the game from memory
     gameHub.destroyGame(id);

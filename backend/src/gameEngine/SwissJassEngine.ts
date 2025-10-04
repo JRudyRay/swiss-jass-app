@@ -1,7 +1,7 @@
 // Complete Swiss Jass Game Engine with Authentic Rules
 export type SwissSuit = 'eicheln' | 'schellen' | 'rosen' | 'schilten';
 export type SwissRank = '6' | '7' | '8' | '9' | '10' | 'U' | 'O' | 'K' | 'A';
-export type TrumpContract = SwissSuit | 'obenabe' | 'undenufe' | 'slalom';
+export type TrumpContract = SwissSuit | 'obenabe' | 'undenufe' | 'slalom' | 'schieben';  // ✅ Added schieben
 export type GamePhase = 'waiting' | 'dealing' | 'examining' | 'trump_selection' | 'playing' | 'scoring' | 'finished';
 
 export interface SwissCard {
@@ -46,6 +46,10 @@ export interface GameState {
   weis?: Record<number, WeisDeclaration[]>;
   // who declared the contract (player id)
   declarer?: number | null;
+  // ✅ Schieben tracking
+  schiebenPending?: boolean;  // true when waiting for partner's choice after schieben
+  // ✅ Trump multiplier for scoring (1x, 2x, 3x, 4x)
+  trumpMultiplier?: number;
 }
 
 // Weis declaration type for backend
@@ -225,10 +229,35 @@ export class SwissJassEngine {
       return false;
     }
 
+    // ✅ SCHIEBEN: If player passes to partner
+    if (trump === 'schieben') {
+      // Prevent double-schieben (partner cannot pass back)
+      if (this.gameState.schiebenPending) {
+        console.log('⚠️  Partner cannot schiebe back!');
+        return false;
+      }
+
+      // Pass to partner (opposite player: +2 mod 4)
+      const partnerIndex = (playerId + 2) % 4;
+      this.gameState.currentPlayer = partnerIndex;
+      this.gameState.schiebenPending = true;
+      
+      this.emit('schiebenPassed', { 
+        fromPlayer: playerId, 
+        toPlayer: partnerIndex,
+        message: `Player ${playerId} passed trump decision to partner (player ${partnerIndex})`
+      });
+      
+      // Stay in trump_selection phase, wait for partner's choice
+      return true;
+    }
+
+    // ✅ Real trump selected
     this.gameState.trumpSuit = trump;
     this.gameState.contract = trump;
     // record who declared the contract
     this.gameState.declarer = playerId;
+    this.gameState.schiebenPending = false;  // Reset flag
 
     // set multiplier based on contract
     if (trump === 'schellen' || trump === 'schilten') {
@@ -459,15 +488,41 @@ export class SwissJassEngine {
   private completeRound(): void {
     this.gameState.phase = 'scoring';
     
-    const team1Score = this.gameState.roundScores.team1;
-    const team2Score = this.gameState.roundScores.team2;
+    // Calculate and award Weis points
+    const weisScores = this.calculateTeamWeis();
+    
+    // Get raw round scores (base trick points + weis)
+    let team1Score = this.gameState.roundScores.team1 + weisScores.team1;
+    let team2Score = this.gameState.roundScores.team2 + weisScores.team2;
 
+    // Apply trump multiplier (authentic Swiss Jass: multiplier applies to all scores)
+    const multiplier = this.gameState.trumpMultiplier || 1;
+    team1Score *= multiplier;
+    team2Score *= multiplier;
+
+    // Check for match bonus: team takes all 9 tricks (36 cards total)
+    const team1Cards = this.gameState.playedTricks.reduce((total, trick) => {
+      return total + trick.filter(card => this.players[card.playerId].team === 1).length;
+    }, 0);
+    const team2Cards = this.gameState.playedTricks.reduce((total, trick) => {
+      return total + trick.filter(card => this.players[card.playerId].team === 2).length;
+    }, 0);
+
+    const MATCH_BONUS = 100;
+    if (team1Cards === 36) {
+      team1Score += MATCH_BONUS * multiplier; // Match bonus is also multiplied
+    } else if (team2Cards === 36) {
+      team2Score += MATCH_BONUS * multiplier;
+    }
+
+    // Add final scores to totals
     this.gameState.scores.team1 += team1Score;
     this.gameState.scores.team2 += team2Score;
 
     this.emit('roundCompleted', {
-      roundScores: this.gameState.roundScores,
-      totalScores: this.gameState.scores
+      roundScores: { team1: team1Score, team2: team2Score }, // Emit final scores with multipliers
+      totalScores: this.gameState.scores,
+      weisScores: weisScores // Include Weis breakdown
     });
 
     // Check for game end
@@ -601,6 +656,83 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
 
   return res;
 }
+
+  /**
+   * Calculate Weis scores for both teams according to Swiss Jass rules:
+   * - Only the team with the BEST Weis scores (all their Weis points)
+   * - If teams have equal best Weis, NOBODY scores (authentic Swiss rule)
+   */
+  private calculateTeamWeis(): { team1: number; team2: number } {
+    const team1Players = this.players.filter(p => p.team === 1);
+    const team2Players = this.players.filter(p => p.team === 2);
+    
+    let team1BestWeis: WeisDeclaration | null = null;
+    let team2BestWeis: WeisDeclaration | null = null;
+    
+    // Find best Weis for each team
+    for (const player of team1Players) {
+      for (const weis of player.weis || []) {
+        if (!team1BestWeis || this.isWeisBetter(weis, team1BestWeis)) {
+          team1BestWeis = weis;
+        }
+      }
+    }
+    
+    for (const player of team2Players) {
+      for (const weis of player.weis || []) {
+        if (!team2BestWeis || this.isWeisBetter(weis, team2BestWeis)) {
+          team2BestWeis = weis;
+        }
+      }
+    }
+    
+    // Determine winning team and award all their Weis points
+    let team1Points = 0;
+    let team2Points = 0;
+    
+    if (team1BestWeis && team2BestWeis) {
+      const team1Wins = this.isWeisBetter(team1BestWeis, team2BestWeis);
+      const team2Wins = this.isWeisBetter(team2BestWeis, team1BestWeis);
+      
+      // Authentic Swiss Jass rule: only team with strictly better Weis scores
+      if (team1Wins && !team2Wins) {
+        team1Points = team1Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
+      } else if (team2Wins && !team1Wins) {
+        team2Points = team2Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
+      }
+      // If equal (both return false), nobody scores
+    } else if (team1BestWeis) {
+      team1Points = team1Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
+    } else if (team2BestWeis) {
+      team2Points = team2Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
+    }
+    
+    return { team1: team1Points, team2: team2Points };
+  }
+
+  /**
+   * Compare two Weis declarations to determine which is better
+   * Returns true if 'a' is strictly better than 'b'
+   */
+  private isWeisBetter(a: WeisDeclaration, b: WeisDeclaration): boolean {
+    // Higher points wins
+    if (a.points !== b.points) return a.points > b.points;
+    
+    // Same points - check by type priority and length
+    if (a.type.startsWith('sequence') && b.type.startsWith('sequence')) {
+      // Longer sequence wins
+      if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
+      
+      // Same length - higher top card wins (compare rank values)
+      const rankValues: Record<string, number> = { '6': 0, '7': 1, '8': 2, '9': 3, '10': 4, 'U': 5, 'O': 6, 'K': 7, 'A': 8 };
+      const aTop = Math.max(...a.cards.map(c => rankValues[c.rank] || 0));
+      const bTop = Math.max(...b.cards.map(c => rankValues[c.rank] || 0));
+      return aTop > bTop;
+    }
+    
+    // For equal Weis, return false (neither is better)
+    return false;
+  }
 
   public getPlayer(playerId: number): Readonly<JassPlayer> | null {
     return this.players.find(p => p.id === playerId) || null;

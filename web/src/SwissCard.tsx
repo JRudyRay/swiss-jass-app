@@ -1,4 +1,5 @@
 import React from 'react';
+import { SuitIcon, CourtFigure } from './components/SwissCardSVG';
 
 interface CardProps {
   card: any;
@@ -8,13 +9,6 @@ interface CardProps {
 }
 
 export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, onClick }) => {
-  const suitSymbols: { [key: string]: string } = {
-    eicheln: '🌰',
-    schellen: '🔔',
-    rosen: '🌹',
-    schilten: '🛡️'
-  };
-
   const suitColors: { [key: string]: string } = {
     eicheln: '#8B4513',
     schellen: '#FFD700',
@@ -28,6 +22,9 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
     'K': 'K',
     'A': 'A'
   };
+
+  const isCourtCard = ['U', 'O', 'K'].includes(card.rank);
+  const suitColor = suitColors[card.suit] || '#000';
 
   const getCardStyle = () => {
     let backgroundColor = 'white';
@@ -93,13 +90,21 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
         {displayRank}
       </div>
       
-      {/* Center suit symbol */}
+      {/* Center suit symbol or court figure */}
       <div style={{
         fontSize: '28px', 
         textAlign: 'center',
-        filter: isSelected ? 'brightness(1.2)' : 'none'
+        filter: isSelected ? 'brightness(1.2)' : 'none',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexGrow: 1
       }}>
-        {suitSymbols[card.suit]}
+        {isCourtCard ? (
+          <CourtFigure rank={card.rank} suit={card.suit} color={suitColor} />
+        ) : (
+          <SuitIcon suit={card.suit} color={suitColor} size={35} />
+        )}
       </div>
       
       {/* Bottom rank (rotated) */}

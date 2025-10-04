@@ -144,6 +144,30 @@ backend/
 - **Database**: SQLite with Prisma ORM
 - **CI/CD**: GitHub Actions for seamless updates
 
+## 🧪 Testing
+
+This project includes comprehensive tests for game rules, rankings, and multiplayer functionality:
+
+- **Game Engine Tests**: Schieben, trump multipliers, Weis scoring
+- **Rankings Tests**: Bot exclusion, multiplayer-only tracking, TrueSkill calculations
+- **Integration Tests**: Friend system, table creation, multiplayer flows
+- **Smoke Tests**: Quick verification of core functionality
+
+**Quick Start**:
+```bash
+cd backend
+npm run smoke          # Friend & table creation tests
+npm run multi          # Multiplayer flow test
+npm run reset:smoke    # Reset DB + smoke test
+```
+
+📖 **See [docs/TESTING.md](docs/TESTING.md) for complete testing guide**, including:
+- How to run all test suites
+- Test coverage goals and current status
+- Known gaps and limitations (async engine, E2E tests)
+- CI/CD integration
+- Contributing to tests
+
 ## 🚀 Deployment Guide
 
 ### 📱 **Frontend Deployment (GitHub Pages)**
@@ -175,6 +199,85 @@ backend/
 4. **Automated deploy**
    - On every push to `main` that touches backend code, `.github/workflows/deploy-backend-pi.yml` will SSH into the Pi, run the deployment script (`npm ci`, `npm run build`), and restart the pm2/systemd process.
    - Manual runs are available via the *Run workflow* button in the Actions tab.
+
+## 📊 Rankings & Statistics
+
+### 🏆 **How Rankings Work**
+
+The Swiss Jass app uses a sophisticated **TrueSkill ranking system** to provide fair and accurate player ratings:
+
+- **Multiplayer Games Only**: Only games played against real human opponents count toward rankings
+- **Bot Games Excluded**: Practice games against AI bots don't affect your rating (learn risk-free!)
+- **TrueSkill Algorithm**: Uses Microsoft's TrueSkill system (better than simple win/loss ratios)
+- **Team-Based**: Your rating reflects your performance as both an individual and team player
+
+### ⚙️ **What Gets Tracked**
+
+| Metric | Description | Multiplayer Only |
+|--------|-------------|------------------|
+| **TrueSkill µ (Mu)** | Your skill rating (starts at 25.0) | ✅ Yes |
+| **TrueSkill σ (Sigma)** | Rating uncertainty (lower = more confident) | ✅ Yes |
+| **Total Games** | Number of multiplayer matches played | ✅ Yes |
+| **Total Wins** | Number of multiplayer matches won | ✅ Yes |
+| **Win Rate** | Calculated as Total Wins / Total Games | ✅ Yes |
+
+### 🚫 **What Doesn't Count**
+
+- ❌ Offline games (single-player vs bots)
+- ❌ Local practice games
+- ❌ Games where all players are bots
+- ❌ Incomplete/abandoned games
+
+### 🤖 **Bot Player Handling**
+
+- **Bot Exclusion**: Bot users (`bot_1`, `bot_2`, `bot_3`) are automatically excluded from rankings
+- **Mixed Games**: In multiplayer games with bots filling empty seats, only real players get stats updates
+- **Database Schema**: Bot users have `isBot = true` flag to ensure clean separation
+
+### 🔄 **Database Management**
+
+#### Reset Database (Development)
+
+```bash
+# Full reset with seed data
+cd backend
+npm run db:reset
+
+# This will:
+# 1. Drop all tables
+# 2. Re-apply Prisma migrations
+# 3. Seed with test users (alice, bob, charlie, dave)
+# 4. Reset all rankings to defaults
+```
+
+#### Seed Test Data
+
+```bash
+# Just add test users without resetting
+cd backend
+npm run db:seed
+```
+
+#### Manual Database Inspection
+
+```bash
+# Open SQLite database
+cd backend/prisma
+sqlite3 swiss_jass.db
+
+# Example queries
+sqlite> SELECT username, totalGames, totalWins, trueSkillMu FROM User WHERE isBot = 0;
+sqlite> SELECT * FROM GameSession WHERE isMultiplayer = 1 ORDER BY createdAt DESC LIMIT 10;
+```
+
+### 📈 **Ranking Transparency**
+
+View your detailed stats:
+1. **In-Game**: Rankings page shows leaderboard with all metrics
+2. **Database**: Direct SQLite queries for power users
+3. **API**: `/api/users/rankings` endpoint returns JSON data
+
+All ranking calculations are **deterministic and reproducible** - resetting the database and replaying the same games will yield identical rankings.
 
 ## 🤝 Contributing
 

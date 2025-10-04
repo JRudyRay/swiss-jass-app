@@ -9,6 +9,8 @@
     "smoke": "ts-node src/tests/friendAndTable.test.ts",
     "reset:smoke": "ts-node scripts/resetAndSmoke.ts",
     "multi": "ts-node src/tests/multiplayerFlow.test.ts",
+    "db:reset": "npx prisma migrate reset --force && npx prisma db push && npx tsx scripts/seed.ts",
+    "db:seed": "npx tsx scripts/seed.ts",
     "postinstall": "npx prisma generate"
   },
   "dependencies": {

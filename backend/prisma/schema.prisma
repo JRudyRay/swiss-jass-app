@@ -23,6 +23,7 @@ model User {
   totalPoints   Int @default(0)
   trueSkillMu    Float @default(25.0)
   trueSkillSigma Float @default(8.333)
+  isBot     Boolean  @default(false)  // NEW: Flag for bot players to exclude from rankings
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lastLogin DateTime?
@@ -36,13 +37,14 @@ model User {
 }
 
 model GameSession {
-  id        String   @id @default(cuid())
-  userId    String
-  gameType  String
-  result    String
-  points    Int
-  duration  Int
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  gameType      String
+  result        String
+  points        Int
+  duration      Int
+  isMultiplayer Boolean  @default(false)  // NEW: Track if game was multiplayer (rankings only count these)
+  createdAt     DateTime @default(now())
   @@map("game_sessions")
 }
 
@@ -53,6 +55,7 @@ model GameTable {
   status      TableStatus       @default(OPEN)
   maxPlayers  Int               @default(4)
   gameType    String            @default("schieber")
+  gameMode    GameMode          @default(MULTIPLAYER)  // NEW: Discriminator for offline vs multiplayer
   team1Name   String            @default("Team 1")
   team2Name   String            @default("Team 2")
   targetPoints Int              @default(1000)
@@ -120,4 +123,9 @@ enum FriendRequestStatus {
   ACCEPTED
   DECLINED
   CANCELLED
+}
+
+enum GameMode {
+  OFFLINE       // Local/practice games (no stats)
+  MULTIPLAYER   // Real multiplayer (stats count)
 }
