@@ -245,7 +245,7 @@ router.post('/:id/complete', async (req, res) => {
 
       // ✅ Check if this is a multiplayer game via gameHub
       const engine = gameHub.get(id);
-      const tableEntry = Array.from((gameHub as any)['tableGameMap'].values()).find((e: any) => e.gameId === id);
+      const tableEntry: any = Array.from((gameHub as any)['tableGameMap'].values()).find((e: any) => e.gameId === id);
       isMultiplayer = tableEntry?.tableConfig?.gameMode === 'MULTIPLAYER';
     } catch (e) {
       // fall through - userId stays null
