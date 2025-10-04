@@ -1,0 +1,63 @@
+# Card Images - Download Instructions
+
+## 🎨 Real Swiss Jass Card Images
+
+This folder should contain **36 authentic Swiss Jass card images** from https://jassverzeichnis.ch/deutsche-jasskarten/
+
+### Current Status
+
+Run this command to check downloaded images:
+```bash
+node ../scripts/check-card-images.js
+```
+
+### Quick Download Guide
+
+1. **Visit**: https://jassverzeichnis.ch/deutsche-jasskarten/
+2. **Right-click each card image** → Save image as...
+3. **Save to this folder** with exact naming:
+   - Format: `{suit}_{rank}.png`
+   - Example: `eicheln_A.png`, `schellen_10.png`
+
+### Required Files (36 total)
+
+**Eicheln (Acorns) - 9 cards:**
+- eicheln_A.png, eicheln_K.png, eicheln_O.png, eicheln_U.png
+- eicheln_10.png, eicheln_9.png, eicheln_8.png, eicheln_7.png, eicheln_6.png
+
+**Rosen (Roses) - 9 cards:**
+- rosen_A.png, rosen_K.png, rosen_O.png, rosen_U.png
+- rosen_10.png, rosen_9.png, rosen_8.png, rosen_7.png, rosen_6.png
+
+**Schellen (Bells) - 9 cards:**
+- schellen_A.png, schellen_K.png, schellen_O.png, schellen_U.png
+- schellen_10.png, schellen_9.png, schellen_8.png, schellen_7.png, schellen_6.png
+
+**Schilten (Shields) - 9 cards:**
+- schilten_A.png, schilten_K.png, schilten_O.png, schilten_U.png
+- schilten_10.png, schilten_9.png, schilten_8.png, schilten_7.png, schilten_6.png
+
+### Optional
+
+- `card_back.png` - Card back design for face-down cards
+
+### Fallback
+
+If images are not downloaded, the app automatically uses SVG graphics as fallback. The game works either way!
+
+### Image Optimization
+
+After downloading, you can optimize images:
+```bash
+# Install imagemin (optional)
+npm install -g imagemin-cli imagemin-pngquant
+
+# Optimize all PNG files
+imagemin *.png --plugin=pngquant --out-dir=.
+```
+
+### License
+
+**Source**: Schweizer Jassverzeichnis (https://jassverzeichnis.ch)
+**Usage**: Check website terms of use for licensing
+**Attribution**: Credit required in app footer

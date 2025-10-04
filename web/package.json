@@ -5,14 +5,15 @@
   "homepage": "https://JRudyRay.github.io/swiss-jass-app",
   "scripts": {
     "dev": "vite",
-  "sim": "ts-node scripts/simulate.ts",
-  "build-smoke-unit": "npx esbuild scripts/unit_tests.ts --bundle --platform=node --format=cjs --outfile=dist_scripts/unit_tests.bundle.cjs --sourcemap",
-  "build-smoke-sim": "npx esbuild scripts/simulate.ts --bundle --platform=node --format=cjs --outfile=dist_scripts/simulate.bundle.cjs --sourcemap",
-  "build-smoke": "npm run build-smoke-unit && npm run build-smoke-sim",
-  "smoke": "npm run build-smoke && node dist_scripts/unit_tests.bundle.cjs && node dist_scripts/simulate.bundle.cjs",
-  "build": "vite build",
-  "preview": "vite preview",
-  "deploy": "npx gh-pages -d dist"
+    "sim": "ts-node scripts/simulate.ts",
+    "build-smoke-unit": "npx esbuild scripts/unit_tests.ts --bundle --platform=node --format=cjs --outfile=dist_scripts/unit_tests.bundle.cjs --sourcemap",
+    "build-smoke-sim": "npx esbuild scripts/simulate.ts --bundle --platform=node --format=cjs --outfile=dist_scripts/simulate.bundle.cjs --sourcemap",
+    "build-smoke": "npm run build-smoke-unit && npm run build-smoke-sim",
+    "smoke": "npm run build-smoke && node dist_scripts/unit_tests.bundle.cjs && node dist_scripts/simulate.bundle.cjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npx gh-pages -d dist",
+    "check-cards": "node scripts/check-card-images.js"
   },
   "dependencies": {
   "react": "^18.2.0",
