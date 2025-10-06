@@ -23,8 +23,8 @@ class GameHub {
         if (players[index]) {
           // store userId for server reporting
           (players[index] as any).userId = userId;
-          // optionally use userId as display name or leave engine default
-          players[index].name = players[index].name || userId;
+          // Use the provided name (Swiss bot names from frontend)
+          players[index].name = userId;
         }
       });
     }
