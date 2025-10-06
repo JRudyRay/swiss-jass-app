@@ -27,7 +27,24 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000', 
+    'http://localhost:5173', 
+    'https://jrudyray.github.io',
+    'http://192.168.1.141:3000'  // Allow requests from your Pi IP
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Debug middleware to log requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} from ${req.get('Origin') || 'direct'}`);
+  next();
+});
+
 app.use(express.json());
 app.use(express.static('public'));
 
