@@ -4,6 +4,10 @@ import EnhancedAuthForm from './components/EnhancedAuthForm';
 import ErrorBoundary from './components/ErrorBoundary';
 import AppHeader from './components/AppHeader';
 import SwissDashboard from './components/SwissDashboard';
+import SwissTables from './components/SwissTables';
+import SwissFriends from './components/SwissFriends';
+import Rankings from './components/Rankings';
+import { API_URL } from './config';
 import './GameTable.css';
 
 type View = 'dashboard' | 'game' | 'tables' | 'rankings' | 'friends';
@@ -73,25 +77,16 @@ function App() {
             <JassGame user={user} onLogout={handleLogout} />
           )}
           {currentView === 'tables' && (
-            <div style={styles.placeholder}>
-              <div style={styles.placeholderIcon}>🎲</div>
-              <h2 style={styles.placeholderTitle}>Tables Coming Soon</h2>
-              <p style={styles.placeholderText}>Browse and join multiplayer tables</p>
-            </div>
+            <SwissTables user={user} token={token || ''} onJoinGame={(tableId) => {
+              console.log('Joined table:', tableId);
+              setCurrentView('game');
+            }} />
           )}
           {currentView === 'rankings' && (
-            <div style={styles.placeholder}>
-              <div style={styles.placeholderIcon}>🏆</div>
-              <h2 style={styles.placeholderTitle}>Rankings Coming Soon</h2>
-              <p style={styles.placeholderText}>View top players and your stats</p>
-            </div>
+            <Rankings apiUrl={API_URL || ''} onBack={() => setCurrentView('dashboard')} onReset={() => {}} />
           )}
           {currentView === 'friends' && (
-            <div style={styles.placeholder}>
-              <div style={styles.placeholderIcon}>👥</div>
-              <h2 style={styles.placeholderTitle}>Friends Coming Soon</h2>
-              <p style={styles.placeholderText}>Connect with other players</p>
-            </div>
+            <SwissFriends user={user} token={token || ''} />
           )}
         </main>
       </div>

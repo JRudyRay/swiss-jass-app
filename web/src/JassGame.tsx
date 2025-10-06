@@ -10,6 +10,7 @@ import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
 import GameHeader from './components/GameHeader';
 import { Loading, Spinner, SkeletonCard, EmptyState } from './components/Loading';
+import { generateSwissBotName } from './utils/swissBotNames';
 
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
@@ -752,7 +753,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setMessage('No backend detected — running local game');
         return;
       }
-      const res = await fetch(`${API_URL}/api/games/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerNames: ['You', 'Anna (bot)', 'Reto (bot)', 'Fritz (bot)'], gameType }) });
+      const res = await fetch(`${API_URL}/api/games/create`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          playerNames: ['You', generateSwissBotName(), generateSwissBotName(), generateSwissBotName()], 
+          gameType 
+        }) 
+      });
       const data = await res.json();
       if (data?.success) {
         setGameId(data.gameId);
@@ -776,7 +784,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     try {
   // clear previous finished flag when explicitly creating a game
   setMatchFinished(false);
-      const body = { playerNames: ['You', 'Anna (bot)', 'Reto (bot)', 'Fritz (bot)'], gameType: opts?.gameType || gameType, maxPoints: opts?.maxPoints || maxPoints };
+      const body = { 
+        playerNames: ['You', generateSwissBotName(), generateSwissBotName(), generateSwissBotName()], 
+        gameType: opts?.gameType || gameType, 
+        maxPoints: opts?.maxPoints || maxPoints 
+      };
       if (!API_URL) {
         // run local flow instead
         startLocalGameWithOptions();
