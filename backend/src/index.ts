@@ -26,18 +26,19 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:3000', 
-    'http://localhost:5173', 
-    'https://jrudyray.github.io',
-    'http://192.168.1.141:3000'  // Allow requests from your Pi IP
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Middleware - CORS handled by nginx reverse proxy in production
+// Only enable CORS for local development
+if (process.env.NODE_ENV !== 'production') {
+  app.use(cors({
+    origin: [
+      'http://localhost:3000', 
+      'http://localhost:5173'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+}
 
 // Debug middleware to log requests
 app.use((req, res, next) => {
