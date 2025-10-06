@@ -311,7 +311,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       const data = await res.json();
       if (data.success) {
         setActiveTableId(id);
-        setTab('game');
         setMessage('Game starting...');
       }
       fetchTables();
@@ -578,11 +577,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
-  // When the user switches back to the Game tab, try to restore any running game.
+  // On component mount, try to restore any running game.
   // If none is running, show the game options/start UI so user can begin a new match.
   useEffect(() => {
-    if (tab !== 'game') return;
-
     // If a server-backed game is active, reload it
     if (gameId && !isLocal) {
       loadGameState(gameId);
@@ -626,7 +623,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     setChosenTrump(null);
     setUiPendingResolve(false);
     setMessage('No active game — start a new one');
-  }, [tab]);
+  }, []); // Run only on mount
 
   useEffect(() => {
     if (mode === 'single' && optionsVisible) {
@@ -1424,9 +1421,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       // CRITICAL FIX: Handle table:starting for ALL players (including non-room members)
       s.on('table:starting', (payload: any) => {
         console.debug('[multiplayer] table:starting received', payload);
-        // If this is the table we're in, switch to game tab and set gameId
+        // If this is the table we're in, set gameId
         if (payload?.tableId === activeTableIdRef.current) {
-          setTab('game');
           setMode('multi');
           if (payload?.gameId) {
             setMultiplayerGameId(payload.gameId);
@@ -1444,8 +1440,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       });
       
       s.on('table:started', (payload: any) => {
-        // Redirect both users to game tab
-        setTab('game');
+        // Game started
         // Placeholder: could initialize synchronized game state here
         setMessage(`Game started: ${payload?.table?.name || ''}`);
       });
@@ -1774,7 +1769,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const handleSwitchMode = (nextMode: 'single' | 'multi') => {
     if (nextMode === mode) return;
     if (nextMode === 'single') {
-      setTab('game');
       setMode('single');
       setOptionsVisible(true);
       setActiveTableId(null);
@@ -1784,7 +1778,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       return;
     }
 
-    setTab('game');
     setMode('multi');
     setOptionsVisible(false);
     setMessage(T[lang].multiModeHint);
@@ -2738,9 +2731,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                     padding: '12px 24px', fontSize: '1rem', fontWeight: '600',
                     boxShadow: '0 4px 12px rgba(220,38,38,0.3)'
                   }} 
-                  onClick={() => { setMatchFinished(false); setTab('rankings'); }}
+                  onClick={() => { setMatchFinished(false); }}
                 >
-                  📊 View Rankings
+                  📊 Close
                 </button>
               </div>
             </div>
@@ -2820,13 +2813,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             setMatchFinished(false);
             if (isLocal) {
               startLocalGameWithOptions();
-            } else {
-              setTab('tables');
             }
           }}
           onClose={() => {
             setShowVictory(false);
-            setTab('rankings');
           }}
         />
       )}
