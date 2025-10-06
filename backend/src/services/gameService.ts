@@ -1,4 +1,4 @@
-// Minimal auth-only game service for Railway deployment
+// Game service for Swiss Jass backend
 import { PrismaClient } from '@prisma/client';
 // Import TrueSkill dynamically to avoid TS typing issues until we run prisma generate/migrate
 // Use the TypeScript-friendly implementation which exports TrueSkill and Rating
