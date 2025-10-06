@@ -1,0 +1,17 @@
+[Unit]
+Description=Swiss Jass Backend
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/swiss-jass-app/backend
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=EXTRA_CORS_ORIGINS=
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
