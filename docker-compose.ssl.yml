@@ -9,7 +9,7 @@ services:
       - NODE_ENV=production
       - PLATFORM=raspberry-pi-docker
     volumes:
-      - ./backend/prisma/swiss_jass.db:/app/prisma/swiss_jass.db
+      - ./backend/prisma:/app/prisma
     command: ["dumb-init", "--", "node", "dist/index.js"]
     networks:
       - swiss-jass-network

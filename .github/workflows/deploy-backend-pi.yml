@@ -55,8 +55,24 @@ jobs:
           # Create data directory for database persistence
           mkdir -p data
           
+          # Fix database file permissions before Docker starts
+          echo "Setting up database permissions..."
+          if [ -f backend/prisma/swiss_jass.db ]; then
+            chmod 666 backend/prisma/swiss_jass.db
+          fi
+          chmod 777 backend/prisma
+          
           # Stop existing containers gracefully
           docker compose down --timeout 30 || true
+          
+          # Fix database permissions after stopping containers
+          echo "Fixing database file permissions..."
+          if [ -f backend/prisma/swiss_jass.db ]; then
+            sudo chmod 666 backend/prisma/swiss_jass.db
+            sudo chown $(whoami):$(whoami) backend/prisma/swiss_jass.db
+          fi
+          sudo chmod 777 backend/prisma
+          sudo chown $(whoami):$(whoami) backend/prisma
           
           # Build and start the containers
           echo "Building and starting Docker containers..."
