@@ -38,6 +38,9 @@ jobs:
         run: |
           set -euo pipefail
           
+          # Ensure Docker is running and accessible
+          sudo systemctl start docker || true
+          
           # Set up environment variables for production
           export NODE_ENV=production
           
