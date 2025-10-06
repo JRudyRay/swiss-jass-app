@@ -30,3 +30,5 @@ if (isGitHubPages && PI_API_URL.startsWith('http:')) {
   console.warn('   2. Set up HTTPS on your Pi');
   console.warn('   3. Allow insecure content in browser settings');
 }
+
+export { API_URL };
