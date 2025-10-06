@@ -285,3 +285,54 @@ body {
 .scale-in {
   animation: scaleIn var(--transition-base) ease-out;
 }
+
+/* ========================================
+   Component-Specific Styles
+   ======================================== */
+
+/* Header hover effects */
+button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Dropdown menu animation */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dashboard action card hover */
+.action-card:hover {
+  background: white !important;
+  box-shadow: var(--shadow-md);
+  transform: translateX(4px);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    font-size: 13px;
+  }
+}
