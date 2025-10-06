@@ -137,10 +137,10 @@ export function deal(): Player[] {
 
 export function startGameLocal(previousDealer?: number): State {
   const players = deal();
-  // Dealer rotates clockwise each hand (0->1->2->3->0)
-  const dealer = previousDealer !== undefined ? (previousDealer + 1) % 4 : 0;
-  const forehand = (dealer + 1) % 4;
-  // Dealer now chooses trump (user requested): currentPlayer set to dealer
+  // Dealer rotates counter-clockwise in Swiss Jass (0->3->2->1->0)
+  const dealer = previousDealer !== undefined ? (previousDealer - 1 + 4) % 4 : 0;
+  const forehand = (dealer - 1 + 4) % 4;
+  // Forehand (player to the right of dealer) chooses trump first
   const st: State = { 
     phase: 'trump_selection', 
     trump: null, 
@@ -158,10 +158,10 @@ export function startGameLocal(previousDealer?: number): State {
 // Start a new hand with proper dealer rotation
 export function startNewHand(previousState: State): State {
   const players = deal();
-  // Dealer rotates clockwise each hand
-  const dealer = (previousState.dealer + 1) % 4;
-  const forehand = (dealer + 1) % 4;
-  // Dealer chooses trump for the new hand
+  // Dealer rotates counter-clockwise in Swiss Jass
+  const dealer = (previousState.dealer - 1 + 4) % 4;
+  const forehand = (dealer - 1 + 4) % 4;
+  // Forehand chooses trump for the new hand
   const st: State = { 
     phase: 'trump_selection', 
     trump: null, 
@@ -282,7 +282,7 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
   if (typeof state.forehand === 'number') {
     st.forehand = state.forehand;
   } else {
-    st.forehand = (state.dealer + 1) % 4;
+    st.forehand = (state.dealer - 1 + 4) % 4;
   }
   
   // Set multiplier based on trump contract (authentic Swiss Jass rules)
@@ -441,7 +441,8 @@ export function playCardLocal(state: State, playerId: number, cardId: string): S
   st.phase = 'resolving';
   // do not clear currentTrick here
   } else {
-    st.currentPlayer = (st.currentPlayer + 1) % 4;
+    // Move to next player counter-clockwise
+    st.currentPlayer = (st.currentPlayer - 1 + 4) % 4;
   }
   return st;
 }

@@ -8,7 +8,6 @@ import { io, Socket } from 'socket.io-client';
 import Rankings from './components/Rankings';
 import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
-import GameHeader from './components/GameHeader';
 import { Loading, Spinner, SkeletonCard, EmptyState } from './components/Loading';
 import { generateSwissBotName } from './utils/swissBotNames';
 
@@ -62,7 +61,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   table: { padding: 14, background: 'rgba(25, 122, 76, 0.1)', borderRadius: 10, minHeight: 140, marginBottom: 12 },
 };
 
-export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user, onLogout }) => {
+export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' | 'ch' }> = ({ user, onLogout, lang }) => {
   // Add CSS animations for victory modal
   useEffect(() => {
     const style = document.createElement('style');
@@ -89,7 +88,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   }, []);
 
   const ytRef = useRef<any>(null);
-  const [lang, setLang] = useState<'en'|'ch'>('ch');
+  // lang now comes from props (global state in App)
 
   const T: Record<string, Record<string,string>> = {
     en: {
@@ -2041,10 +2040,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   return (
     <div style={styles.container}>
-      <GameHeader 
-        lang={lang} 
-        onLangChange={(newLang) => setLang(newLang)}
-      />
       <div style={styles.gameArea}>
         <div style={styles.message}>{message}</div>
 

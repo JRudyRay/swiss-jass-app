@@ -17,18 +17,29 @@ function App() {
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [lang, setLang] = useState<'en' | 'ch'>('en'); // Global language state
 
   useEffect(() => {
-    // Check for saved token on mount
+    // Check for saved token and language on mount
     const savedToken = localStorage.getItem('jassToken');
     const savedUser = localStorage.getItem('jassUser');
+    const savedLang = localStorage.getItem('jassLang') as 'en' | 'ch' | null;
     
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
       setIsAuthenticated(true);
     }
+    
+    if (savedLang) {
+      setLang(savedLang);
+    }
   }, []);
+
+  const handleLangChange = (newLang: 'en' | 'ch') => {
+    setLang(newLang);
+    localStorage.setItem('jassLang', newLang);
+  };
 
   const handleLogin = (newToken: string, newUser: any) => {
     setToken(newToken);
@@ -68,13 +79,15 @@ function App() {
           currentView={currentView}
           onViewChange={setCurrentView}
           unreadNotifications={0}
+          lang={lang}
+          onLangChange={handleLangChange}
         />
         <main style={styles.main}>
           {currentView === 'dashboard' && (
             <SwissDashboard user={user} token={token || ''} onNavigate={setCurrentView} />
           )}
           {currentView === 'game' && (
-            <JassGame user={user} onLogout={handleLogout} />
+            <JassGame user={user} onLogout={handleLogout} lang={lang} />
           )}
           {currentView === 'tables' && (
             <SwissTables user={user} token={token || ''} onJoinGame={(tableId) => {

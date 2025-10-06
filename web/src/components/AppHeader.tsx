@@ -7,6 +7,8 @@ interface AppHeaderProps {
   currentView: 'dashboard' | 'game' | 'tables' | 'rankings' | 'friends';
   onViewChange: (view: 'dashboard' | 'game' | 'tables' | 'rankings' | 'friends') => void;
   unreadNotifications?: number;
+  lang: 'en' | 'ch';
+  onLangChange: (lang: 'en' | 'ch') => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ 
@@ -14,7 +16,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   onLogout, 
   currentView, 
   onViewChange,
-  unreadNotifications = 0 
+  unreadNotifications = 0,
+  lang,
+  onLangChange
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -58,6 +62,28 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
         {/* User Actions */}
         <div style={styles.actions}>
+          {/* Language Selector */}
+          <div style={styles.langSelector}>
+            <button
+              style={{
+                ...styles.langButton,
+                ...(lang === 'en' ? styles.langButtonActive : {})
+              }}
+              onClick={() => onLangChange('en')}
+            >
+              EN
+            </button>
+            <button
+              style={{
+                ...styles.langButton,
+                ...(lang === 'ch' ? styles.langButtonActive : {})
+              }}
+              onClick={() => onLangChange('ch')}
+            >
+              🇨🇭 CH
+            </button>
+          </div>
+
           {/* Notifications */}
           <button 
             style={styles.iconButton}
@@ -209,6 +235,28 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
+  },
+  langSelector: {
+    display: 'flex',
+    gap: '0.25rem',
+    background: 'rgba(0, 0, 0, 0.2)',
+    padding: '0.25rem',
+    borderRadius: 10,
+  },
+  langButton: {
+    padding: '0.5rem 0.875rem',
+    border: 'none',
+    background: 'transparent',
+    borderRadius: 8,
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 600,
+    color: 'rgba(255, 255, 255, 0.7)',
+    transition: 'all 0.2s ease',
+  },
+  langButtonActive: {
+    background: 'rgba(255, 255, 255, 0.3)',
+    color: 'white',
   },
   iconButton: {
     position: 'relative' as const,
