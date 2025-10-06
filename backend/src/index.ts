@@ -47,6 +47,8 @@ app.get('/health', async (req, res) => {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       version: '2.0.0',
+      platform: 'raspberry-pi-docker',
+      hostname: require('os').hostname(),
       database: 'connected',
       features: [
         'user-authentication',

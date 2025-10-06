@@ -4,7 +4,7 @@
 
 [![Swiss Made](https://img.shields.io/badge/Swiss-Made-red?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjRkYwMDAwIi8+CjxyZWN0IHg9IjciIHk9IjMiIHdpZHRoPSI2IiBoZWlnaHQ9IjE0IiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCB4PSIzIiB5PSI3IiB3aWR0aD0iMTQiIGhlaWdodD0iNiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+)](https://github.com/JRudyRay/swiss-jass-app)
 [![Live Demo](https://img.shields.io/badge/🎮_Live-Demo-green?style=for-the-badge)](https://jrudyray.github.io/swiss-jass-app)
-[![Railway Backend](https://img.shields.io/badge/⚡_Railway-Backend-purple?style=for-the-badge)](https://swiss-jass-app-production.up.railway.app)
+[![Raspberry Pi Backend](https://img.shields.io/badge/🍓_Raspberry_Pi-Backend-green?style=for-the-badge)](http://your-pi-ip:3000)
 
 ![Swiss Jass Game Screenshot](https://via.placeholder.com/800x400/dcfce7/16a34a?text=🇨🇭+Swiss+Jass+•+Authentic+Schieber+Experience)
 
@@ -142,7 +142,7 @@ backend/
 ### 🌐 **Deployment**
 
 - **Frontend**: GitHub Pages with automated deployment
-- **Backend**: Railway.app with instant scaling
+- **Backend**: Self-hosted on Raspberry Pi with Docker
 - **Database**: SQLite with Prisma ORM
 - **CI/CD**: GitHub Actions for seamless updates
 
@@ -186,41 +186,42 @@ npm run reset:smoke    # Reset DB + smoke test
 4. **Manual deployment** (if needed)
    - Go to Actions tab → "Deploy to GitHub Pages" → "Run workflow"
 
-### ⚡ **Backend Deployment (Railway)**
+### 🍓 **Backend Deployment (Raspberry Pi)**
 
-**Status**: ✅ **Automatic deployment via Railway**
+**Status**: ✅ **Automatic deployment via GitHub Actions self-hosted runner**
 
-Railway automatically deploys your backend when connected to this GitHub repository:
+Docker deployment on Raspberry Pi automatically deploys when you push to this repository:
 
-1. **Connect to Railway** (one-time setup)
-   - Visit [railway.app](https://railway.app) and sign in with GitHub
-   - Create new project → "Deploy from GitHub repo"
-   - Select `swiss-jass-app` repository
-   - Railway auto-detects the backend and deploys
+1. **Setup Self-Hosted Runner** (one-time setup)
+   - Install GitHub Actions runner on your Raspberry Pi
+   - Runner automatically pulls latest code and deploys with Docker
+   - See `DOCKER_DEPLOYMENT.md` for complete setup instructions
 
-2. **Environment Variables** (set in Railway dashboard)
+2. **Environment Variables** (set on Pi in `.env` file)
    ```env
-   PORT=3001
-   JWT_SECRET=your-strong-secret-here
-   DATABASE_URL=file:./swiss_jass.db
+   PORT=3000
    NODE_ENV=production
+   DATABASE_URL=file:/data/swiss_jass.db
+   JWT_SECRET=your-strong-secret-here
    ```
 
 3. **Automatic Updates**
-   - Every push to `main` triggers automatic Railway deployment
-   - No GitHub Actions configuration needed (Railway handles it)
+   - Every push to `main` triggers automatic Pi deployment
+   - GitHub Actions runner on Pi handles Docker build and deployment
+   - Container orchestration via docker-compose
 
 4. **Check Deployment Status**
-   - Railway dashboard shows build logs and deployment status
-   - Backend URL: `https://your-project.up.railway.app`
+   - GitHub Actions shows deployment logs and status
+   - Backend URL: `http://your-pi-ip:3000`
+   - Health check: `http://your-pi-ip:3000/health`
 
 ### 🔗 **Connecting Frontend to Backend**
 
-Update `web/src/config.ts` with your Railway backend URL:
+Update `web/src/config.ts` with your Raspberry Pi IP address:
 
 ```typescript
 export const API_BASE_URL = import.meta.env.PROD 
-  ? 'https://your-project.up.railway.app'
+  ? 'http://your-pi-ip:3000'
   : 'http://localhost:3001';
 ```
 
