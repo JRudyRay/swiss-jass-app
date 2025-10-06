@@ -53,6 +53,8 @@ jobs:
           port: ${{ env.DEPLOY_PI_PORT || '22' }}
           script_stop: true
           command_timeout: 30m
+          timeout: 10s
+          debug: true
           script: |
             set -euo pipefail
             APP_DIR="${PI_APP_DIR:-}"
