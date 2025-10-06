@@ -28,76 +28,46 @@ on:
 
 jobs:
   deploy:
-    name: SSH deploy to Raspberry Pi
-    runs-on: ubuntu-latest
-    env:
-      DEPLOY_PI_HOST: ${{ secrets.PI_HOST }}
-      DEPLOY_PI_USER: ${{ secrets.PI_SSH_USER }}
-      DEPLOY_PI_KEY: ${{ secrets.PI_SSH_KEY }}
-      DEPLOY_PI_PORT: ${{ secrets.PI_SSH_PORT }}
-      DEPLOY_PI_APP_DIR: /home/pi/apps/swiss-jass-app
-      DEPLOY_PI_BRANCH: main
+    name: Deploy to Raspberry Pi
+    runs-on: self-hosted
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run deployment script on Raspberry Pi
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.PI_HOST }}
-          username: ${{ secrets.PI_SSH_USER }}
-          key: ${{ secrets.PI_SSH_KEY }}
-          port: ${{ secrets.PI_SSH_PORT || '22' }}
-          script_stop: true
-          command_timeout: 30m
-          timeout: 30s
-          debug: true
-          script: |
-            set -euo pipefail
-            APP_DIR="/home/pi/apps/swiss-jass-app"
-            BRANCH="main"
-            
-            mkdir -p "$APP_DIR"
-            if [ ! -d "$APP_DIR/.git" ]; then
-              echo "Cloning repository"
-              git clone https://github.com/${{ github.repository }} "$APP_DIR"
-            fi
-            cd "$APP_DIR"
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            git reset --hard "origin/$BRANCH"
-            git clean -fd
-            
-            # Set up environment variables for production
-            export NODE_ENV=production
-            
-            # Create data directory for database persistence
-            mkdir -p data
-            
-            # Stop existing containers gracefully
-            docker compose down --timeout 30 || true
-            
-            # Build and start the containers
-            echo "Building and starting Docker containers..."
-            docker compose up -d --build
-            
-            # Wait for container to be ready
-            echo "Waiting for container to be ready..."
-            sleep 15
-            
-            # Run database migrations
-            echo "Running database migrations..."
-            docker compose exec -T swiss-jass-backend npx prisma migrate deploy || echo "Migration failed or no migrations to run"
-            
-            # Clean up old Docker images to save space
-            echo "Cleaning up old Docker images..."
-            docker image prune -f --filter "until=24h" 2>/dev/null || true
-            
-            # Show container status
-            echo "Deployment completed. Container status:"
-            docker compose ps
-            
-            # Verify health endpoint
-            echo "Checking health endpoint..."
-            sleep 5
-            curl -f http://localhost:3000/health || echo "Health check failed, but container may still be starting"
+      - name: Deploy with Docker
+        run: |
+          set -euo pipefail
+          
+          # Set up environment variables for production
+          export NODE_ENV=production
+          
+          # Create data directory for database persistence
+          mkdir -p data
+          
+          # Stop existing containers gracefully
+          docker compose down --timeout 30 || true
+          
+          # Build and start the containers
+          echo "Building and starting Docker containers..."
+          docker compose up -d --build
+          
+          # Wait for container to be ready
+          echo "Waiting for container to be ready..."
+          sleep 15
+          
+          # Run database migrations
+          echo "Running database migrations..."
+          docker compose exec -T swiss-jass-backend npx prisma migrate deploy || echo "Migration failed or no migrations to run"
+          
+          # Clean up old Docker images to save space
+          echo "Cleaning up old Docker images..."
+          docker image prune -f --filter "until=24h" 2>/dev/null || true
+          
+          # Show container status
+          echo "Deployment completed. Container status:"
+          docker compose ps
+          
+          # Verify health endpoint
+          echo "Checking health endpoint..."
+          sleep 5
+          curl -f http://localhost:3000/health || echo "Health check failed, but container may still be starting"
