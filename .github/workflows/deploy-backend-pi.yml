@@ -42,27 +42,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run deployment script on Raspberry Pi
-        uses: appleboy/ssh-action@v1.0.0
-        env:
-          PI_APP_DIR: ${{ env.DEPLOY_PI_APP_DIR }}
-          PI_BRANCH: ${{ env.DEPLOY_PI_BRANCH }}
+        uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ env.DEPLOY_PI_HOST }}
-          username: ${{ env.DEPLOY_PI_USER }}
-          key: ${{ env.DEPLOY_PI_KEY }}
-          port: ${{ env.DEPLOY_PI_PORT || '22' }}
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_SSH_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || '22' }}
           script_stop: true
           command_timeout: 30m
-          timeout: 10s
+          timeout: 30s
           debug: true
           script: |
             set -euo pipefail
-            APP_DIR="${PI_APP_DIR:-}"
-            BRANCH="${PI_BRANCH:-main}"
-            if [ -z "$APP_DIR" ]; then
-              echo "PI_APP_DIR secret is required" >&2
-              exit 1
-            fi
+            APP_DIR="/home/pi/apps/swiss-jass-app"
+            BRANCH="main"
+            
             mkdir -p "$APP_DIR"
             if [ ! -d "$APP_DIR/.git" ]; then
               echo "Cloning repository"
