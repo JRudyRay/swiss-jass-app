@@ -33,6 +33,12 @@ jobs:
     name: Deploy to Raspberry Pi
     runs-on: self-hosted
     steps:
+      - name: Clean workspace
+        run: |
+          # Fix permissions on files created by Docker before checkout
+          sudo chown -R $(whoami):$(whoami) . || true
+          sudo chmod -R u+w . || true
+          
       - name: Checkout repository
         uses: actions/checkout@v4
 
