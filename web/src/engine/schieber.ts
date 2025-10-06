@@ -675,6 +675,16 @@ export function resolveTrick(state: State): State {
     const team2Score = st.scores.team2;
     team1Players.forEach(p => p.points = team1Score);
     team2Players.forEach(p => p.points = team2Score);
+
+    // Check if either team has reached the winning score (1000 points)
+    // If so, keep the game in 'finished' phase instead of starting a new hand
+    if (st.scores.team1 >= 1000 || st.scores.team2 >= 1000) {
+      // Game is complete - stay in 'finished' phase
+      st.phase = 'finished';
+    } else {
+      // Continue to next hand
+      st.phase = 'playing';
+    }
   } else {
     st.phase = 'playing';
   }

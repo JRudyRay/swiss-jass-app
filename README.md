@@ -45,6 +45,8 @@ npm install
 npm run dev
 ```
 
+> 📂 **New to the project?** See [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) for a complete guide to the codebase organization.
+
 ## 🎪 Features
 
 ### 🃏 **Authentic Schieber Jass Experience**
@@ -144,37 +146,164 @@ backend/
 - **Database**: SQLite with Prisma ORM
 - **CI/CD**: GitHub Actions for seamless updates
 
+## 🧪 Testing
+
+This project includes comprehensive tests for game rules, rankings, and multiplayer functionality:
+
+- **Game Engine Tests**: Schieben, trump multipliers, Weis scoring
+- **Rankings Tests**: Bot exclusion, multiplayer-only tracking, TrueSkill calculations
+- **Integration Tests**: Friend system, table creation, multiplayer flows
+- **Smoke Tests**: Quick verification of core functionality
+
+**Quick Start**:
+```bash
+cd backend
+npm run smoke          # Friend & table creation tests
+npm run multi          # Multiplayer flow test
+npm run reset:smoke    # Reset DB + smoke test
+```
+
+📖 **See [docs/TESTING.md](docs/TESTING.md) for complete testing guide**, including:
+- How to run all test suites
+- Test coverage goals and current status
+- Known gaps and limitations (async engine, E2E tests)
+- CI/CD integration
+- Contributing to tests
+
 ## 🚀 Deployment Guide
 
 ### 📱 **Frontend Deployment (GitHub Pages)**
 
+**Status**: ✅ **Automatic deployment configured**
+
 1. **Fork the repository** on GitHub
 2. **Enable GitHub Pages** in repository settings
-3. **Automatic deployment** via GitHub Actions
-4. **Live in minutes** at `https://yourusername.github.io/swiss-jass-app`
+   - Go to Settings → Pages
+   - Source: GitHub Actions
+3. **Automatic deployment** via GitHub Actions (`.github/workflows/deploy.yml`)
+   - Every push to `main` triggers automatic build and deployment
+   - Live in minutes at `https://yourusername.github.io/swiss-jass-app`
+4. **Manual deployment** (if needed)
+   - Go to Actions tab → "Deploy to GitHub Pages" → "Run workflow"
 
-### 🔧 **Backend Deployment (Raspberry Pi)**
+### ⚡ **Backend Deployment (Railway)**
 
-1. **Prepare the Pi**
-   - Install the latest LTS Node.js (e.g. via [`nvm`](https://github.com/nvm-sh/nvm)) and Git.
-   - Install `pm2` globally (`npm install -g pm2`) or create a `systemd` service for long-running use.
-   - Open the backend port (default `3000`) on your network/router.
-2. **Initial checkout** (one-time)
-   - SSH into the Pi and run `bash deploy/raspberry-pi/deploy-backend.sh /home/pi/apps/swiss-jass-app` to clone the repo, install dependencies, and build once.
-   - Create `backend/.env` with at least:
-     ```env
-     PORT=3000
-     JWT_SECRET=replace-with-strong-secret
-     DATABASE_URL="file:./swiss_jass.db"
-     NODE_ENV=production
-     ```
-   - Start the process with pm2 (`pm2 start dist/index.js --name swiss-jass-backend`) or enable your service unit.
-3. **Configure GitHub Actions secrets** (Repository → Settings → Secrets and variables):
-   - Secrets → `PI_HOST` (public IP or DNS), `PI_SSH_USER`, `PI_SSH_KEY` (private key with access to the Pi), optional `PI_SSH_PORT`.
-   - (Optional) Variables → override `PI_APP_DIR` or `PI_BRANCH` in `.github/workflows/deploy-backend-pi.yml` if your paths differ.
-4. **Automated deploy**
-   - On every push to `main` that touches backend code, `.github/workflows/deploy-backend-pi.yml` will SSH into the Pi, run the deployment script (`npm ci`, `npm run build`), and restart the pm2/systemd process.
-   - Manual runs are available via the *Run workflow* button in the Actions tab.
+**Status**: ✅ **Automatic deployment via Railway**
+
+Railway automatically deploys your backend when connected to this GitHub repository:
+
+1. **Connect to Railway** (one-time setup)
+   - Visit [railway.app](https://railway.app) and sign in with GitHub
+   - Create new project → "Deploy from GitHub repo"
+   - Select `swiss-jass-app` repository
+   - Railway auto-detects the backend and deploys
+
+2. **Environment Variables** (set in Railway dashboard)
+   ```env
+   PORT=3001
+   JWT_SECRET=your-strong-secret-here
+   DATABASE_URL=file:./swiss_jass.db
+   NODE_ENV=production
+   ```
+
+3. **Automatic Updates**
+   - Every push to `main` triggers automatic Railway deployment
+   - No GitHub Actions configuration needed (Railway handles it)
+
+4. **Check Deployment Status**
+   - Railway dashboard shows build logs and deployment status
+   - Backend URL: `https://your-project.up.railway.app`
+
+### 🔗 **Connecting Frontend to Backend**
+
+Update `web/src/config.ts` with your Railway backend URL:
+
+```typescript
+export const API_BASE_URL = import.meta.env.PROD 
+  ? 'https://your-project.up.railway.app'
+  : 'http://localhost:3001';
+```
+
+Then rebuild and push to trigger GitHub Pages deployment.
+
+## 📊 Rankings & Statistics
+
+### 🏆 **How Rankings Work**
+
+The Swiss Jass app uses a sophisticated **TrueSkill ranking system** to provide fair and accurate player ratings:
+
+- **Multiplayer Games Only**: Only games played against real human opponents count toward rankings
+- **Bot Games Excluded**: Practice games against AI bots don't affect your rating (learn risk-free!)
+- **TrueSkill Algorithm**: Uses Microsoft's TrueSkill system (better than simple win/loss ratios)
+- **Team-Based**: Your rating reflects your performance as both an individual and team player
+
+### ⚙️ **What Gets Tracked**
+
+| Metric | Description | Multiplayer Only |
+|--------|-------------|------------------|
+| **TrueSkill µ (Mu)** | Your skill rating (starts at 25.0) | ✅ Yes |
+| **TrueSkill σ (Sigma)** | Rating uncertainty (lower = more confident) | ✅ Yes |
+| **Total Games** | Number of multiplayer matches played | ✅ Yes |
+| **Total Wins** | Number of multiplayer matches won | ✅ Yes |
+| **Win Rate** | Calculated as Total Wins / Total Games | ✅ Yes |
+
+### 🚫 **What Doesn't Count**
+
+- ❌ Offline games (single-player vs bots)
+- ❌ Local practice games
+- ❌ Games where all players are bots
+- ❌ Incomplete/abandoned games
+
+### 🤖 **Bot Player Handling**
+
+- **Bot Exclusion**: Bot users (`bot_1`, `bot_2`, `bot_3`) are automatically excluded from rankings
+- **Mixed Games**: In multiplayer games with bots filling empty seats, only real players get stats updates
+- **Database Schema**: Bot users have `isBot = true` flag to ensure clean separation
+
+### 🔄 **Database Management**
+
+#### Reset Database (Development)
+
+```bash
+# Full reset with seed data
+cd backend
+npm run db:reset
+
+# This will:
+# 1. Drop all tables
+# 2. Re-apply Prisma migrations
+# 3. Seed with test users (alice, bob, charlie, dave)
+# 4. Reset all rankings to defaults
+```
+
+#### Seed Test Data
+
+```bash
+# Just add test users without resetting
+cd backend
+npm run db:seed
+```
+
+#### Manual Database Inspection
+
+```bash
+# Open SQLite database
+cd backend/prisma
+sqlite3 swiss_jass.db
+
+# Example queries
+sqlite> SELECT username, totalGames, totalWins, trueSkillMu FROM User WHERE isBot = 0;
+sqlite> SELECT * FROM GameSession WHERE isMultiplayer = 1 ORDER BY createdAt DESC LIMIT 10;
+```
+
+### 📈 **Ranking Transparency**
+
+View your detailed stats:
+1. **In-Game**: Rankings page shows leaderboard with all metrics
+2. **Database**: Direct SQLite queries for power users
+3. **API**: `/api/users/rankings` endpoint returns JSON data
+
+All ranking calculations are **deterministic and reproducible** - resetting the database and replaying the same games will yield identical rankings.
 
 ## 🤝 Contributing
 

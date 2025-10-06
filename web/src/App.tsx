@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { JassGame } from './JassGame';
 import { AuthForm } from './AuthForm';
+import ErrorBoundary from './components/ErrorBoundary';
+import './GameTable.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,13 +42,19 @@ function App() {
   };
 
   if (!isAuthenticated) {
-    return <AuthForm onLogin={handleLogin} />;
+    return (
+      <ErrorBoundary>
+        <AuthForm onLogin={handleLogin} />
+      </ErrorBoundary>
+    );
   }
 
   return (
-    <div>
-      <JassGame user={user} onLogout={handleLogout} />
-    </div>
+    <ErrorBoundary>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        <JassGame user={user} onLogout={handleLogout} />
+      </div>
+    </ErrorBoundary>
   );
 }
 

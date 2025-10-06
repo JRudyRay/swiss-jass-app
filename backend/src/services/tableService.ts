@@ -90,11 +90,21 @@ export class TableService {
   static async joinTable(tableId: string, userId: string, password?: string) {
   const table = await prisma.gameTable.findUnique({ where: { id: tableId }, include: { players: true } });
     if (!table) throw new Error('Table not found');
-    if (table.status !== 'OPEN') throw new Error('Table not open');
+    
+    // ✅ GUARD: Cannot join games in progress
+    if (table.status !== 'OPEN') {
+      throw new Error('Table is not accepting new players (status: ' + table.status + ')');
+    }
+    
     if (table.isPrivate) {
       if (!password || password !== table.password) throw new Error('Invalid table password');
     }
-    if (table.players.length >= table.maxPlayers) throw new Error('Table full');
+    
+    // ✅ GUARD: Check capacity
+    if (table.players.length >= table.maxPlayers) {
+      throw new Error(`Table is full (${table.players.length}/${table.maxPlayers} players)`);
+    }
+    
     const existing = table.players.find(p => p.userId === userId);
     if (existing) return this.getTable(tableId);
 
@@ -117,7 +127,17 @@ export class TableService {
     if (!table) throw new Error('Table not found');
     const host = table.players.find(p => p.userId === userId && p.isHost);
     if (!host) throw new Error('Only host can start');
-    if (table.status !== 'OPEN') throw new Error('Already started');
+    
+    // ✅ GUARD: Check table state
+    if (table.status !== 'OPEN') {
+      throw new Error(`Cannot start table in status '${table.status}'`);
+    }
+    
+    // ✅ GUARD: Require minimum players (at least 2 for a valid game)
+    if (table.players.length < 2) {
+      throw new Error(`Cannot start game with only ${table.players.length} player(s). Need at least 2.`);
+    }
+    
     // Determine seating: ensure two human players (if exactly 2) are opposite (0 & 2)
     let players = [...table.players];
     const humanPlayers = players.filter(p => !p.userId.startsWith('BOT_'));
@@ -141,7 +161,18 @@ export class TableService {
       const botEmail = `bot_${i+1}@bots.local`;
       let botUser = await prisma.user.findFirst({ where: { username: botUsername } });
       if (!botUser) {
-        botUser = await prisma.user.create({ data: { username: botUsername, email: botEmail, password: '!' } });
+        // Create bot user with isBot flag to exclude from rankings
+        botUser = await prisma.user.create({ 
+          data: { 
+            username: botUsername, 
+            email: botEmail, 
+            password: '!',
+            isBot: true  // Mark as bot to exclude from all rankings/stats
+          } 
+        });
+      } else if (!botUser.isBot) {
+        // Ensure existing bot users are flagged correctly
+        await prisma.user.update({ where: { id: botUser.id }, data: { isBot: true } });
       }
       await prisma.gameTablePlayer.create({ data: { tableId, userId: botUser.id, seatIndex, /* @ts-ignore */ isReady: true } as any });
     }

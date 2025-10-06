@@ -6,6 +6,10 @@ import YouTubePlayer from './YouTubePlayer';
 import { API_URL } from './config';
 import { io, Socket } from 'socket.io-client';
 import Rankings from './components/Rankings';
+import VictoryModal from './components/VictoryModal';
+import Toast from './components/Toast';
+import GameHeader from './components/GameHeader';
+import { Loading, Spinner, SkeletonCard, EmptyState } from './components/Loading';
 
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
@@ -259,6 +263,18 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
+  
+  // New UX components state
+  const [showVictory, setShowVictory] = useState(false);
+  const [winningTeam, setWinningTeam] = useState<number>(1);
+  const [toast, setToast] = useState<{ message: string; type: 'default' | 'success' | 'error' | 'warning' } | null>(null);
+  
+  // Toast helper function
+  const showToast = (message: string, type: 'default' | 'success' | 'error' | 'warning' = 'default') => {
+    setToast({ message, type });
+    setMessage(message); // Also update old message display for now
+  };
+  
   // Ref to avoid stale closure inside initial socket effect
   const activeTableIdRef = useRef<string | null>(null);
   useEffect(() => { activeTableIdRef.current = activeTableId; }, [activeTableId]);
@@ -490,15 +506,18 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         setShowLastTrick(newSt.lastTrick || null);
         await new Promise(r=>setTimeout(r, 2000));
         setShowLastTrick(null);
-  // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
-  // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
+        // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
+        // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
         // if maxPoints reached by either team, stop; else start a fresh local round
         const t1 = newSt.scores.team1 || 0; const t2 = newSt.scores.team2 || 0;
         if (t1 >= maxPoints || t2 >= maxPoints) {
-          setMessage('Match finished — max points reached');
-          // mark match finished and update state so UI can react
+          // NEW UX: Show victory modal with confetti!
+          const winner = t1 >= maxPoints ? 1 : 2;
+          setWinningTeam(winner);
+          setShowVictory(true);
           setMatchFinished(true);
           setGameState({ ...toGameState(newSt), phase: 'finished' });
+          setToast({ message: `${teamNames[winner]} wins!`, type: 'success' });
           
           // Update backend stats if this is an online game
           if (gameId && API_URL) {
@@ -1388,13 +1407,30 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       setSocket(s);
       s.on('connect', () => {});
       s.on('presence:count', (p: any) => setOnlineCount(p.online));
-  s.on('tables:updated', () => fetchTables());
-  s.on('table:starting', (_p: any) => { setTab('game'); setMessage('Waiting for players to be ready...'); });
-    s.on('game:dealerAssigned', (data: any) => {
-      setMultiplayerGameId(data.gameId);
-      setDealerUserId(data.dealerUserId);
-      setMessage(`Dealer assigned: ${data.dealerUserId}`);
-    });
+      s.on('tables:updated', () => fetchTables());
+      
+      // CRITICAL FIX: Handle table:starting for ALL players (including non-room members)
+      s.on('table:starting', (payload: any) => {
+        console.debug('[multiplayer] table:starting received', payload);
+        // If this is the table we're in, switch to game tab and set gameId
+        if (payload?.tableId === activeTableIdRef.current) {
+          setTab('game');
+          setMode('multi');
+          if (payload?.gameId) {
+            setMultiplayerGameId(payload.gameId);
+          }
+          setMessage('Game starting...');
+          // Ensure we're in the socket room
+          s.emit('table:join', { tableId: payload.tableId });
+        }
+      });
+      
+      s.on('game:dealerAssigned', (data: any) => {
+        setMultiplayerGameId(data.gameId);
+        setDealerUserId(data.dealerUserId);
+        setMessage(`Dealer assigned: ${data.dealerUserId}`);
+      });
+      
       s.on('table:started', (payload: any) => {
         // Redirect both users to game tab
         setTab('game');
@@ -1814,7 +1850,26 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
               </div>
             </div>
           ))}
-          {!tables.length && <div style={{ fontSize:14, color:'#6b7280', background:'#fff', border:'1px dashed #d1d5db', padding:'28px 32px', borderRadius:14, textAlign:'center' }}>No public tables yet — be the first to create one!</div>}
+          {!tables.length && (
+            <EmptyState
+              icon="🎴"
+              title="No Active Tables"
+              description="Be the first to create a public table and invite friends to play!"
+              action={
+                <button 
+                  onClick={() => createTable('My Table')}
+                  disabled={creatingTable}
+                  style={{
+                    ...styles.button,
+                    padding: '12px 24px',
+                    fontSize: '1rem'
+                  }}
+                >
+                  {creatingTable ? <><Spinner size="sm" /> Creating...</> : '+ Create First Table'}
+                </button>
+              }
+            />
+          )}
         </div>
       </div>
     );
@@ -1828,32 +1883,43 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
         <button style={styles.button} onClick={()=>{ sendFriendRequest(friendInput); setFriendInput(''); }}>Add</button>
         <button style={styles.button} onClick={fetchFriends}>Refresh</button>
       </div>
-      {friendsLoading && <div style={{ fontSize:12 }}>Loading...</div>}
-      <h4 style={{ margin:'8px 0 4px' }}>Friends</h4>
-      <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-        {friendsTabData.friends.map(f => <div key={f.id} style={{ background:'#fff', padding:'6px 10px', borderRadius:20, fontSize:12, border:'1px solid #e5e7eb', display:'flex', alignItems:'center', gap:6 }}>
-          <span style={{ width:8, height:8, borderRadius:4, background: f.online? '#10b981':'#9ca3af', display:'inline-block' }} />
-          {f.username}
-        </div>)}
-        {!friendsTabData.friends.length && <div style={{ fontSize:12, color:'#555' }}>No friends yet</div>}
-      </div>
-      <h4 style={{ margin:'12px 0 4px' }}>Requests</h4>
-      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-        {friendsTabData.requests.map(r => (
-          <div key={r.id} style={{ background:'#fff', padding:'8px 10px', borderRadius:8, border:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <div style={{ fontSize:12 }}>
-              {r.senderId === user?.id ? `To ${r.receiver?.username}` : `From ${r.sender?.username}`} – {r.status}
-            </div>
-            {r.status==='PENDING' && r.receiverId === user?.id && (
-              <div style={{ display:'flex', gap:6 }}>
-                <button style={{ ...styles.button, background:'#1A7A4C' }} onClick={()=>respondFriendRequest(r.id,true)}>Accept</button>
-                <button style={{ ...styles.button, background:'#D42E2C' }} onClick={()=>respondFriendRequest(r.id,false)}>Decline</button>
-              </div>
+      {friendsLoading && <Loading message="Loading friends..." />}
+      {!friendsLoading && (
+        <>
+          <h4 style={{ margin:'8px 0 4px' }}>Friends</h4>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {friendsTabData.friends.map(f => <div key={f.id} style={{ background:'#fff', padding:'6px 10px', borderRadius:20, fontSize:12, border:'1px solid #e5e7eb', display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ width:8, height:8, borderRadius:4, background: f.online? '#10b981':'#9ca3af', display:'inline-block' }} />
+              {f.username}
+            </div>)}
+            {!friendsTabData.friends.length && (
+              <EmptyState
+                icon="👥"
+                title="No Friends Yet"
+                description="Add friends to play multiplayer games together"
+                style={{ gridColumn: '1 / -1' }}
+              />
             )}
           </div>
-        ))}
-        {!friendsTabData.requests.length && <div style={{ fontSize:12, color:'#555' }}>No requests</div>}
-      </div>
+          <h4 style={{ margin:'12px 0 4px' }}>Requests</h4>
+          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            {friendsTabData.requests.map(r => (
+              <div key={r.id} style={{ background:'#fff', padding:'8px 10px', borderRadius:8, border:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div style={{ fontSize:12 }}>
+                  {r.senderId === user?.id ? `To ${r.receiver?.username}` : `From ${r.sender?.username}`} – {r.status}
+                </div>
+                {r.status==='PENDING' && r.receiverId === user?.id && (
+                  <div style={{ display:'flex', gap:6 }}>
+                    <button style={{ ...styles.button, background:'#1A7A4C' }} onClick={()=>respondFriendRequest(r.id,true)}>Accept</button>
+                    <button style={{ ...styles.button, background:'#D42E2C' }} onClick={()=>respondFriendRequest(r.id,false)}>Decline</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {!friendsTabData.requests.length && <div style={{ fontSize:12, color:'#555' }}>No pending requests</div>}
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -1975,20 +2041,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
 
   return (
     <div style={styles.container}>
-      <div style={styles.header}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-        <img src={logo} alt="Swiss Jass Logo" style={{ height: 50, borderRadius: 8 }} />
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, letterSpacing: '-0.05em' }}>Swiss Jass</h1>
-      </div></div>
+      <GameHeader 
+        lang={lang} 
+        onLangChange={(newLang) => setLang(newLang)}
+      />
       <div style={styles.gameArea}>
         <div style={styles.message}>{message}</div>
-        
-        {/* Language selector in top right */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <select value={lang} onChange={e=>setLang(e.target.value as any)} style={{ padding:6, borderRadius:6 }} title="Language">
-            <option value="en">🇺🇸 English</option>
-            <option value="ch">🇨🇭 Schwiizerdütsch</option>
-          </select>
-        </div>
 
         {renderModeSwitcher()}
 
@@ -2482,11 +2540,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                     ...styles.button, 
                     background: '#059669', color: 'white', 
                     padding: '12px 24px', fontSize: '1rem', fontWeight: '600',
-                    boxShadow: '0 4px 12px rgba(5,150,105,0.3)'
+                    boxShadow: '0 4px 12px rgba(5,150,105,0.3)',
+                    opacity: isLoading ? 0.7 : 1,
+                    cursor: isLoading ? 'not-allowed' : 'pointer'
                   }} 
                   onClick={() => { setMatchFinished(false); createGame(); }}
+                  disabled={isLoading}
                 >
-                  🎮 {T[lang].playAgain}
+                  {isLoading ? <><Spinner size="sm" /> Creating...</> : `🎮 ${T[lang].playAgain}`}
                 </button>
                 <button 
                   style={{ 
@@ -2534,7 +2595,69 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
             </div>
           </div>
         </div>
+
+        {/* Credits Footer */}
+        <div style={{
+          marginTop: 24,
+          padding: '12px 16px',
+          background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+          borderRadius: 8,
+          border: '1px solid #d1d5db',
+          fontSize: 11,
+          color: '#6b7280',
+          lineHeight: 1.6,
+          textAlign: 'center'
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 4, color: '#374151' }}>
+            Swiss Jass Card Designs
+          </div>
+          <div>
+            Card symbols rendered using custom SVG graphics based on authentic Swiss Jass traditions.
+            <br />
+            Eicheln (Acorns) • Schellen (Bells) • Rosen (Roses) • Schilten (Shields)
+          </div>
+          <div style={{ marginTop: 8, fontSize: 10, color: '#9ca3af' }}>
+            Court figures (Unter, Ober, König) represent traditional Swiss card characters.
+            <br />
+            © 2025 Swiss Jass App - Cultural heritage preserved digitally
+          </div>
+        </div>
       </div>
+      
+      {/* NEW UX COMPONENTS */}
+      {/* Victory Modal with Confetti */}
+      {showVictory && (
+        <VictoryModal
+          isOpen={showVictory}
+          winningTeam={winningTeam}
+          teamNames={teamNames}
+          finalScores={{ team1: gameState?.scores?.team1 || 0, team2: gameState?.scores?.team2 || 0 }}
+          roundHistory={roundHistory}
+          onPlayAgain={() => {
+            setShowVictory(false);
+            setMatchFinished(false);
+            if (isLocal) {
+              startLocalGameWithOptions();
+            } else {
+              setTab('tables');
+            }
+          }}
+          onClose={() => {
+            setShowVictory(false);
+            setTab('rankings');
+          }}
+        />
+      )}
+      
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3000}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

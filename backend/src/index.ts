@@ -270,37 +270,155 @@ io.on('connection', (socket: any) => {
   });
   
   // Handle dealer's trump selection from client
-  socket.on('game:selectTrump', (data: { tableId: string; gameId: string; trump: string }) => {
+  socket.on('game:selectTrump', async (data: { tableId: string; gameId: string; trump: string }) => {
     const { tableId, gameId, trump } = data;
     try {
       const engine = require('./gameHub').gameHub.get(gameId);
       const stateBefore = engine.getGameState();
+      
+      // ✅ VALIDATION: Check if game is in correct phase
+      if (stateBefore.phase !== 'trump_selection') {
+        socket.emit('game:error', { 
+          message: `Cannot select trump in phase '${stateBefore.phase}'`,
+          code: 'INVALID_PHASE'
+        });
+        return;
+      }
+
+      // ✅ VALIDATION: Map socket user to player
+      if (!userId) {
+        socket.emit('game:error', { 
+          message: 'Authentication required',
+          code: 'UNAUTHENTICATED'
+        });
+        return;
+      }
+
+      const players = engine.getPlayers();
+      const player = players.find((p: any) => p.userId === userId);
+      
+      if (!player) {
+        socket.emit('game:error', { 
+          message: 'You are not a player in this game',
+          code: 'NOT_IN_GAME'
+        });
+        return;
+      }
+
+      // ✅ VALIDATION: Check if it's this player's turn
+      if (stateBefore.currentPlayer !== players.indexOf(player)) {
+        socket.emit('game:error', { 
+          message: `Not your turn (current player: ${stateBefore.currentPlayer})`,
+          code: 'NOT_YOUR_TURN'
+        });
+        return;
+      }
+      
       // Dealer selects trump
       engine.selectTrump(trump as any, stateBefore.dealer);
       const newState = engine.getGameState();
+      
       // Broadcast updated game state to all clients in the table room
-      io.to(`table:${tableId}`).emit('game:state', { tableId, state: newState, players: engine.getPlayers(), gameId });
+      io.to(`table:${tableId}`).emit('game:state', { 
+        tableId, 
+        state: newState, 
+        players: engine.getPlayers(), 
+        gameId 
+      });
     } catch (err) {
       console.error('Error processing selectTrump:', err);
+      socket.emit('game:error', { 
+        message: 'Failed to select trump',
+        code: 'TRUMP_SELECTION_FAILED'
+      });
     }
   });
 
   // Handle a player's card play in multiplayer
-  socket.on('game:playCard', (data: { tableId: string; gameId: string; playerId: number; cardId: string }) => {
+  socket.on('game:playCard', async (data: { tableId: string; gameId: string; playerId: number; cardId: string }) => {
     const { tableId, gameId, playerId, cardId } = data;
     try {
       const engine = require('./gameHub').gameHub.get(gameId);
-      const ok = engine.playCard(cardId, playerId);
-      if (!ok) {
-        // Optionally, emit an error back only to the player
-        socket.emit('game:error', { message: 'Illegal card play', cardId });
+      const state = engine.getGameState();
+      
+      // ✅ VALIDATION: Check if game is in playing phase
+      if (state.phase !== 'playing') {
+        socket.emit('game:error', { 
+          message: `Cannot play cards in phase '${state.phase}'`,
+          code: 'INVALID_PHASE'
+        });
         return;
       }
+
+      // ✅ VALIDATION: Authenticate user
+      if (!userId) {
+        socket.emit('game:error', { 
+          message: 'Authentication required',
+          code: 'UNAUTHENTICATED'
+        });
+        return;
+      }
+
+      const players = engine.getPlayers();
+      const player = players.find((p: any) => p.userId === userId);
+      
+      if (!player) {
+        socket.emit('game:error', { 
+          message: 'You are not a player in this game',
+          code: 'NOT_IN_GAME'
+        });
+        return;
+      }
+
+      const playerIndex = players.indexOf(player);
+
+      // ✅ VALIDATION: Check turn order
+      if (state.currentPlayer !== playerIndex) {
+        socket.emit('game:error', { 
+          message: `Not your turn (current player: ${state.currentPlayer}, you are: ${playerIndex})`,
+          code: 'NOT_YOUR_TURN'
+        });
+        return;
+      }
+
+      // ✅ VALIDATION: Check card legality
+      const legalCards = engine.getLegalCards(playerIndex);
+      const isLegal = legalCards.some((c: any) => c.id === cardId);
+      
+      if (!isLegal) {
+        socket.emit('game:error', { 
+          message: 'Illegal card play (must follow suit or play trump)',
+          code: 'ILLEGAL_CARD',
+          legalCards: legalCards.map((c: any) => c.id)
+        });
+        return;
+      }
+      
+      // ✅ All validations passed - apply the move
+      const ok = engine.playCard(cardId, playerIndex);
+      if (!ok) {
+        // Should not happen after validations, but defensive check
+        socket.emit('game:error', { 
+          message: 'Card play rejected by engine',
+          code: 'PLAY_REJECTED'
+        });
+        return;
+      }
+      
       // Broadcast updated state to table
       const newState = engine.getGameState();
-      io.to(`table:${tableId}`).emit('game:state', { tableId, state: newState, players: engine.getPlayers(), gameId });
+      io.to(`table:${tableId}`).emit('game:state', { 
+        tableId, 
+        state: newState, 
+        players: engine.getPlayers(), 
+        gameId 
+      });
     } catch (err) {
       console.error('Error processing playCard:', err);
+      socket.emit('game:error', { 
+        message: 'Failed to play card',
+        code: 'PLAY_FAILED'
+      });
     }
   });
 });
