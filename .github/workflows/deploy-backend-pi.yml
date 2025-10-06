@@ -7,7 +7,9 @@ on:
       - 'backend/**'
       - '.github/workflows/deploy-backend-pi.yml'
       - 'deploy/raspberry-pi/**'
-  workflow_dispatch:
+      - 'docker-compose.yml'
+      - 'Dockerfile'
+  workflow_dispatch:  # This allows manual triggering
   workflow_call:
     secrets:
       PI_HOST:

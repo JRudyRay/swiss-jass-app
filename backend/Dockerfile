@@ -8,13 +8,13 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install all dependencies (including dev dependencies for build)
-RUN npm ci
-
-# Copy Prisma schema
+# Copy Prisma schema first (needed for npm ci postinstall)
 COPY prisma ./prisma/
 
-# Generate Prisma client
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci --include=dev
+
+# Generate Prisma client explicitly
 RUN npx prisma generate
 
 # Copy source code
@@ -39,8 +39,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install only production dependencies (no postinstall issues)
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy Prisma schema and generated client
 COPY --from=builder /app/prisma ./prisma/

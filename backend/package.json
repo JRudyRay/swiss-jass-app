@@ -10,8 +10,7 @@
     "reset:smoke": "ts-node scripts/resetAndSmoke.ts",
     "multi": "ts-node src/tests/multiplayerFlow.test.ts",
     "db:reset": "npx prisma migrate reset --force && npx prisma db push && npx tsx scripts/seed.ts",
-    "db:seed": "npx tsx scripts/seed.ts",
-    "postinstall": "npx prisma generate"
+    "db:seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",
