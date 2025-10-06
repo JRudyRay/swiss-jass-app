@@ -135,7 +135,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
   changePassword: 'Change Password',
   username: 'Username',
   newPassword: 'New password',
-  savePassword: 'Save Password'
+  savePassword: 'Save Password',
+  confirmNewGame: 'Start a new game? Current progress will be lost.'
     },
     ch: {
   welcome: 'Willkomme bi Swiss Jass!',
@@ -143,6 +144,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
   weisPoints: 'Weis Punkt',
   weisNotCount: '(zählt nicht)',
   weisRulesTitle: 'Weis Regle',
+  confirmNewGame: 'Es neus Spiel starte? Aktuelle Fortschritt gaht verlore.',
   weisRulesDesc: 'Nur d Team mit em bestä Weis kassiert Punkt. Weis wärend em erschte Stich angekündigt und werdet automatisch nach Trump-Auswahl entdeckt.',
       currentTrump: 'Trump jetzt',
       roundScores: 'Rundi — Team1',
@@ -861,6 +863,44 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
     setMessage('Local game started — select trump or have bots choose');
     // store engine state in ref-like place (we'll keep in localStorage for now)
   saveLocalState(st);
+  };
+
+  // Reset game to initial welcome screen state
+  const resetToWelcome = () => {
+    // Clear all game state
+    setGameState(null);
+    setPlayers([]);
+    setHand([]);
+    setLegalCards([]);
+    setSelectedCard(null);
+    setChosenTrump(null);
+    setUiPendingResolve(false);
+    setMatchFinished(false);
+    setShowVictory(false);
+    setRoundHistory([]);
+    setOrientedTrick([]);
+    setAnimatingSwoop(null);
+    setWinnerFlash(null);
+    setShowLastTrick(null);
+    
+    // Clear multiplayer state
+    setMultiGameState(null);
+    setMultiplayerGameId(null);
+    setActiveTableId(null);
+    setMySeat(null);
+    setDealerUserId(null);
+    
+    // Reset to welcome screen
+    setOptionsVisible(true);
+    setSetupChoice('welcome');
+    setIsLocal(false);
+    
+    // Clear localStorage
+    try {
+      localStorage.removeItem('jassLocalState');
+    } catch {}
+    
+    setMessage(T[lang].welcome);
   };
 
   const startLocalGameWithOptions = () => {
@@ -2041,7 +2081,40 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
   return (
     <div style={styles.container}>
       <div style={styles.gameArea}>
-        <div style={styles.message}>{message}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={styles.message}>{message}</div>
+          
+          {/* Quick action buttons - always available when not on welcome screen */}
+          {(showPlaySurface || setupChoice !== 'welcome') && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              {gameState && (
+                <button
+                  onClick={() => {
+                    if (confirm(T[lang].confirmNewGame || 'Start a new game? Current progress will be lost.')) {
+                      resetToWelcome();
+                    }
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#ef4444',
+                    color: 'white',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#dc2626'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#ef4444'}
+                >
+                  🔄 {T[lang].newGame || 'New Game'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Game-only HUD (scores, trump, history) */}
         {showPlaySurface && (
@@ -2807,11 +2880,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
             setShowVictory(false);
             setMatchFinished(false);
             if (isLocal) {
+              // Start another local game with same settings
               startLocalGameWithOptions();
+            } else {
+              // For multiplayer, return to welcome to choose again
+              resetToWelcome();
             }
           }}
           onClose={() => {
-            setShowVictory(false);
+            // Return to welcome screen to choose new game
+            resetToWelcome();
           }}
         />
       )}
