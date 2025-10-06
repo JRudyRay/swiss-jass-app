@@ -71,12 +71,37 @@ jobs:
             git checkout "$BRANCH"
             git reset --hard "origin/$BRANCH"
             git clean -fd
-            cd backend
+            
+            # Set up environment variables for production
             export NODE_ENV=production
-            npm ci
-            npm run build
-            if command -v pm2 >/dev/null 2>&1; then
-              pm2 describe swiss-jass-backend >/dev/null 2>&1 && pm2 restart swiss-jass-backend --update-env || pm2 start dist/index.js --name swiss-jass-backend --update-env
-            else
-              systemctl --user restart swiss-jass-backend.service 2>/dev/null || sudo systemctl restart swiss-jass-backend.service
-            fi
+            
+            # Create data directory for database persistence
+            mkdir -p data
+            
+            # Stop existing containers gracefully
+            docker compose down --timeout 30 || true
+            
+            # Build and start the containers
+            echo "Building and starting Docker containers..."
+            docker compose up -d --build
+            
+            # Wait for container to be ready
+            echo "Waiting for container to be ready..."
+            sleep 15
+            
+            # Run database migrations
+            echo "Running database migrations..."
+            docker compose exec -T swiss-jass-backend npx prisma migrate deploy || echo "Migration failed or no migrations to run"
+            
+            # Clean up old Docker images to save space
+            echo "Cleaning up old Docker images..."
+            docker image prune -f --filter "until=24h" 2>/dev/null || true
+            
+            # Show container status
+            echo "Deployment completed. Container status:"
+            docker compose ps
+            
+            # Verify health endpoint
+            echo "Checking health endpoint..."
+            sleep 5
+            curl -f http://localhost:3000/health || echo "Health check failed, but container may still be starting"

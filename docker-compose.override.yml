@@ -1,0 +1,13 @@
+# Docker Compose override for development
+version: '3.8'
+
+services:
+  swiss-jass-backend:
+    environment:
+      - NODE_ENV=development
+    volumes:
+      # Mount source code for development
+      - ./backend/src:/app/src
+    ports:
+      - "3000:3000"
+    command: ["npm", "run", "dev"]

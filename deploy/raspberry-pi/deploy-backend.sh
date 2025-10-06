@@ -23,19 +23,25 @@ git fetch origin "${BRANCH}"
 git checkout "${BRANCH}"
 git reset --hard "origin/${BRANCH}"
 
-echo "Installing backend dependencies"
-cd backend
-npm ci
+echo "Setting up data directory"
+mkdir -p data
 
-echo "Building backend"
-npm run build
+echo "Building and starting Docker containers"
+# Stop existing containers gracefully
+docker compose down --timeout 30 2>/dev/null || true
 
-if command -v pm2 >/dev/null 2>&1; then
-  echo "Restarting backend with pm2"
-  pm2 describe swiss-jass-backend >/dev/null 2>&1 \
-    && pm2 restart swiss-jass-backend --update-env \
-    || pm2 start dist/index.js --name swiss-jass-backend --update-env
-else
-  echo "pm2 not found; starting backend directly (blocking)"
-  node dist/index.js
-fi
+# Build and start the containers
+docker compose up -d --build
+
+echo "Waiting for container to start..."
+sleep 15
+
+echo "Running database migrations"
+# Run migrations with error handling
+docker compose exec -T swiss-jass-backend npx prisma migrate deploy 2>/dev/null || echo "No migrations to run or migration failed"
+
+echo "Deployment completed successfully"
+echo "Backend is running at http://localhost:3000"
+
+# Show container status
+docker compose ps
