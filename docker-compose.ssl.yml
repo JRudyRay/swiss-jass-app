@@ -32,7 +32,8 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl
       - ./nginx/certbot:/var/www/certbot
     depends_on:
-      - swiss-jass-backend
+      swiss-jass-backend:
+        condition: service_healthy
     networks:
       - swiss-jass-network
 
