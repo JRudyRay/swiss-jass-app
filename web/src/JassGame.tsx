@@ -194,7 +194,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [message, setMessage] = useState(T[lang].welcome);
   const [isLoading, setIsLoading] = useState(false);
-  const [tab, setTab] = useState<'game'|'rankings'|'settings'|'profile'|'tables'|'friends'>('game');
   const [usersList, setUsersList] = useState<Array<{ id: string; username: string; totalPoints: number; totalWins?: number; totalGames?: number }>>([]);
   const [totals, setTotals] = useState<Record<string, number>>(() => {
     try {
@@ -237,6 +236,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
   // dialect selection removed - translations handled via `lang` ('en'|'ch')
   const [teamNames, setTeamNames] = useState<{1:string;2:string}>(() => ({ 1: 'Team 1', 2: 'Team 2' }));
   const [optionsVisible, setOptionsVisible] = useState(true);
+  const [setupChoice, setSetupChoice] = useState<'welcome' | 'single' | 'multi'>('welcome');
 
   // simplify optional checks used in JSX
   const animCards = animatingSwoop?.cards ?? [];
@@ -1790,14 +1790,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     setMessage(T[lang].multiModeHint);
   };
 
-  // Rendering helpers
-  const renderModeSwitcher = () => (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', margin: '12px 0' }}>
-      <button style={{ ...styles.button, background: mode==='single'? '#1A7A4C':'#64748b' }} onClick={() => handleSwitchMode('single')}>Single Player</button>
-      <button style={{ ...styles.button, background: mode==='multi'? '#1A7A4C':'#64748b' }} onClick={() => handleSwitchMode('multi')}>Multiplayer</button>
-      {mode==='multi' && <span style={{ alignSelf:'center', fontSize:12, color:'#374151' }}>Online: {onlineCount}</span>}
-    </div>
-  );
+  // Unused rendering functions removed (tables/friends/tabs moved to standalone views)
+
+  // Apply multiplayer game state to UI
 
   const renderTables = () => {
     const statusTheme: Record<string, { bg: string; color: string; label: string }> = {
@@ -2049,7 +2044,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
     }
   }, [multiGameState]);
 
-  const showPlaySurface = tab === 'game' && (!optionsVisible || (mode === 'multi' && !!gameState));
+  const showPlaySurface = !optionsVisible || (mode === 'multi' && !!gameState);
 
   return (
     <div style={styles.container}>
@@ -2059,18 +2054,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
       />
       <div style={styles.gameArea}>
         <div style={styles.message}>{message}</div>
-
-        {renderModeSwitcher()}
-
-        {renderTabs()}
-
-        {/* Tab content injection for new multiplayer features */}
-        {tab === 'tables' && mode==='multi' && (
-          <div style={{ marginBottom:24 }}>{renderTables()}</div>
-        )}
-        {tab === 'friends' && mode==='multi' && (
-          <div style={{ marginBottom:24 }}>{renderFriends()}</div>
-        )}
 
         {/* Game-only HUD (scores, trump, history) */}
         {showPlaySurface && (
@@ -2273,7 +2256,208 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
           </div>
         )}
 
-        {tab === 'game' && optionsVisible && mode === 'single' && (
+        {/* Welcome Screen - shown when user hasn't chosen single or multi yet */}
+        {optionsVisible && setupChoice === 'welcome' && (
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ 
+              width: '100%', 
+              maxWidth: 900, 
+              background: 'linear-gradient(135deg, #FF0000 0%, #DC143C 100%)', 
+              borderRadius: 20, 
+              padding: '48px 32px', 
+              boxShadow: '0 24px 60px rgba(220, 20, 60, 0.4)', 
+              border: '2px solid rgba(255, 255, 255, 0.2)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Swiss Cross Pattern Background */}
+              <div style={{ 
+                position: 'absolute', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0, 
+                opacity: 0.08,
+                backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 35px, white 35px, white 40px),
+                                  repeating-linear-gradient(90deg, transparent, transparent 35px, white 35px, white 40px)`,
+                pointerEvents: 'none'
+              }} />
+
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                {/* Header */}
+                <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                  <div style={{ fontSize: 56, marginBottom: 12 }}>🇨🇭</div>
+                  <h2 style={{ 
+                    margin: 0, 
+                    fontSize: 36, 
+                    fontWeight: 900, 
+                    color: '#ffffff', 
+                    textShadow: '0 2px 12px rgba(0,0,0,0.2)',
+                    letterSpacing: '-0.5px'
+                  }}>
+                    Grüezi! Willkommen zum Jass
+                  </h2>
+                  <p style={{ 
+                    margin: '12px 0 0', 
+                    fontSize: 16, 
+                    color: 'rgba(255, 255, 255, 0.95)', 
+                    fontWeight: 500,
+                    lineHeight: 1.5
+                  }}>
+                    Choose your Swiss Jass adventure below
+                  </p>
+                </div>
+
+                {/* Two Main Options */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+                  gap: 24,
+                  marginBottom: 32
+                }}>
+                  {/* Local Game Option */}
+                  <button
+                    onClick={() => {
+                      setMode('single');
+                      setSetupChoice('single');
+                    }}
+                    style={{
+                      background: '#ffffff',
+                      border: 'none',
+                      borderRadius: 16,
+                      padding: 32,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                      textAlign: 'left'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.2)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
+                    }}
+                  >
+                    <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontSize: 24, 
+                      fontWeight: 800, 
+                      color: '#1f2937',
+                      marginBottom: 8
+                    }}>
+                      Play Local vs Bots
+                    </h3>
+                    <p style={{ 
+                      margin: 0, 
+                      fontSize: 14, 
+                      color: '#6b7280', 
+                      lineHeight: 1.6,
+                      marginBottom: 16
+                    }}>
+                      Practice your skills against AI opponents. Perfect for learning the game or playing offline.
+                    </p>
+                    <div style={{ 
+                      display: 'inline-block',
+                      background: '#dcfce7',
+                      color: '#166534',
+                      padding: '6px 12px',
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      ⚡ Instant Start
+                    </div>
+                  </button>
+
+                  {/* Online Game Option */}
+                  <button
+                    onClick={() => {
+                      setMode('multi');
+                      setSetupChoice('multi');
+                    }}
+                    style={{
+                      background: '#ffffff',
+                      border: 'none',
+                      borderRadius: 16,
+                      padding: 32,
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                      textAlign: 'left'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.2)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
+                    }}
+                  >
+                    <div style={{ fontSize: 48, marginBottom: 16 }}>🌐</div>
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontSize: 24, 
+                      fontWeight: 800, 
+                      color: '#1f2937',
+                      marginBottom: 8
+                    }}>
+                      Play Online
+                    </h3>
+                    <p style={{ 
+                      margin: 0, 
+                      fontSize: 14, 
+                      color: '#6b7280', 
+                      lineHeight: 1.6,
+                      marginBottom: 16
+                    }}>
+                      Join tables and play with other Jass enthusiasts from around the world in real-time.
+                    </p>
+                    <div style={{ 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: '#dbeafe',
+                      color: '#1e40af',
+                      padding: '6px 12px',
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      <span style={{ 
+                        width: 8, 
+                        height: 8, 
+                        background: '#10b981', 
+                        borderRadius: '50%',
+                        display: 'inline-block'
+                      }} />
+                      {onlineCount} Online
+                    </div>
+                  </button>
+                </div>
+
+                {/* Footer Info */}
+                <div style={{ 
+                  textAlign: 'center', 
+                  color: 'rgba(255, 255, 255, 0.85)', 
+                  fontSize: 13,
+                  fontWeight: 500
+                }}>
+                  🏔️ Authentic Swiss Schieber Jass • 🧀 Traditional Rules • 🫕 Modern Interface
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {optionsVisible && setupChoice === 'single' && mode === 'single' && (
           <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
             <div style={{ width: '100%', maxWidth: 760, background: '#ffffff', borderRadius: 16, padding: '24px 28px', boxShadow: '0 18px 40px rgba(17, 24, 39, 0.12)', border: '1px solid #e5e7eb' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -2304,76 +2488,62 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void }> = ({ user
                 </label>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>{T[lang].autosaveHint}</div>
-                <button style={{ ...styles.button, padding: '12px 24px', fontSize: 15 }} onClick={startLocalGameWithOptions}>{T[lang].startLocalMatch}</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === 'game' && optionsVisible && mode === 'multi' && (
-          <div style={{ marginTop: 12, background: '#f9fafb', borderRadius: 14, padding: '16px 20px', border: '1px solid #e5e7eb', color: '#374151', fontSize: 13 }}>
-            {T[lang].multiTablesBlurb}
-          </div>
-        )}
-
-        {tab === 'rankings' && mode === 'multi' && (
-          <Rankings apiUrl={API_URL!} onBack={() => setTab('game')} onReset={resetTotals} />
-        )}
-
-  {tab === 'profile' && (
-          <div style={{ marginTop: 8 }}>
-            <h3>{T[lang].profile}</h3>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <div style={{ flex: 1, background: '#fff', padding: 12, borderRadius: 8 }}>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>{currentUserName}</div>
-                <div style={{ color: '#6b7280', marginTop: 8 }}>Total Points: {jassUsers[currentUserName]?.totalPoints ?? 0}</div>
-                <div style={{ color: '#6b7280' }}>Games Played: {jassUsers[currentUserName]?.gamesPlayed ?? 0}</div>
-                <div style={{ color: '#6b7280' }}>Wins: {jassUsers[currentUserName]?.wins ?? 0}</div>
-                <div style={{ color: '#6b7280' }}>Last Seen: {jassUsers[currentUserName]?.lastSeen ? new Date(jassUsers[currentUserName].lastSeen).toLocaleString() : '—'}</div>
-              </div>
-              <div style={{ width: 360, background: '#fff', padding: 12, borderRadius: 8 }}>
-                <h4>{T[lang].changePassword}</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <label>{T[lang].username}
-                    <input value={currentUserName} onChange={e=>setCurrentUserName(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
-                  </label>
-                  <label>{T[lang].newPassword}
-                    <input type="password" value={newPasswordInput} onChange={e=>setNewPasswordInput(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
-                  </label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button style={styles.button} onClick={handleChangePassword}>{T[lang].savePassword}</button>
-                    <button style={{ ...styles.button, background: '#6b7280' }} onClick={()=>{ setProfileMessage(null); setNewPasswordInput(''); }}>{T[lang].backToGame}</button>
-                  </div>
-                  {profileMessage && <div style={{ color: '#065f46', marginTop: 6 }}>{profileMessage}</div>}
+                <button 
+                  style={{ 
+                    padding: '10px 20px', 
+                    borderRadius: 10, 
+                    border: '1px solid #d1d5db', 
+                    background: '#ffffff', 
+                    color: '#4b5563', 
+                    cursor: 'pointer', 
+                    fontSize: 14, 
+                    fontWeight: 600 
+                  }} 
+                  onClick={() => setSetupChoice('welcome')}
+                >
+                  ← Back
+                </button>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{T[lang].autosaveHint}</div>
+                  <button style={{ ...styles.button, padding: '12px 24px', fontSize: 15 }} onClick={startLocalGameWithOptions}>{T[lang].startLocalMatch}</button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {tab === 'settings' && (
-          <div style={{ marginTop: 8 }}>
-            <h3>Settings</h3>
-            <div style={{ marginTop: 8 }}>
-              <label>Delete User: </label>
-              <select id="delete-user-select" style={{ marginLeft: 8 }}>
-                <option value="">-- Select user --</option>
-                {usersList.map(u => <option key={u.id} value={u.id}>{u.username} ({u.totalPoints} pts)</option>)}
-              </select>
-              <button style={{ ...styles.button, marginLeft: 8 }} onClick={async () => {
-                const sel = (document.getElementById('delete-user-select') as HTMLSelectElement).value;
-                if (!sel) return setMessage('Select a user to delete');
-                try {
-                  const res = await fetch(`${API_URL}/api/admin/users/${sel}`, { method: 'DELETE' });
-                  const d = await res.json();
-                  setMessage(d?.message || 'Deleted');
-                  // refresh list
-                  const r2 = await fetch(`${API_URL}/api/admin/users`);
-                  const j2 = await r2.json();
-                  if (j2?.success) setUsersList(j2.users || []);
-                } catch (e) { setMessage('Failed to delete user'); }
-              }}>Delete</button>
+        {optionsVisible && setupChoice === 'multi' && mode === 'multi' && (
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 760, background: '#ffffff', borderRadius: 16, padding: '24px 28px', boxShadow: '0 18px 40px rgba(17, 24, 39, 0.12)', border: '1px solid #e5e7eb' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1f2937' }}>Multiplayer Game</h3>
+                  <p style={{ margin: '6px 0 0', fontSize: 13, color: '#4b5563' }}>Join or create tables to play with others online</p>
+                </div>
+                <div style={{ background: '#2563eb', color: '#fff', borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600 }}>
+                  {onlineCount} Online
+                </div>
+              </div>
+              <div style={{ background: '#f9fafb', borderRadius: 14, padding: '16px 20px', border: '1px solid #e5e7eb', color: '#374151', fontSize: 13, marginBottom: 20 }}>
+                {T[lang].multiTablesBlurb || "Go to the Tables tab to create or join a game table. Once all players are ready, the game will begin automatically."}
+              </div>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button 
+                  style={{ 
+                    padding: '10px 20px', 
+                    borderRadius: 10, 
+                    border: '1px solid #d1d5db', 
+                    background: '#ffffff', 
+                    color: '#4b5563', 
+                    cursor: 'pointer', 
+                    fontSize: 14, 
+                    fontWeight: 600 
+                  }} 
+                  onClick={() => setSetupChoice('welcome')}
+                >
+                  ← Back
+                </button>
+              </div>
             </div>
           </div>
         )}
