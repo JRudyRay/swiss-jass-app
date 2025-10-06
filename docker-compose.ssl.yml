@@ -10,7 +10,7 @@ services:
       - PLATFORM=raspberry-pi-docker
     volumes:
       - ./backend/prisma/swiss_jass.db:/app/prisma/swiss_jass.db
-    command: npm start
+    command: ["dumb-init", "--", "node", "dist/index.js"]
     networks:
       - swiss-jass-network
     healthcheck:
