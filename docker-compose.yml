@@ -10,6 +10,8 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/swiss_jass.db
+      - PORT=3000
+    command: ["dumb-init", "--", "node", "dist/index.js"]
     volumes:
       # Mount database directory for persistence
       - ./data:/data
