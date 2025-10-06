@@ -1,0 +1,450 @@
+/* Premium Game Table Styles */
+
+.premium-game-table {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.game-table-container {
+  position: relative;
+  background: linear-gradient(135deg, #1a5f3b 0%, #0f4028 100%);
+  border-radius: 50%;
+  width: 100%;
+  aspect-ratio: 1;
+  box-shadow: 
+    inset 0 0 80px rgba(0, 0, 0, 0.4),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 12px #8b4513,
+    0 0 0 16px #654321;
+  padding: 3rem;
+  
+  /* Felt texture */
+  background-image: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+}
+
+.game-table-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+/* Card positions - circular layout */
+.card-position {
+  position: absolute;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-position.top {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+
+.card-position.right {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%) translateX(50%);
+}
+
+.card-position.bottom {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(50%);
+}
+
+.card-position.left {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%) translateX(-50%);
+}
+
+/* Player areas around the table */
+.player-area {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.player-area.north {
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.player-area.east {
+  right: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.player-area.south {
+  bottom: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.player-area.west {
+  left: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.player-info {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 150px;
+  transition: all 0.3s ease;
+}
+
+.player-info.active {
+  box-shadow: 0 0 0 3px #fbbf24, 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 3px #fbbf24, 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #fbbf24, 0 0 20px rgba(251, 191, 36, 0.5);
+  }
+}
+
+.player-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.player-details {
+  flex: 1;
+}
+
+.player-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f2937;
+  margin: 0;
+}
+
+.player-cards-count {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Trick center area */
+.trick-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.trick-count {
+  font-size: 2rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.trick-label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Player hand - fan layout */
+.player-hand {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  z-index: 100;
+}
+
+.hand-cards {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: -40px;
+  perspective: 1000px;
+}
+
+.hand-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.hand-card:hover {
+  transform: translateY(-20px) scale(1.05);
+  z-index: 10;
+}
+
+.hand-card:active {
+  transform: translateY(-10px) scale(0.98);
+}
+
+/* Trump indicator */
+.trump-indicator {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.trump-icon {
+  font-size: 2rem;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.trump-label {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Score display */
+.score-display {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+}
+
+.score-title {
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.team-score {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.team-score:last-child {
+  margin-bottom: 0;
+}
+
+.team-score.team1 {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.team-score.team2 {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.team-score.team1 .team-name {
+  color: #2563eb;
+}
+
+.team-score.team2 .team-name {
+  color: #dc2626;
+}
+
+.score-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Card dealing animation */
+@keyframes dealCard {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(720deg);
+  }
+}
+
+.card-dealing {
+  animation: dealCard 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Card play animation */
+@keyframes playCard {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-30px) scale(1.1);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card-playing {
+  animation: playCard 0.5s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .premium-game-table {
+    padding: 1rem;
+  }
+
+  .game-table-container {
+    padding: 2rem;
+  }
+
+  .player-area.north,
+  .player-area.south {
+    transform: translateX(-50%) scale(0.8);
+  }
+
+  .player-area.east,
+  .player-area.west {
+    transform: translateY(-50%) scale(0.8);
+  }
+
+  .score-display,
+  .trump-indicator {
+    transform: scale(0.85);
+  }
+
+  .hand-cards {
+    gap: -50px;
+  }
+}
+
+/* Lighting effects */
+.table-lighting {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+/* Turn indicator */
+.turn-arrow {
+  position: absolute;
+  font-size: 2rem;
+  animation: float-arrow 1.5s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes float-arrow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.turn-arrow.north {
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.turn-arrow.east {
+  right: -50px;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.turn-arrow.south {
+  bottom: -50px;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+}
+
+.turn-arrow.west {
+  left: -50px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+}

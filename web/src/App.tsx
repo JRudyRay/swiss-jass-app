@@ -3,7 +3,7 @@ import { JassGame } from './JassGame';
 import EnhancedAuthForm from './components/EnhancedAuthForm';
 import ErrorBoundary from './components/ErrorBoundary';
 import AppHeader from './components/AppHeader';
-import Dashboard from './components/Dashboard';
+import SwissDashboard from './components/SwissDashboard';
 import './GameTable.css';
 
 type View = 'dashboard' | 'game' | 'tables' | 'rankings' | 'friends';
@@ -67,7 +67,7 @@ function App() {
         />
         <main style={styles.main}>
           {currentView === 'dashboard' && (
-            <Dashboard user={user} onNavigate={setCurrentView} />
+            <SwissDashboard user={user} token={token || ''} onNavigate={setCurrentView} />
           )}
           {currentView === 'game' && (
             <JassGame user={user} onLogout={handleLogout} />
