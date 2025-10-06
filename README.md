@@ -1,103 +1,203 @@
-# 🇨🇭 Swiss Jass - Authentic Swiss Card Game
+# 🇨🇭 Swiss Jass# 🇨🇭 Swiss Jass - Authentic Swiss Card Game
 
-> *"En öchtä Schwizer Jass für alli!"* - An authentic Swiss Jass experience for everyone!
 
-[![Swiss Made](https://img.shields.io/badge/Swiss-Made-red?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjRkYwMDAwIi8+CjxyZWN0IHg9IjciIHk9IjMiIHdpZHRoPSI2IiBoZWlnaHQ9IjE0IiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCB4PSIzIiB5PSI3IiB3aWR0aD0iMTQiIGhlaWdodD0iNiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+)](https://github.com/JRudyRay/swiss-jass-app)
-[![Live Demo](https://img.shields.io/badge/🎮_Live-Demo-green?style=for-the-badge)](https://jrudyray.github.io/swiss-jass-app)
+
+> An authentic Swiss Jass (Schieber) card game with multiplayer support> *"En öchtä Schwizer Jass für alli!"* - An authentic Swiss Jass experience for everyone!
+
+
+
+[![Live Demo](https://img.shields.io/badge/🎮_Live-Demo-green?style=for-the-badge)](https://jrudyray.github.io/swiss-jass-app)[![Swiss Made](https://img.shields.io/badge/Swiss-Made-red?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjRkYwMDAwIi8+CjxyZWN0IHg9IjciIHk9IjMiIHdpZHRoPSI2IiBoZWlnaHQ9IjE0IiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCB4PSIzIiB5PSI3IiB3aWR0aD0iMTQiIGhlaWdodD0iNiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+)](https://github.com/JRudyRay/swiss-jass-app)
+
+[![Backend](https://img.shields.io/badge/🍓_Raspberry_Pi-Deployed-green?style=for-the-badge)](https://192.168.1.141)[![Live Demo](https://img.shields.io/badge/🎮_Live-Demo-green?style=for-the-badge)](https://jrudyray.github.io/swiss-jass-app)
+
 [![Raspberry Pi Backend](https://img.shields.io/badge/🍓_Raspberry_Pi-Backend-green?style=for-the-badge)](http://your-pi-ip:3000)
+
+## 🎯 Features
 
 ![Swiss Jass Game Screenshot](https://via.placeholder.com/800x400/dcfce7/16a34a?text=🇨🇭+Swiss+Jass+•+Authentic+Schieber+Experience)
 
-## 🏔️ About
+- ✅ **Authentic Swiss Jass Rules** - Official Schieber regulations
 
-Swiss Jass is the **most authentic web implementation** of the beloved Swiss card game Schieber Jass. Built with love for Swiss tradition and modern web technologies, it brings the authentic Beiz (tavern) experience to your browser.
+- ✅ **Multiplayer Support** - Real-time gameplay with Socket.IO## 🏔️ About
+
+- ✅ **User Authentication** - Secure JWT-based auth system  
+
+- ✅ **Smart AI Opponents** - Intelligent bots for practice gamesSwiss Jass is the **most authentic web implementation** of the beloved Swiss card game Schieber Jass. Built with love for Swiss tradition and modern web technologies, it brings the authentic Beiz (tavern) experience to your browser.
+
+- ✅ **HTTPS Deployment** - Secure production setup on Raspberry Pi
 
 ### 🎯 **Why This Implementation Stands Out**
 
-- ✅ **100% Authentic Swiss Rules** - Follows official Schieber Jass regulations
-- ✅ **Smart Trump Card Rules** - You can ALWAYS play trump cards (fixed!)
-- ✅ **Intelligent Bot AI** - Bots make strategic trump choices and card plays
-- ✅ **Authentic Weis Competition** - Only winning team's Weis count (Swiss style!)
-- ✅ **Professional Multiplayer** - Full backend with user accounts and rankings
-- ✅ **Swiss German Interface** - Toggle between English and Schwiizerdütsch
-- ✅ **Responsive Design** - Play on desktop, tablet, or mobile
-
 ## 🚀 Quick Start
 
-### 🎮 **Play Now** (Instant)
-Visit the live demo: **[Swiss Jass Game](https://jrudyray.github.io/swiss-jass-app)**
+- ✅ **100% Authentic Swiss Rules** - Follows official Schieber Jass regulations
 
-### 🔧 **Local Development**
+### Play Online- ✅ **Smart Trump Card Rules** - You can ALWAYS play trump cards (fixed!)
+
+Visit: **[https://jrudyray.github.io/swiss-jass-app](https://jrudyray.github.io/swiss-jass-app)**- ✅ **Intelligent Bot AI** - Bots make strategic trump choices and card plays
+
+- ✅ **Authentic Weis Competition** - Only winning team's Weis count (Swiss style!)
+
+### Local Development- ✅ **Professional Multiplayer** - Full backend with user accounts and rankings
+
+- ✅ **Swiss German Interface** - Toggle between English and Schwiizerdütsch
+
+**Frontend:**- ✅ **Responsive Design** - Play on desktop, tablet, or mobile
 
 ```bash
-# Clone the authentic Swiss experience
-git clone https://github.com/JRudyRay/swiss-jass-app.git
-cd swiss-jass-app
 
-# Frontend setup (React + TypeScript)
+cd web## 🚀 Quick Start
+
+npm install
+
+npm run dev### 🎮 **Play Now** (Instant)
+
+```Visit the live demo: **[Swiss Jass Game](https://jrudyray.github.io/swiss-jass-app)**
+
+
+
+**Backend:**### 🔧 **Local Development**
+
+```bash
+
+cd backend```bash
+
+npm install# Clone the authentic Swiss experience
+
+npm run devgit clone https://github.com/JRudyRay/swiss-jass-app.git
+
+```cd swiss-jass-app
+
+
+
+## 🏗️ Tech Stack# Frontend setup (React + TypeScript)
+
 cd web
+
+**Frontend:**npm install
+
+- React + TypeScriptnpm run dev
+
+- Vite
+
+- Socket.IO Client# Backend setup (Optional - for multiplayer)
+
+- TailwindCSScd ../backend
+
 npm install
-npm run dev
 
-# Backend setup (Optional - for multiplayer)
-cd ../backend
-npm install
-npm run dev
-```
+**Backend:**npm run dev
 
-> 📂 **New to the project?** See [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) for a complete guide to the codebase organization.
+- Node.js + Express```
 
-## 🎪 Features
+- TypeScript
 
-### 🃏 **Authentic Schieber Jass Experience**
+- Socket.IO> 📂 **New to the project?** See [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) for a complete guide to the codebase organization.
 
-| Feature | Description |
-|---------|-------------|
-| **Swiss Trump Contracts** | Eicheln, Schellen, Rosen, Schilten, Oben-abe, Unden-ufe |
+- Prisma + SQLite
+
+- JWT Authentication## 🎪 Features
+
+
+
+**Deployment:**### 🃏 **Authentic Schieber Jass Experience**
+
+- GitHub Pages (Frontend)
+
+- Raspberry Pi + Docker (Backend)| Feature | Description |
+
+- Nginx reverse proxy with HTTPS|---------|-------------|
+
+- GitHub Actions for CI/CD| **Swiss Trump Contracts** | Eicheln, Schellen, Rosen, Schilten, Oben-abe, Unden-ufe |
+
 | **Authentic Scoring** | Proper point values with multipliers (2x, 3x, 4x) |
-| **Weis Competition** | Stöck, sequences, four-of-a-kinds with Swiss rules |
+
+## 📚 Documentation| **Weis Competition** | Stöck, sequences, four-of-a-kinds with Swiss rules |
+
 | **Dealer Rotation** | Proper dealer progression and trump selection order |
-| **Last Trick Bonus** | +5 points for winning the final trick |
+
+- [Deployment Guide](./DEPLOYMENT.md) - Raspberry Pi HTTPS setup| **Last Trick Bonus** | +5 points for winning the final trick |
+
+- [Development Docs](./docs/) - Architecture and implementation details
 
 ### 🤖 **Intelligent Bot Players**
 
+## 🎮 Game Rules
+
 - **Smart Trump Selection**: Bots analyze hand strength and make strategic choices
-- **Strategic Card Play**: Bots understand Swiss Jass tactics
+
+Swiss Jass (Schieber) is played with 4 players in teams of 2. Key features:- **Strategic Card Play**: Bots understand Swiss Jass tactics
+
 - **Team Coordination**: Bots play cooperatively with their partner
-- **Authentic Names**: Anna, Reto, and Fritz - your Swiss Jass companions
 
-### 🏆 **Professional Multiplayer System**
+- **36 Swiss cards** (4 suits: Eicheln, Rosen, Schilten, Schellen)- **Authentic Names**: Anna, Reto, and Fritz - your Swiss Jass companions
 
-- **User Accounts**: Register and track your Jass journey
+- **Trump selection** by dealer
+
+- **Weis (melds)** for bonus points### 🏆 **Professional Multiplayer System**
+
+- **Match bonus** (last trick = 5 points)
+
+- **Target:** First team to 1000 points wins- **User Accounts**: Register and track your Jass journey
+
 - **Rankings & Statistics**: See who's the best Jass player
-- **Game History**: Track rounds, scores, and victories
+
+## 🔧 Development- **Game History**: Track rounds, scores, and victories
+
 - **Point System**: Earn points based on victory margins
 
-### 🇨🇭 **Swiss Authenticity**
+**Run tests:**
 
-- **Swiss German Interface**: Play in authentic Schwiizerdütsch
+```bash### 🇨🇭 **Swiss Authenticity**
+
+npm test
+
+```- **Swiss German Interface**: Play in authentic Schwiizerdütsch
+
 - **Traditional Terminology**: Stöck, Wies, Schieben, and more
-- **Swiss Styling**: Authentic green and white color scheme
-- **Cultural Elements**: Mountain music, Swiss emojis, traditional sayings
 
-## 🎯 How to Play Schieber Jass
+**Build for production:**- **Swiss Styling**: Authentic green and white color scheme
 
-### 📚 **Basic Rules**
+```bash- **Cultural Elements**: Mountain music, Swiss emojis, traditional sayings
 
-1. **Dealing**: 9 cards per player (36-card deck)
-2. **Trump Selection**: Choose from 6 contracts or "schieben" (pass to partner)
+cd web && npm run build
+
+```## 🎯 How to Play Schieber Jass
+
+
+
+**Docker deployment:**### 📚 **Basic Rules**
+
+```bash
+
+docker compose -f docker-compose.ssl.yml up -d1. **Dealing**: 9 cards per player (36-card deck)
+
+```2. **Trump Selection**: Choose from 6 contracts or "schieben" (pass to partner)
+
 3. **Playing**: Follow suit if possible, trump cards can ALWAYS be played
-4. **Weis Declaration**: Declare melds during first trick
+
+## 📝 License4. **Weis Declaration**: Declare melds during first trick
+
 5. **Scoring**: First team to reach 1000 points wins
+
+MIT License - See [LICENSE](./LICENSE)
 
 ### 🏅 **Trump Contracts & Multipliers**
 
+## 🤝 Contributing
+
 | Contract | Multiplier | Description |
-|----------|------------|-------------|
+
+Contributions welcome! Please feel free to submit a Pull Request.|----------|------------|-------------|
+
 | **Eicheln** | 1x | Acorns are trump |
-| **Rosen** | 1x | Roses are trump |
+
+---| **Rosen** | 1x | Roses are trump |
+
 | **Schellen** | 2x | Bells are trump (higher risk/reward) |
-| **Schilten** | 2x | Shields are trump (higher risk/reward) |
+
+Made with ❤️ for Swiss Jass enthusiasts| **Schilten** | 2x | Shields are trump (higher risk/reward) |
+
 | **Oben-abe** | 3x | Highest cards win (no trump suit) |
 | **Unden-ufe** | 4x | Lowest cards win (everything inverted) |
 
