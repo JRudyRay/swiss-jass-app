@@ -52,3 +52,6 @@ web/node_modules/.cache/gh-pages/
 *.db
 *.db-journal
 !prisma/schema.prisma
+
+# Claude Code local settings
+.claude/settings.local.json

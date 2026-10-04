@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(*db:reset*)",
+      "Bash(*prisma migrate reset*)",
+      "Bash(*npm run deploy*)",
+      "Bash(*gh-pages*)",
+      "Bash(*config.svc.sh*)",
+      "Bash(*actions-runner*)"
+    ]
+  }
+}
