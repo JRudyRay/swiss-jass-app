@@ -19,6 +19,7 @@ const en = {
   },
   trick: { takes: (name: string) => `${name} takes the trick`, youTake: 'You take the trick' },
   victory: { youWon: 'Your team wins the match.', youLost: 'The opponents win the match.', rounds: 'Rounds', breakdown: 'Round by round', close: 'Close' },
+  setup: { title: 'New match', subtitle: 'Schieber against three bots', teams: 'Teams', yourTeam: 'Your team', opponents: 'Opponents', partner: (name: string) => `with ${name}`, custom: 'Custom', targetHint: (n: number) => `First team to ${n} points wins`, multipliers: 'Multipliers', start: 'Start match' },
   game: {
     welcome: 'Welcome to Swiss Jass!',
     noCardsPlayed: 'No cards played',

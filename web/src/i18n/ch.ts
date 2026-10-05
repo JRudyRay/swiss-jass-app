@@ -21,6 +21,7 @@ const ch: Messages = {
   },
   trick: { takes: (name: string) => `${name} macht dä Stich`, youTake: 'Du machsch dä Stich' },
   victory: { youWon: 'Eues Team gwünnt dä Match.', youLost: 'D Gägner gwünned dä Match.', rounds: 'Runde', breakdown: 'Rundi für Rundi', close: 'Schliesse' },
+  setup: { title: 'Neus Spiel', subtitle: 'Schieber gäge drei Bots', teams: 'Teams', yourTeam: 'Dis Team', opponents: 'Gägner', partner: (name: string) => `mit ${name}`, custom: 'Eiges', targetHint: (n: number) => `Wer zerscht ${n} Pünkt hät, gwünnt`, multipliers: 'Zählig', start: 'Spiel starte' },
   game: {
     welcome: 'Willkomme bim Swiss Jass!',
     noCardsPlayed: 'No kei Charte gspilt',

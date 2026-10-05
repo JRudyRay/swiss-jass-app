@@ -10,9 +10,9 @@ const TRICK_POS: Record<string, { left: string; top: string; rot: number }> = {
   center: { left: '50%', top: '50%', rot: 0 },
 };
 
-// Trick collection timing: the winning card is highlighted, then the pile slides to the winner.
+// Trick collection timing: the winning card is highlighted, then the pile swoops to the winner.
 export const HIGHLIGHT_MS = 650;
-export const SLIDE_MS = 480;
+export const SLIDE_MS = 620;
 export const COLLECT_MS = HIGHLIGHT_MS + SLIDE_MS + 60;
 
 export type TrickCard = { card: any; seat: string };
@@ -29,38 +29,62 @@ const reducedMotion = () => {
 };
 
 // The cards in the middle of the felt. While `collect` is set, the winning card lifts and glows,
-// then every card slides into the winner's name plate (found via `data-seat` on the table).
+// then every card swoops into the winner's name plate (found via `data-seat` on the table).
 export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
   const boxRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [sliding, setSliding] = useState(false);
-  const [deltas, setDeltas] = useState<Record<string, { x: number; y: number }>>({});
 
   useEffect(() => {
     setSliding(false);
-    setDeltas({});
     if (!collect) return;
     const id = setTimeout(() => setSliding(true), HIGHLIGHT_MS);
     return () => clearTimeout(id);
   }, [collect?.winnerSeat, collect?.winningCardId]);
 
+  // The cards gather onto the winning card, then swoop in an arc into the winner's seat.
   useLayoutEffect(() => {
     if (!sliding || !collect) return;
     const table = boxRef.current?.closest('[data-jass-table]');
     const target = table?.querySelector(`[data-seat="${collect.winnerSeat}"]`)?.getBoundingClientRect();
-    if (!target) return;
-    const tx = target.left + target.width / 2;
-    const ty = target.top + target.height / 2;
-    const next: Record<string, { x: number; y: number }> = {};
-    for (const [id, el] of Object.entries(cardRefs.current)) {
-      if (!el) continue;
-      const r = el.getBoundingClientRect();
-      next[id] = { x: tx - (r.left + r.width / 2), y: ty - (r.top + r.height / 2) };
-    }
-    setDeltas(next);
+    const winEl = cardRefs.current[collect.winningCardId];
+    if (!target || !winEl) return;
+    const center = (r: DOMRect) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    const t = center(target);
+    const w = center(winEl.getBoundingClientRect());
+    const still = reducedMotion();
+    const anims: Animation[] = [];
+    Object.entries(cardRefs.current).forEach(([id, el], i) => {
+      if (!el || typeof el.animate !== 'function') return;
+      if (still) {
+        anims.push(el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }));
+        return;
+      }
+      const c = center(el.getBoundingClientRect());
+      const g = { x: w.x - c.x, y: w.y - c.y };     // gather point
+      const e = { x: t.x - c.x, y: t.y - c.y };     // end point
+      const dx = e.x - g.x, dy = e.y - g.y;
+      const len = Math.hypot(dx, dy) || 1;
+      // Bow the path sideways so it reads as a swoop, not a straight slide.
+      const bow = Math.min(60, len * 0.28);
+      const mid = { x: g.x + dx * 0.55 - (dy / len) * bow, y: g.y + dy * 0.55 + (dx / len) * bow };
+      const tilt = Math.max(-25, Math.min(25, dx / 8));
+      const rot = (TRICK_POS[seatOf[id]] || TRICK_POS.center).rot;
+      const tr = (p: { x: number; y: number }, r: number, s: number) =>
+        `translate(calc(-50% + ${p.x}px), calc(-50% + ${p.y}px)) rotate(${r}deg) scale(${s})`;
+      const fan = (i - 1.5) * 2;
+      anims.push(el.animate([
+        { offset: 0, transform: tr({ x: 0, y: 0 }, id === collect.winningCardId ? 0 : rot, id === collect.winningCardId ? 1.08 : 1), opacity: 1, easing: 'cubic-bezier(0.3, 0, 0.2, 1)' },
+        { offset: 0.28, transform: tr(g, fan, 1.04), opacity: 1, easing: 'cubic-bezier(0.5, 0, 0.6, 1)' },
+        { offset: 0.68, transform: tr(mid, tilt, 0.72), opacity: 1, easing: 'cubic-bezier(0.3, 0, 0.4, 1)' },
+        { offset: 1, transform: tr(e, tilt * 1.4, 0.32), opacity: 0 },
+      ], { duration: SLIDE_MS, fill: 'forwards' }));
+    });
+    return () => anims.forEach(a => a.cancel());
   }, [sliding]);
 
-  const still = reducedMotion();
+  const seatOf: Record<string, string> = {};
+  cards.forEach(({ card, seat }, i) => { seatOf[String(card.id ?? i)] = seat; });
 
   return (
     <div ref={boxRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -68,20 +92,13 @@ export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
         const id = String(card.id ?? i);
         const pos = TRICK_POS[seat] || TRICK_POS.center;
         const isWinner = !!collect && collect.winningCardId === id;
-        const d = deltas[id];
-        const moving = sliding && !!d;
-        const transform = moving
-          ? `translate(calc(-50% + ${still ? 0 : d.x}px), calc(-50% + ${still ? 0 : d.y}px)) rotate(${pos.rot}deg) scale(0.3)`
-          : `translate(-50%,-50%) rotate(${isWinner ? 0 : pos.rot}deg) scale(${isWinner ? 1.08 : 1})`;
+        const transform = `translate(-50%,-50%) rotate(${isWinner ? 0 : pos.rot}deg) scale(${isWinner ? 1.08 : 1})`;
         return (
           <div key={id} ref={el => { cardRefs.current[id] = el; }} style={{
             position: 'absolute', left: pos.left, top: pos.top, transform,
             zIndex: isWinner ? 20 : i + 1,
-            opacity: moving ? 0 : 1,
-            transition: moving
-              ? `transform ${SLIDE_MS}ms cubic-bezier(0.45, 0, 0.2, 1), opacity ${SLIDE_MS}ms cubic-bezier(0.7, 0, 1, 1)`
-              : 'transform 220ms ease, filter 220ms ease',
-            filter: collect && !isWinner && !moving ? 'brightness(0.82)' : 'none',
+            transition: 'transform 220ms ease, filter 220ms ease',
+            filter: collect && !isWinner && !sliding ? 'brightness(0.82)' : 'none',
           }}>
             <div style={{
               borderRadius: 8,

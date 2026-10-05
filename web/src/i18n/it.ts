@@ -21,6 +21,7 @@ const it: Messages = {
   },
   trick: { takes: (name: string) => `${name} fa la presa`, youTake: 'Fai la presa' },
   victory: { youWon: 'La vostra squadra vince la partita.', youLost: 'Gli avversari vincono la partita.', rounds: 'Mani', breakdown: 'Mano per mano', close: 'Chiudi' },
+  setup: { title: 'Nuova partita', subtitle: 'Schieber contro tre bot', teams: 'Squadre', yourTeam: 'La tua squadra', opponents: 'Avversari', partner: (name: string) => `con ${name}`, custom: 'Altro', targetHint: (n: number) => `Vince la prima squadra a ${n} punti`, multipliers: 'Moltiplicatori', start: 'Inizia la partita' },
   game: {
     welcome: 'Benvenuti a Swiss Jass!',
     noCardsPlayed: 'Nessuna carta giocata',

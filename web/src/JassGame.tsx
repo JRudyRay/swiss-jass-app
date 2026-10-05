@@ -12,6 +12,7 @@ import TrickArea, { COLLECT_MS } from './components/table/TrickArea';
 import { API_URL, ONLINE_ENABLED } from './config';
 import { io, Socket } from 'socket.io-client';
 import Rankings from './components/Rankings';
+import MatchSetup from './components/setup/MatchSetup';
 import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
 import { Loading, Spinner, SkeletonCard, EmptyState } from './components/Loading';
@@ -1850,7 +1851,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     <div style={styles.container}>
       <div style={styles.gameArea}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div style={styles.message}>{message}</div>
+          {showPlaySurface && <div style={styles.message}>{message}</div>}
           
           {/* Quick action buttons - always available when not on welcome screen */}
           {(showPlaySurface || setupChoice !== 'welcome') && (
@@ -2148,57 +2149,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         )}
 
         {optionsVisible && setupChoice === 'single' && mode === 'single' && (
-          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: '100%', maxWidth: 760, background: '#ffffff', borderRadius: 16, padding: '24px 28px', boxShadow: '0 18px 40px rgba(17, 24, 39, 0.12)', border: '1px solid #e5e7eb' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1f2937' }}>{t.singleSetupTitle}</h3>
-                  <p style={{ margin: '6px 0 0', fontSize: 13, color: '#4b5563' }}>{t.singleSetupSubtitle}</p>
-                </div>
-                <div style={{ background: '#1A7A4C', color: '#fff', borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600 }}>{t.offlineBadge}</div>
-              </div>
-              <div style={{ display: 'grid', gap: 16, marginTop: 20, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {t.gameType}
-                  <select value={gameType} onChange={e => setGameType(e.target.value)} style={{ marginTop: 6, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 500 }}>
-                    <option value="schieber">Schieber</option>
-                  </select>
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {t.teamName(1)}
-                  <input value={teamNames[1]} onChange={e => setTeamNames(s => ({ ...s, 1: e.target.value }))} style={{ marginTop: 6, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 500 }} />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {t.teamName(2)}
-                  <input value={teamNames[2]} onChange={e => setTeamNames(s => ({ ...s, 2: e.target.value }))} style={{ marginTop: 6, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 500 }} />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', fontSize: 12, fontWeight: 600, color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  {t.targetScore}
-                  <input type="number" value={maxPoints} min={100} onChange={e => setMaxPoints(Number(e.target.value))} style={{ marginTop: 6, padding: '10px 12px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontWeight: 500 }} />
-                </label>
-              </div>
-              <div style={{ display: 'flex', justifyContent: ONLINE_ENABLED ? 'space-between' : 'flex-end', alignItems: 'center', marginTop: 24, flexWrap: 'wrap', gap: 12 }}>
-                {ONLINE_ENABLED && <button 
-                  style={{ 
-                    padding: '10px 20px', 
-                    borderRadius: 10, 
-                    border: '1px solid #d1d5db', 
-                    background: '#ffffff', 
-                    color: '#4b5563', 
-                    cursor: 'pointer', 
-                    fontSize: 14, 
-                    fontWeight: 600 
-                  }} 
-                  onClick={() => setSetupChoice('welcome')}
-                >
-                  ← Back
-                </button>}
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>{t.autosaveHint}</div>
-                  <button style={{ ...styles.button, padding: '12px 24px', fontSize: 15 }} onClick={startLocalGameWithOptions}>{t.startLocalMatch}</button>
-                </div>
-              </div>
-            </div>
+          <div style={{ marginTop: 4 }}>
+            <MatchSetup lang={lang} teamNames={teamNames} onTeamNames={setTeamNames} target={maxPoints} onTarget={setMaxPoints}
+              onStart={startLocalGameWithOptions} onBack={ONLINE_ENABLED ? () => setSetupChoice('welcome') : undefined} backLabel={messages(lang).header.home} />
           </div>
         )}
 
@@ -2259,7 +2212,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                   </div>
                 </div>
               );
-            }) : <div style={{ color: '#6b7280' }}>No cards</div>}
+            }) : null}
           </div>
         </div>
 

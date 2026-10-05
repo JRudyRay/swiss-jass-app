@@ -21,6 +21,7 @@ const fr: Messages = {
   },
   trick: { takes: (name: string) => `${name} remporte le pli`, youTake: 'Vous remportez le pli' },
   victory: { youWon: 'Votre équipe remporte la partie.', youLost: 'Les adversaires remportent la partie.', rounds: 'Manches', breakdown: 'Manche par manche', close: 'Fermer' },
+  setup: { title: 'Nouvelle partie', subtitle: 'Schieber contre trois bots', teams: 'Équipes', yourTeam: 'Ton équipe', opponents: 'Adversaires', partner: (name: string) => `avec ${name}`, custom: 'Autre', targetHint: (n: number) => `La première équipe à ${n} points gagne`, multipliers: 'Multiplicateurs', start: 'Commencer la partie' },
   game: {
     welcome: 'Bienvenue sur Swiss Jass !',
     noCardsPlayed: 'Aucune carte jouée',

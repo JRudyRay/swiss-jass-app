@@ -21,6 +21,7 @@ const de: Messages = {
   },
   trick: { takes: (name: string) => `${name} macht den Stich`, youTake: 'Du machst den Stich' },
   victory: { youWon: 'Euer Team gewinnt die Partie.', youLost: 'Die Gegner gewinnen die Partie.', rounds: 'Runden', breakdown: 'Runde für Runde', close: 'Schliessen' },
+  setup: { title: 'Neue Partie', subtitle: 'Schieber gegen drei Bots', teams: 'Teams', yourTeam: 'Dein Team', opponents: 'Gegner', partner: (name: string) => `mit ${name}`, custom: 'Eigene', targetHint: (n: number) => `Wer zuerst ${n} Punkte hat, gewinnt`, multipliers: 'Multiplikatoren', start: 'Partie starten' },
   game: {
     welcome: 'Willkommen bei Swiss Jass!',
     noCardsPlayed: 'Noch keine Karten gespielt',

@@ -22,6 +22,7 @@ const rm: Messages = {
   },
   trick: { takes: (name: string) => `${name} fa il stich`, youTake: 'Ti fas il stich' },
   victory: { youWon: 'Vossa equipa gudogna la partida.', youLost: 'Ils adversaris gudognan la partida.', rounds: 'Rundas', breakdown: 'Runda per runda', close: 'Serrar' },
+  setup: { title: 'Nova partida', subtitle: 'Schieber cunter trais bots', teams: 'Equipas', yourTeam: 'Tia equipa', opponents: 'Adversaris', partner: (name: string) => `cun ${name}`, custom: 'Auter', targetHint: (n: number) => `L'emprima equipa cun ${n} puncts gudogna`, multipliers: 'Multiplicaturs', start: 'Cumenzar la partida' },
   game: {
     welcome: 'Bainvegni tar Swiss Jass!',
     noCardsPlayed: 'Anc naginas cartas giugadas',
