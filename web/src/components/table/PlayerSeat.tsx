@@ -11,21 +11,25 @@ type Props = {
   tricks: number;
   isDealer?: boolean;
   isTurn?: boolean;
-  flash?: string | null;
+  // This player just won the trick: the pile slides here.
+  taking?: boolean;
+  seat?: string;
   narrow?: boolean;
 };
 
 // Name plate on the felt: light text on a dark plate so it reads on green.
-const PlayerSeat: React.FC<Props> = ({ lang, name, team, cardsLeft, tricks, isDealer, isTurn, flash, narrow }) => {
+const PlayerSeat: React.FC<Props> = ({ lang, name, team, cardsLeft, tricks, isDealer, isTurn, taking, seat, narrow }) => {
   const t = messages(lang).seat;
   const base: string = ((import.meta as any).env?.BASE_URL) || '/';
   return (
-    <div data-seat-turn={isTurn ? 'true' : 'false'} style={{
+    <div data-seat={seat} data-seat-turn={isTurn ? 'true' : 'false'} style={{
       position: 'relative', display: 'inline-block', maxWidth: narrow ? 92 : 170, padding: '5px 10px 6px',
       background: 'rgba(12, 28, 20, 0.82)', borderRadius: 10, textAlign: 'center',
       borderTop: `3px solid ${TEAM_COLORS[team ?? 0] || '#9ca3af'}`,
-      boxShadow: isTurn ? '0 0 0 2px #fbbf24, 0 0 16px 3px rgba(251,191,36,0.65)' : '0 2px 6px rgba(0,0,0,0.35)',
-      transition: 'box-shadow 250ms ease',
+      boxShadow: taking ? '0 0 0 2px #fffaf0, 0 0 18px 4px rgba(255,250,240,0.55)'
+        : isTurn ? '0 0 0 2px #fbbf24, 0 0 16px 3px rgba(251,191,36,0.65)' : '0 2px 6px rgba(0,0,0,0.35)',
+      transform: taking ? 'scale(1.05)' : 'none',
+      transition: 'box-shadow 250ms ease, transform 250ms ease',
     }}>
       <div style={{ fontSize: 14, fontWeight: 700, color: '#fffaf0', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {name}
@@ -47,9 +51,6 @@ const PlayerSeat: React.FC<Props> = ({ lang, name, team, cardsLeft, tricks, isDe
         }}>
           {t.dealer}
         </span>
-      )}
-      {flash && (
-        <span style={{ position: 'absolute', top: -14, left: -10, fontSize: 24, animation: 'bounceIn 550ms ease' }}>{flash}</span>
       )}
     </div>
   );

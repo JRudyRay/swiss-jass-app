@@ -18,22 +18,8 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'default', duration = 300
     }
   }, [duration, onClose]);
 
-  const getIcon = () => {
-    switch (type) {
-      case 'success':
-        return '✅';
-      case 'error':
-        return '❌';
-      case 'warning':
-        return '⚠️';
-      default:
-        return '💬';
-    }
-  };
-
   return (
     <div className={`toast ${type}`}>
-      <span style={{ marginRight: '0.5rem', fontSize: '18px' }}>{getIcon()}</span>
       {message}
     </div>
   );

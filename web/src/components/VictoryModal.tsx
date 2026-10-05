@@ -1,8 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { messages, type Lang } from '../i18n';
+import { TEAM_COLORS } from './table/ScoreBar';
+import { trumpName } from './table/SuitBadge';
 
 interface VictoryModalProps {
   isOpen: boolean;
+  lang: Lang;
   winningTeam: number;
+  myTeam?: number;
   teamNames: { 1: string; 2: string };
   finalScores: { team1: number; team2: number };
   roundHistory: Array<{ round: number; team1: number; team2: number; trump: string }>;
@@ -10,134 +15,72 @@ interface VictoryModalProps {
   onClose: () => void;
 }
 
+const btn: React.CSSProperties = {
+  flex: '1 1 140px', padding: '12px 18px', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer',
+};
+
+// End-of-match summary: winner, final score and the round-by-round breakdown.
 const VictoryModal: React.FC<VictoryModalProps> = ({
-  isOpen,
-  winningTeam,
-  teamNames,
-  finalScores,
-  roundHistory,
-  onPlayAgain,
-  onClose,
+  isOpen, lang, winningTeam, myTeam, teamNames, finalScores, roundHistory, onPlayAgain, onClose,
 }) => {
-  const [confettiPieces, setConfettiPieces] = useState<Array<{ id: number; left: number; delay: number }>>([]);
-
-  useEffect(() => {
-    if (isOpen) {
-      // Generate confetti pieces
-      const pieces = Array.from({ length: 50 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 0.5,
-      }));
-      setConfettiPieces(pieces);
-
-      // Play celebration sound if available
-      try {
-        const audio = new Audio('/assets/sounds/victory.mp3');
-        audio.volume = 0.3;
-        audio.play().catch(() => {});
-      } catch (e) {}
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
-
-  const winnerName = teamNames[winningTeam as 1 | 2] || `Team ${winningTeam}`;
-  const winnerScore = winningTeam === 1 ? finalScores.team1 : finalScores.team2;
-  const loserScore = winningTeam === 1 ? finalScores.team2 : finalScores.team1;
-  const roundsPlayed = roundHistory.length;
-  const averagePointsPerRound = roundsPlayed > 0 ? Math.round(winnerScore / roundsPlayed) : winnerScore;
+  const m = messages(lang);
+  const v = m.victory;
+  const winner = (winningTeam === 2 ? 2 : 1) as 1 | 2;
+  const accent = TEAM_COLORS[winner];
 
   return (
-    <div className="victory-overlay">
-      {/* Confetti */}
-      {confettiPieces.map((piece) => (
-        <div
-          key={piece.id}
-          className="confetti"
-          style={{
-            left: `${piece.left}%`,
-            animationDelay: `${piece.delay}s`,
-          }}
-        />
-      ))}
+    <div role="dialog" aria-modal="true" style={{
+      position: 'fixed', inset: 0, zIndex: 2000, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(10, 20, 14, 0.62)', animation: 'fadeIn 250ms ease',
+    }}>
+      <div style={{
+        width: '100%', maxWidth: 440, maxHeight: '90vh', overflowY: 'auto', background: '#fffaf0', borderRadius: 16,
+        borderTop: `6px solid ${accent}`, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', padding: '22px 22px 18px', color: '#2b2116',
+      }}>
+        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: accent }}>
+          {m.game.teamWins(teamNames[winner] || `Team ${winner}`)}
+        </h2>
+        {myTeam != null && (
+          <div style={{ marginTop: 4, fontSize: 15, color: '#5b4a33' }}>{myTeam === winner ? v.youWon : v.youLost}</div>
+        )}
 
-      <div className="victory-modal">
-        <div className="victory-emoji">🏆</div>
-        
-        <h1 className="victory-title">
-          {winnerName} Wins!
-        </h1>
-
-        <div style={{ fontSize: '20px', color: '#6b7280', marginBottom: '2rem', fontWeight: 500 }}>
-          Congratulations on a well-played Swiss Jass match!
-        </div>
-
-        <div className="victory-stats">
-          <div className="victory-stat-row">
-            <span style={{ fontWeight: 600, color: '#374151' }}>Final Score</span>
-            <span style={{ fontWeight: 700, fontSize: '18px', color: winningTeam === 1 ? '#DC291E' : '#1A7A4C' }}>
-              {winnerScore} - {loserScore}
-            </span>
-          </div>
-          
-          <div className="victory-stat-row">
-            <span style={{ fontWeight: 600, color: '#374151' }}>Rounds Played</span>
-            <span style={{ fontWeight: 700, color: '#667eea' }}>{roundsPlayed}</span>
-          </div>
-          
-          <div className="victory-stat-row">
-            <span style={{ fontWeight: 600, color: '#374151' }}>Avg Points/Round</span>
-            <span style={{ fontWeight: 700, color: '#10b981' }}>{averagePointsPerRound}</span>
-          </div>
-
-          {roundHistory.length > 0 && (
-            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '2px solid #e5e7eb' }}>
-              <div style={{ fontWeight: 700, marginBottom: '0.75rem', color: '#1f2937' }}>
-                Round-by-Round Breakdown
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, margin: '18px 0 6px' }}>
+          {([1, 2] as const).map((team, i) => (
+            <React.Fragment key={team}>
+              {i === 1 && <span style={{ fontSize: 22, color: '#a8957a' }}>:</span>}
+              <div style={{ textAlign: 'center', minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#5b4a33', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{teamNames[team]}</div>
+                <div style={{ fontSize: 34, fontWeight: 800, color: TEAM_COLORS[team], fontVariantNumeric: 'tabular-nums' }}>
+                  {team === 1 ? finalScores.team1 : finalScores.team2}
+                </div>
               </div>
-              <div style={{ maxHeight: '200px', overflowY: 'auto', padding: '0.5rem' }}>
-                {roundHistory.map((round, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '0.5rem',
-                      background: idx % 2 === 0 ? '#f9fafb' : 'white',
-                      borderRadius: '6px',
-                      marginBottom: '0.25rem',
-                      fontSize: '13px',
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, color: '#4b5563' }}>Round {round.round}</span>
-                    <span style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase' }}>
-                      {round.trump}
-                    </span>
-                    <span style={{ display: 'flex', gap: '1rem' }}>
-                      <span style={{ color: '#DC291E', fontWeight: 600 }}>{round.team1}</span>
-                      <span style={{ color: '#9ca3af' }}>-</span>
-                      <span style={{ color: '#1A7A4C', fontWeight: 600 }}>{round.team2}</span>
-                    </span>
-                  </div>
+            </React.Fragment>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', fontSize: 12, color: '#8a7759' }}>{m.game.finalScore} · {v.rounds}: {roundHistory.length}</div>
+
+        {roundHistory.length > 0 && (
+          <details style={{ marginTop: 14, borderTop: '1px solid #eadfc9', paddingTop: 10 }}>
+            <summary style={{ fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{v.breakdown}</summary>
+            <table style={{ width: '100%', marginTop: 8, borderCollapse: 'collapse', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+              <tbody>
+                {roundHistory.map(r => (
+                  <tr key={r.round} style={{ borderBottom: '1px solid #f1e8d6' }}>
+                    <td style={{ padding: '4px 0', color: '#5b4a33' }}>{m.game.round} {r.round}</td>
+                    <td style={{ padding: '4px 0', color: '#8a7759', fontSize: 12 }}>{trumpName(r.trump, lang)}</td>
+                    <td style={{ padding: '4px 0', textAlign: 'right', color: TEAM_COLORS[1], fontWeight: 600 }}>{r.team1}</td>
+                    <td style={{ padding: '4px 0 4px 12px', textAlign: 'right', color: TEAM_COLORS[2], fontWeight: 600 }}>{r.team2}</td>
+                  </tr>
                 ))}
-              </div>
-            </div>
-          )}
-        </div>
+              </tbody>
+            </table>
+          </details>
+        )}
 
-        <div className="victory-buttons">
-          <button className="btn btn-primary" onClick={onPlayAgain} style={{ minWidth: '160px' }}>
-            🎮 Play Again
-          </button>
-          <button className="btn btn-secondary" onClick={onClose} style={{ minWidth: '160px' }}>
-            📊 View Stats
-          </button>
-        </div>
-
-        <div style={{ marginTop: '2rem', fontSize: '14px', color: '#9ca3af', fontStyle: 'italic' }}>
-          "Jass is more than a game—it's Swiss tradition." 🇨🇭
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
+          <button onClick={onPlayAgain} style={{ ...btn, border: 'none', background: '#b91c1c', color: '#fff' }}>{m.game.playAgain}</button>
+          <button onClick={onClose} style={{ ...btn, border: '1px solid #d6c7a8', background: '#fff', color: '#3b2a14' }}>{v.close}</button>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ import PlayerSeat from './components/table/PlayerSeat';
 import * as Schieber from './engine/schieber';
 import InfoPanels from './components/table/InfoPanels';
 import WeisPanel from './components/table/WeisPanel';
+import TrickArea, { COLLECT_MS } from './components/table/TrickArea';
 import { API_URL, ONLINE_ENABLED } from './config';
 import { io, Socket } from 'socket.io-client';
 import Rankings from './components/Rankings';
@@ -35,15 +36,6 @@ type GameState = {
 };
 
 type Player = { id: number; name: string; hand: any[]; team: number; position: string };
-
-// Where each seat's card lands in the trick area (small tilt, like a real pile).
-const TRICK_POS: Record<string, { left: string; top: string; rot: number }> = {
-  south: { left: '50%', top: '78%', rot: 2 },
-  north: { left: '50%', top: '22%', rot: -3 },
-  west: { left: '22%', top: '50%', rot: -6 },
-  east: { left: '78%', top: '50%', rot: 5 },
-  center: { left: '50%', top: '50%', rot: 0 },
-};
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: { fontFamily: '"Helvetica Neue", "Arial", sans-serif', minHeight: '100vh', background: '#f5f2e8', paddingBottom: 40 },
@@ -147,11 +139,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [setupChoice, setSetupChoice] = useState<'welcome' | 'single' | 'multi'>(ONLINE_ENABLED ? 'welcome' : 'single');
 
   // simplify optional checks used in JSX
-  const animCards = animatingSwoop?.cards ?? [];
   const isAnimating = Boolean(animatingSwoop);
-  const [winnerFlash, setWinnerFlash] = useState<{ id: number; emoji: string } | null>(null);
-  const headerEmojis = ['🇨🇭','🧀','🫕','🏔️','🐄','🍫'];
-  const [showLastTrick, setShowLastTrick] = useState<(any[] ) | null>(null);
+  // Set while the finished trick is shown and collected by its winner.
+  const [collect, setCollect] = useState<{ winnerId: number } | null>(null);
   const [matchFinished, setMatchFinished] = useState<boolean>(false);
   const [currentUserName, setCurrentUserName] = useState<string>(user?.username || 'You');
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
@@ -390,14 +380,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   }
 
   async function startSwoopAndResolve(st: Schieber.State): Promise<Schieber.State> {
-    // lightweight UX: flash an emoji next to the winner instead of a heavy DOM animation
+    // Highlight the winning card, slide the trick to the winner, then resolve.
     const winner = Schieber.peekTrickWinner(st);
     if (winner === null) return st;
-    const emoji = headerEmojis[Math.floor(Math.random()*headerEmojis.length)];
-  try {
-  setWinnerFlash({ id: winner, emoji });
-  // keep the played cards visible in the middle so users can see the trick
-  await new Promise(r=>setTimeout(r, 1000));
+    try {
+      const tr = messages(lang).trick;
+      setMessage(winner === 0 ? tr.youTake : tr.takes(st.players.find(p => p.id === winner)?.name || ''));
+      setCollect({ winnerId: winner });
+      await new Promise(r=>setTimeout(r, COLLECT_MS));
   const newSt = Schieber.resolveTrick(st);
       saveLocalState(newSt);
       setGameState(toGameState(newSt));
@@ -406,10 +396,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
       // if round finished, show lastTrick for 2s then clear and award totals
   if (newSt.phase === 'finished') {
-        // show the final trick for 2s before clearing
-        setShowLastTrick(newSt.lastTrick || null);
-        await new Promise(r=>setTimeout(r, 2000));
-        setShowLastTrick(null);
+        // short pause on the empty table before the next deal
+        await new Promise(r=>setTimeout(r, 900));
         // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
         // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
         // if maxPoints reached by either team, stop; else start a fresh local round
@@ -423,7 +411,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           setShowVictory(true);
           setMatchFinished(true);
           setGameState({ ...toGameState(newSt), phase: 'finished' });
-          setToast({ message: `${teamNames[winner]} wins!`, type: 'success' });
           
           // Update backend stats if this is an online game
           if (gameId && API_URL) {
@@ -456,12 +443,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       }
       return newSt;
     } finally {
-      setWinnerFlash(null);
+      setCollect(null);
       setAnimatingSwoop(null);
     }
   }
 
-  // Helper to render a prominent dealer badge and animated winner emoji
+  // Name plate for a seat; it lights up while that player collects the trick.
   const renderSeat = (pos: string, narrow = false) => {
     const p = players.find(x => x.position === pos);
     if (!p) return null;
@@ -469,7 +456,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     return (
       <PlayerSeat lang={lang} name={p.name} team={p.team} cardsLeft={p.hand?.length ?? 0} tricks={getTricksCount(p)}
         isDealer={gameState?.dealer === p.id} isTurn={active && gameState?.currentPlayer === p.id}
-        flash={winnerFlash?.id === p.id ? winnerFlash.emoji : null} narrow={narrow} />
+        taking={collect?.winnerId === p.id} seat={pos} narrow={narrow} />
     );
   };
 
@@ -791,8 +778,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     setRoundHistory([]);
     setOrientedTrick([]);
     setAnimatingSwoop(null);
-    setWinnerFlash(null);
-    setShowLastTrick(null);
+    setCollect(null);
     
     // Clear multiplayer state
     setMultiGameState(null);
@@ -1132,15 +1118,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         newUsers[nm].lastSeen = now;
       });
 
-      // Debug message to confirm points are being updated
-      if (Object.keys(additions).length > 0) {
-        // Sum points per team for a clearer message (previously only picked first entry)
-        const team1Total = Object.entries(additions).reduce((acc, [name, pts]) => acc + (playersList.find(p => p.name === name)?.team === 1 ? pts : 0), 0);
-        const team2Total = Object.entries(additions).reduce((acc, [name, pts]) => acc + (playersList.find(p => p.name === name)?.team === 2 ? pts : 0), 0);
-
-        console.log('Swiss Jass: Team scores - Team 1:', team1Total, 'Team 2:', team2Total);
-        setMessage(`Game finished! Team 1: ${team1Total} pts, Team 2: ${team2Total} pts`);
-      }
+      setMessage(`${messages(lang).game.finalScore}: ${t1} : ${t2}`);
 
   localStorage.setItem('jassTotals', JSON.stringify(newTotals));
   localStorage.setItem('jassUsers', JSON.stringify(newUsers));
@@ -1944,7 +1922,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   {showPlaySurface && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <div style={{ width: '100%', maxWidth: 700, height: 440, position: 'relative', background: 'radial-gradient(ellipse at center, #22875a 0%, #17683f 60%, #0f4c2d 100%)', borderRadius: 18, boxShadow: 'inset 0 0 40px rgba(0,0,0,0.45), 0 8px 25px rgba(0,0,0,0.2)', border: '6px solid #6b4423', boxSizing: 'border-box' }}>
+            <div data-jass-table style={{ width: '100%', maxWidth: 700, height: 440, position: 'relative', background: 'radial-gradient(ellipse at center, #22875a 0%, #17683f 60%, #0f4c2d 100%)', borderRadius: 18, boxShadow: 'inset 0 0 40px rgba(0,0,0,0.45), 0 8px 25px rgba(0,0,0,0.2)', border: '6px solid #6b4423', boxSizing: 'border-box' }}>
               
               {/* Seats: north/south centred, west/east on the sides */}
               <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 5 }}>{renderSeat('north')}</div>
@@ -1954,49 +1932,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
               {/* Trick: cards upright, nudged toward the player who played them */}
               <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 'min(260px, 58%)', height: 270 }}>
-                <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                  {/* If showing last trick at round end, render that first (override) */}
-                  {showLastTrick && showLastTrick.length > 0 ? (
-                    showLastTrick.map((c:any, i:number) => {
-                      const seat = positionForPlayerId(c.playerId ?? i);
-                      const pos = TRICK_POS[seat] || TRICK_POS.center;
-                      return (
-                        <div key={c.id || i} style={{ position: 'absolute', left: pos.left, top: pos.top, transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`, zIndex: i + 1 }}>
-                          <SwissCard card={c} />
-                        </div>
-                      );
-                    })
-                  ) : (
-                    // Render current trick cards - show them during resolving so all 4 cards remain visible
-                    !isAnimating && gameState?.currentTrick && gameState.currentTrick.length > 0 && (
-                      gameState.currentTrick.map((c:any, i:number) => {
-                        const seat = positionForPlayerId(c.playerId ?? i);
-                        const pos = TRICK_POS[seat] || TRICK_POS.center;
-                        const isSwooping = animCards.findIndex((ac:any) => ac.id === c.id) !== -1;
-                        const swoopStyle: React.CSSProperties = isSwooping && (animatingSwoop?.winnerId ?? null) !== null
-                          ? { transition: 'transform 700ms ease, left 700ms ease, top 700ms ease', zIndex: 40 }
-                          : {};
-                        return (
-                          <div key={c.id || i} style={{ position: 'absolute', left: pos.left, top: pos.top, transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`, zIndex: i + 1, ...swoopStyle }}>
-                            <SwissCard card={c} />
-                          </div>
-                        );
-                      })
-                      )
-                    )}
-
-                  {isAnimating && (
-                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: 'rgba(255,250,240,0.8)', fontWeight: '600', fontSize: 14 }}>
-                      …
-                    </div>
-                  )}
-
-                  {!gameState?.currentTrick?.length && !uiPendingResolve && !isAnimating && (
-                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: 'rgba(255,250,240,0.65)', fontWeight: '500', fontSize: 13, whiteSpace: 'nowrap' }}>
-                      {t.noCardsPlayed}
-                    </div>
-                  )}
-                </div>
+                <TrickArea
+                  cards={(gameState?.currentTrick || []).map((c: any, i: number) => ({ card: c, seat: positionForPlayerId(c.playerId ?? i) }))}
+                  collect={collect ? { winnerSeat: positionForPlayerId(collect.winnerId), winningCardId: String((gameState?.currentTrick || []).find((c: any) => c.playerId === collect.winnerId)?.id ?? '') } : null}
+                  emptyLabel={uiPendingResolve || isAnimating ? null : t.noCardsPlayed}
+                />
               </div>
             </div>
           </div>
@@ -2348,72 +2288,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
         <WeisPanel lang={lang} weis={gameState?.weis as any} players={players as any} weisWinner={weisWinner as any} />
 
-        {/* Victory Celebration Modal */}
-        {matchFinished && gameState?.phase === 'finished' && (
-          <div style={{ 
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-            background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000, animation: 'fadeIn 0.5s ease-in-out'
-          }}>
-            <div style={{ 
-              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
-              padding: 32, borderRadius: 16, textAlign: 'center', maxWidth: 500,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.3)', border: '3px solid #f59e0b',
-              animation: 'bounceIn 0.6s ease-out'
-            }}>
-              <div style={{ fontSize: '4rem', marginBottom: 16, animation: 'pulse 2s infinite' }}>🏆</div>
-              <h2 style={{ margin: '0 0 16px 0', color: '#92400e', fontSize: '2rem', fontWeight: '800' }}>
-                {t.teamWins(teamNames[gameState.scores!.team1 > gameState.scores!.team2 ? 1 : 2] || `Team ${gameState.scores!.team1 > gameState.scores!.team2 ? 1 : 2}`)}
-              </h2>
-              <div style={{ fontSize: '1.2rem', marginBottom: 20, color: '#451a03' }}>
-                <div style={{ marginBottom: 8 }}>
-                  <strong>{t.finalScore}:</strong> {teamNames[1] || 'Team 1'} {gameState.scores!.team1} : {gameState.scores!.team2} {teamNames[2] || 'Team 2'}
-                </div>
-                <div style={{ fontSize: '1rem', color: '#78716c' }}>
-                  {t.victoryLine} 🇨🇭
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                <button 
-                  style={{ 
-                    ...styles.button, 
-                    background: '#059669', color: 'white', 
-                    padding: '12px 24px', fontSize: '1rem', fontWeight: '600',
-                    boxShadow: '0 4px 12px rgba(5,150,105,0.3)',
-                    opacity: isLoading ? 0.7 : 1,
-                    cursor: isLoading ? 'not-allowed' : 'pointer'
-                  }} 
-                  onClick={() => { setMatchFinished(false); createGame(); }}
-                  disabled={isLoading}
-                >
-                  {isLoading ? <><Spinner size="sm" /> {t.creating}</> : `🎮 ${t.playAgain}`}
-                </button>
-                <button 
-                  style={{ 
-                    ...styles.button, 
-                    background: '#dc2626', color: 'white',
-                    padding: '12px 24px', fontSize: '1rem', fontWeight: '600',
-                    boxShadow: '0 4px 12px rgba(220,38,38,0.3)'
-                  }} 
-                  onClick={() => { setMatchFinished(false); }}
-                >
-                  📊 Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         <InfoPanels lang={lang} />
 
         <CardCredits lang={lang} />
       </div>
       
-      {/* NEW UX COMPONENTS */}
-      {/* Victory Modal with Confetti */}
       {showVictory && (
         <VictoryModal
           isOpen={showVictory}
+          lang={lang}
+          myTeam={players.find(p => p.position === 'south')?.team}
           winningTeam={winningTeam}
           teamNames={teamNames}
           finalScores={{ team1: gameState?.scores?.team1 || 0, team2: gameState?.scores?.team2 || 0 }}
@@ -2429,10 +2313,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               resetToWelcome();
             }
           }}
-          onClose={() => {
-            // Return to welcome screen to choose new game
-            resetToWelcome();
-          }}
+          onClose={() => setShowVictory(false)}
         />
       )}
       

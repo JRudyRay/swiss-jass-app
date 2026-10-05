@@ -19,6 +19,8 @@ const ch: Messages = {
     title: 'D Charte',
     body: 'Dütschschwizer Jasscharte, druckt um 1850 z Hasle bi Burgdorf. Scans: Bibliothèque nationale de France, gmeinfrei:',
   },
+  trick: { takes: (name: string) => `${name} macht dä Stich`, youTake: 'Du machsch dä Stich' },
+  victory: { youWon: 'Eues Team gwünnt dä Match.', youLost: 'D Gägner gwünned dä Match.', rounds: 'Runde', breakdown: 'Rundi für Rundi', close: 'Schliesse' },
   game: {
     welcome: 'Willkomme bim Swiss Jass!',
     noCardsPlayed: 'No kei Charte gspilt',

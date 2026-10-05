@@ -19,6 +19,8 @@ const it: Messages = {
     title: 'Le carte',
     body: 'Mazzo svizzero tedesco stampato verso il 1850 a Hasle bei Burgdorf. Scansioni: Bibliothèque nationale de France, pubblico dominio:',
   },
+  trick: { takes: (name: string) => `${name} fa la presa`, youTake: 'Fai la presa' },
+  victory: { youWon: 'La vostra squadra vince la partita.', youLost: 'Gli avversari vincono la partita.', rounds: 'Mani', breakdown: 'Mano per mano', close: 'Chiudi' },
   game: {
     welcome: 'Benvenuti a Swiss Jass!',
     noCardsPlayed: 'Nessuna carta giocata',
