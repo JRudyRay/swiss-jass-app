@@ -6,7 +6,6 @@ import { trumpName } from './table/SuitBadge';
 interface VictoryModalProps {
   isOpen: boolean;
   lang: Lang;
-  winningTeam: number;
   myTeam?: number;
   teamNames: { 1: string; 2: string };
   finalScores: { team1: number; team2: number };
@@ -21,12 +20,13 @@ const btn: React.CSSProperties = {
 
 // End-of-match summary: winner, final score and the round-by-round breakdown.
 const VictoryModal: React.FC<VictoryModalProps> = ({
-  isOpen, lang, winningTeam, myTeam, teamNames, finalScores, roundHistory, onPlayAgain, onClose,
+  isOpen, lang, myTeam, teamNames, finalScores, roundHistory, onPlayAgain, onClose,
 }) => {
   if (!isOpen) return null;
   const m = messages(lang);
   const v = m.victory;
-  const winner = (winningTeam === 2 ? 2 : 1) as 1 | 2;
+  // Derived from the totals shown, so the headline can never disagree with the score.
+  const winner: 1 | 2 = finalScores.team2 > finalScores.team1 ? 2 : 1;
   const accent = TEAM_COLORS[winner];
 
   return (

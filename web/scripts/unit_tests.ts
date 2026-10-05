@@ -283,8 +283,22 @@ function testTotalsDuplicateGuard() {
   if (totals['B'] !== 20) throw new Error('Duplicate guard failed: B has wrong pts');
 }
 
+function testBotNamesKeptAcrossHands() {
+  for (let k = 0; k < 50; k++) {
+    const bots = Schieber.pickBotNames();
+    assert(bots.length === 3 && new Set(bots).size === 3, 'Three distinct bot names');
+    assert(bots.every(n => n.endsWith(' (bot)')), 'Bot names are marked as bots');
+  }
+  const st = Schieber.startGameLocal(undefined, ['Urs (bot)', 'Vreni (bot)', 'Gian (bot)']);
+  const names = st.players.map(p => p.name);
+  assert(names.join() === 'You,Urs (bot),Vreni (bot),Gian (bot)', 'Chosen bot names are used');
+  const next = Schieber.startNewHand(st);
+  assert(next.players.map(p => p.name).join() === names.join(), 'Names stay the same for the next hand');
+}
+
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
+  tests.push(testBotNamesKeptAcrossHands);
   // existing extra tests
   tests.push(testObenUndenOrdering, testWeisTieGoesToForehandOrder, testWeisWinnerScoresAll, testWeisSequenceTieBreaks, testNoFourSixesSevensEights);
   // standard Schieber legal-play rules and contract points

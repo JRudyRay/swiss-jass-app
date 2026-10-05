@@ -127,11 +127,29 @@ export function shuffle<T>(arr: T[]) {
   }
 }
 
-export function deal(): Player[] {
+// First names the bots pick from, from all four language regions.
+export const BOT_NAMES = [
+  'Anna', 'Reto', 'Fritz', 'Heidi', 'Urs', 'Beat', 'Vreni', 'Ruedi', 'Sepp', 'Margrit',
+  'Hansruedi', 'Erika', 'Kurt', 'Ursula', 'Werner', 'Barbara', 'Peter', 'Claudia', 'Toni', 'Silvia',
+  'Trudi', 'Köbi', 'Heiri', 'Bethli', 'Hanspeter', 'Doris', 'Marlies', 'Ernst', 'Lisbeth', 'Röbi',
+  'Jürg', 'Monika', 'Thomas', 'Sandra', 'Andreas', 'Esther', 'Christian', 'Regula', 'Stefan', 'Corinne',
+  'Jean', 'Sophie', 'Pierre', 'Chantal', 'Luc', 'Mireille', 'Yves', 'Nathalie',
+  'Luca', 'Chiara', 'Marco', 'Giulia', 'Matteo', 'Elena', 'Gianni', 'Franca',
+  'Gian', 'Ladina', 'Curdin', 'Mengia', 'Flurin', 'Seraina',
+];
+
+// Three distinct random bot names, marked as bots.
+export function pickBotNames(rand: () => number = Math.random): string[] {
+  const pool = [...BOT_NAMES];
+  const out: string[] = [];
+  while (out.length < 3) out.push(pool.splice(Math.floor(rand() * pool.length), 1)[0] + ' (bot)');
+  return out;
+}
+
+// Deal a fresh hand. `names` are the four player names by id (0 is the human).
+export function deal(names: string[] = ['You', ...pickBotNames()]): Player[] {
   const deck = createDeck();
   shuffle(deck);
-  // Use Swiss-like names and mark bots
-  const names = ['You', 'Anna (bot)', 'Reto (bot)', 'Fritz (bot)'];
   const players: Player[] = [0,1,2,3].map(i => ({ id: i, name: names[i] || `Player ${i+1}`, team: i%2===0?1:2, hand: [], tricks: [], points: 0, weis: [] }));
   // 36 cards, 9 each
   for (let i=0;i<9;i++) {
@@ -143,8 +161,8 @@ export function deal(): Player[] {
   return players;
 }
 
-export function startGameLocal(previousDealer?: number): State {
-  const players = deal();
+export function startGameLocal(previousDealer?: number, botNames: string[] = pickBotNames()): State {
+  const players = deal(['You', ...botNames]);
   // Dealer rotates counter-clockwise in Swiss Jass (0->3->2->1->0)
   const dealer = previousDealer !== undefined ? (previousDealer - 1 + 4) % 4 : 0;
   const forehand = (dealer - 1 + 4) % 4;
@@ -165,7 +183,8 @@ export function startGameLocal(previousDealer?: number): State {
 
 // Start a new hand with proper dealer rotation
 export function startNewHand(previousState: State): State {
-  const players = deal();
+  // Same players for the whole match, only the cards change.
+  const players = deal(previousState.players.map(p => p.name));
   // Dealer rotates counter-clockwise in Swiss Jass
   const dealer = (previousState.dealer - 1 + 4) % 4;
   const forehand = (dealer - 1 + 4) % 4;

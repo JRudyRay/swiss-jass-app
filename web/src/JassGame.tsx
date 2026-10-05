@@ -118,7 +118,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     try { return JSON.parse(localStorage.getItem('jassUsers') || '{}'); } catch { return {}; }
   });
   const [gameType, setGameType] = useState<string>('schieber');
-  const [maxPoints, setMaxPoints] = useState<number>(1000);
+  // Restore the last chosen target so a resumed match ends where it was meant to.
+  const [maxPoints, setMaxPoints] = useState<number>(() => {
+    try { const n = Number(JSON.parse(localStorage.getItem('jassLocalOptions') || '{}').maxPoints); return n >= 100 ? n : 1000; } catch { return 1000; }
+  });
+  // The bots for the next local match, shown on the setup screen.
+  const [botNames, setBotNames] = useState<string[]>(() => Schieber.pickBotNames());
   const [isLocal, setIsLocal] = useState<boolean>(false);
   const [chosenTrump, setChosenTrump] = useState<string | null>(null);
   const [playDelayMs, setPlayDelayMs] = useState<number>(450);
@@ -166,7 +171,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   
   // New UX components state
   const [showVictory, setShowVictory] = useState(false);
-  const [winningTeam, setWinningTeam] = useState<number>(1);
   const [toast, setToast] = useState<{ message: string; type: 'default' | 'success' | 'error' | 'warning' } | null>(null);
   
   // Toast helper function
@@ -407,8 +411,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         setRoundHistory(h => [...h, { round: h.length + 1, team1: t1 - base.team1, team2: t2 - base.team2, trump: String(newSt.trump || '') }]);
         if (t1 >= maxPoints || t2 >= maxPoints) {
           // Both teams can pass the target in the same hand: the higher total wins.
-          const winner = t1 >= t2 ? 1 : 2;
-          setWinningTeam(winner);
           setShowVictory(true);
           setMatchFinished(true);
           setGameState({ ...toGameState(newSt), phase: 'finished' });
@@ -753,7 +755,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   // --- Local play with simple bots ---
   const startLocalGame = () => {
-    const st = Schieber.startGameLocal();
+    const st = Schieber.startGameLocal(undefined, botNames);
+    setBotNames(Schieber.pickBotNames());
     // map engine players to our UI players
   setPlayers(mapPlayersWithSeats(st.players));
     setGameState(toGameState(st));
@@ -2150,7 +2153,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
         {optionsVisible && setupChoice === 'single' && mode === 'single' && (
           <div style={{ marginTop: 4 }}>
-            <MatchSetup lang={lang} teamNames={teamNames} onTeamNames={setTeamNames} target={maxPoints} onTarget={setMaxPoints}
+            <MatchSetup lang={lang} bots={botNames.map(n => n.replace(/\s*\(bot\)$/, ''))} teamNames={teamNames} onTeamNames={setTeamNames} target={maxPoints} onTarget={setMaxPoints}
               onStart={startLocalGameWithOptions} onBack={ONLINE_ENABLED ? () => setSetupChoice('welcome') : undefined} backLabel={messages(lang).header.home} />
           </div>
         )}
@@ -2255,7 +2258,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           isOpen={showVictory}
           lang={lang}
           myTeam={players.find(p => p.position === 'south')?.team}
-          winningTeam={winningTeam}
           teamNames={teamNames}
           finalScores={{ team1: gameState?.scores?.team1 || 0, team2: gameState?.scores?.team2 || 0 }}
           roundHistory={roundHistory}

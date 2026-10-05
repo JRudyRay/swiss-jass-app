@@ -7,11 +7,11 @@ const TARGETS = [1000, 1500, 2500];
 const MULTIPLIERS: [string, number][] = [
   ['eicheln', 1], ['rosen', 1], ['schellen', 2], ['schilten', 2], ['oben-abe', 3], ['unden-ufe', 3],
 ];
-// The bots' names in the single-player engine (team 1: you + Reto).
-const MEMBERS = { 1: 'Reto', 2: 'Anna & Fritz' } as const;
 
 type Props = {
   lang: Lang;
+  // Bot names by seat: [right opponent, partner, left opponent] (engine ids 1, 2, 3).
+  bots: string[];
   teamNames: { 1: string; 2: string };
   onTeamNames: (names: { 1: string; 2: string }) => void;
   target: number;
@@ -37,10 +37,13 @@ const base: string = ((import.meta as any).env?.BASE_URL) || '/';
 const FAN = ['rosen_A', 'eicheln_U', 'schellen_9'];
 
 // Setup screen for a single-player match: team names, target score and the contract multipliers.
-export const MatchSetup: React.FC<Props> = ({ lang, teamNames, onTeamNames, target, onTarget, onStart, onBack, backLabel }) => {
+export const MatchSetup: React.FC<Props> = ({ lang, bots, teamNames, onTeamNames, target, onTarget, onStart, onBack, backLabel }) => {
   const m = messages(lang);
   const s = m.setup;
   const [custom, setCustom] = useState(!TARGETS.includes(target));
+  // Typed text for the custom target; only clamped when the field loses focus.
+  const [draft, setDraft] = useState(String(target));
+  const commitDraft = () => { const n = Math.max(100, Math.round(Number(draft) || 0)); setDraft(String(n)); onTarget(n); };
 
   const segment = (active: boolean): React.CSSProperties => ({
     flex: 1, minWidth: 0, padding: '10px 4px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -78,7 +81,7 @@ export const MatchSetup: React.FC<Props> = ({ lang, teamNames, onTeamNames, targ
                 <span style={{ display: 'grid', gap: 6 }}>
                   <span style={{ fontSize: 13, color: muted }}>
                     <b style={{ color: ink }}>{team === 1 ? s.yourTeam : s.opponents}</b>
-                    {' · '}{team === 1 ? s.partner(MEMBERS[1]) : MEMBERS[2]}
+                    {' · '}{team === 1 ? s.partner(bots[1]) : `${bots[0]} & ${bots[2]}`}
                   </span>
                   <input value={teamNames[team]} maxLength={24} onChange={e => onTeamNames({ ...teamNames, [team]: e.target.value })} style={input} />
                 </span>
@@ -94,11 +97,12 @@ export const MatchSetup: React.FC<Props> = ({ lang, teamNames, onTeamNames, targ
               <button key={n} role="radio" aria-checked={!custom && target === n} style={segment(!custom && target === n)}
                 onClick={() => { setCustom(false); onTarget(n); }}>{n}</button>
             ))}
-            <button role="radio" aria-checked={custom} style={segment(custom)} onClick={() => setCustom(true)}>{s.custom}</button>
+            <button role="radio" aria-checked={custom} style={segment(custom)} onClick={() => { setCustom(true); setDraft(String(target)); }}>{s.custom}</button>
           </div>
           {custom && (
-            <input type="number" inputMode="numeric" min={100} step={100} value={target} autoFocus
-              onChange={e => onTarget(Math.max(100, Number(e.target.value) || 0))} style={{ ...input, marginTop: 10 }} />
+            <input type="number" inputMode="numeric" min={100} step={100} value={draft} autoFocus
+              onChange={e => { setDraft(e.target.value); const n = Number(e.target.value); if (n >= 100) onTarget(Math.round(n)); }}
+              onBlur={commitDraft} style={{ ...input, marginTop: 10 }} />
           )}
           <div style={{ marginTop: 8, fontSize: 13, color: muted }}>{s.targetHint(target)}</div>
         </section>
