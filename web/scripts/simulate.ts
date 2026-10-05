@@ -1,106 +1,80 @@
 import * as Schieber from '../src/engine/schieber';
 
-function sumScores(st: Schieber.State) {
-  return (st.scores.team1 || 0) + (st.scores.team2 || 0);
+// Plays random hands with the bots and checks the engine's settlement against
+// an independent calculation. Exits non-zero on any mismatch or illegal play.
+
+const SUITS = ['eicheln', 'schellen', 'rosen', 'schilten'];
+const BASE: Record<string, number> = { '6': 0, '7': 0, '8': 0, '9': 0, '10': 10, 'U': 2, 'O': 3, 'K': 4, 'A': 11 };
+const TRUMP: Record<string, number> = { ...BASE, 'U': 20, '9': 14 };
+const OBEN: Record<string, number> = { ...BASE, '8': 8 };
+const UNDEN: Record<string, number> = { ...BASE, '8': 8, '6': 11, 'A': 0 };
+
+function points(card: { suit: string; rank: string }, trump: string) {
+  if (trump === 'oben-abe') return OBEN[card.rank];
+  if (trump === 'unden-ufe') return UNDEN[card.rank];
+  return card.suit === trump ? TRUMP[card.rank] : BASE[card.rank];
 }
+
+let failures = 0;
+function fail(msg: string) { failures++; console.error('  FAIL:', msg); }
 
 function runOneHand() {
   let st = Schieber.startGameLocal();
-  // let bots pick trump until playing (simulate naive decisions)
+  const dealt = JSON.parse(JSON.stringify(st.players)) as Schieber.Player[];
   while (st.phase === 'trump_selection') {
     const p = st.currentPlayer;
-    if (p === 0) {
-      // pick a random trump for player 0 (simulate human choosing randomly)
-      const t = Schieber.chooseRandomTrump();
-      st = Schieber.setTrumpAndDetectWeis(st, t as any);
-    } else {
-      const t = Schieber.chooseBotTrump(st, p);
-      st = Schieber.setTrumpAndDetectWeis(st, t as any);
-    }
+    const t = p === 0 ? Schieber.chooseRandomTrump() : Schieber.chooseBotTrump(st, p);
+    st = Schieber.setTrumpAndDetectWeis(st, t as any);
   }
-
-  // play until finished using simple bot choices
+  const forehand = st.forehand;
+  if (st.currentPlayer !== forehand) fail(`play should start with the forehand ${forehand}, got ${st.currentPlayer}`);
+  const withWeis = JSON.parse(JSON.stringify(st.players)) as Schieber.Player[];
+  let lastWinner = -1;
   while (st.phase !== 'finished') {
-    if (st.currentPlayer !== 0) {
-      const pick = Schieber.chooseBotCard(st, st.currentPlayer);
-      if (!pick) break;
-      st = Schieber.playCardLocal(st, st.currentPlayer, pick);
-      if (st.pendingResolve) {
-        st = Schieber.resolveTrick(st);
-      }
-    } else {
-      // play first legal card for player 0
-      const legal = Schieber.getLegalCardsForPlayer(st, 0);
-      if (legal.length === 0) break;
-      st = Schieber.playCardLocal(st, 0, legal[0].id);
-      if (st.pendingResolve) st = Schieber.resolveTrick(st);
+    const p = st.currentPlayer;
+    const legal = Schieber.getLegalCardsForPlayer(st, p);
+    const pick = p === 0 ? legal[0]?.id : Schieber.chooseBotCard(st, p);
+    if (!pick) { fail(`player ${p} has no card to play`); break; }
+    if (!legal.some(c => c.id === pick)) fail(`player ${p} played illegal card ${pick}`);
+    st = Schieber.playCardLocal(st, p, pick);
+    if (st.pendingResolve) {
+      lastWinner = Schieber.peekTrickWinner(st)!;
+      st = Schieber.resolveTrick(st);
     }
   }
-
-  return st;
+  return { st, dealt, withWeis, forehand, lastWinner };
 }
 
-function simulate(n = 20) {
+function simulate(n: number) {
   for (let i = 0; i < n; i++) {
-    const st = runOneHand();
-  const total = sumScores(st);
-  // compute sum of card points from collected tricks for verification
-    const basePoints: Record<string, number> = { '6':0,'7':0,'8':0,'9':0,'10':10,'U':2,'O':3,'K':4,'A':11 };
-    const trumpOverride: Record<string, number> = { 'U':20,'9':14,'A':11,'10':10,'K':4,'O':3,'8':0,'7':0,'6':0 };
-    let sumFromTricks = 0;
-    let totalCards = 0;
-    for (const p of st.players) {
-      for (const c of p.tricks) {
-        totalCards += 1;
-        const isTrump = (st.trump && (['eicheln','schellen','rosen','schilten'].includes(st.trump))) ? c.suit === st.trump : false;
-        sumFromTricks += isTrump ? trumpOverride[c.rank] : basePoints[c.rank];
+    const { st, dealt, withWeis, forehand, lastWinner } = runOneHand();
+    const trump = st.trump as string;
+    const raw: Record<number, number> = { 1: 0, 2: 0 };
+    const cards: Record<number, number> = { 1: 0, 2: 0 };
+    for (const p of st.players) for (const c of p.tricks) { raw[p.team] += points(c, trump); cards[p.team]++; }
+    const lastTeam = st.players.find(p => p.id === lastWinner)!.team;
+    raw[lastTeam] += 5;
+    if (raw[1] + raw[2] !== 157) fail(`hand total should be 157, got ${raw[1] + raw[2]}`);
+
+    // Stöck: trump King and Ober dealt to the same player
+    if (SUITS.includes(trump)) {
+      for (const p of dealt) {
+        const has = (r: string) => p.hand.some(c => c.suit === trump && c.rank === r);
+        if (has('K') && has('O')) raw[p.team] += 20;
       }
     }
-    const diff = total - sumFromTricks;
-    // Compute per-team raw totals from collected trick cards
-    const teamRaw: { [k:number]: number } = { 1: 0, 2: 0 };
-    for (const p of st.players) {
-      for (const c of p.tricks) {
-        const isTrump = (st.trump && (['eicheln','schellen','rosen','schilten'].includes(st.trump))) ? c.suit === st.trump : false;
-        const pts = isTrump ? trumpOverride[c.rank] : basePoints[c.rank];
-        teamRaw[p.team] += pts;
-      }
-    }
-    // Add last-trick +5 to the team of the currentPlayer (winner of last trick)
-    if (st.players.every(p => p.hand.length === 0)) {
-      const winnerTeam = st.players.find(p => p.id === st.currentPlayer)!.team;
-      teamRaw[winnerTeam] += 5;
-    }
+    const weis = Schieber.calculateTeamWeis(withWeis, trump as any, forehand);
+    const m = st.trumpMultiplier || 1;
+    const expected = { team1: (raw[1] + weis.team1) * m, team2: (raw[2] + weis.team2) * m };
+    if (cards[1] === 36) expected.team1 += 100 * m;
+    if (cards[2] === 36) expected.team2 += 100 * m;
 
-    // The engine already applies settlement in resolveTrick when finishing, so read settled scores from st.scores
-    const settled = { team1: st.scores.team1 || 0, team2: st.scores.team2 || 0 };
-  const lastTrickBonus = st.players.every(p => p.hand.length === 0) ? 5 : 0;
-  const totalRaw = sumFromTricks + lastTrickBonus;
-  console.log(`Hand ${i+1}: RawTeam1=${teamRaw[1]} RawTeam2=${teamRaw[2]} RawTotal=${teamRaw[1]+teamRaw[2]} Trump=${st.trump} Mult=${st.trumpMultiplier}`);
-    console.log(`  Intermediate: sumFromTricks=${sumFromTricks} lastTrickBonus=${lastTrickBonus} totalRaw=${totalRaw}`);
-    // Compute expected settled totals using Weis and multiplier logic (for verification)
-    const weis = Schieber.calculateTeamWeis(st.players);
-    const declarerId = st.declarer;
-    const declarerTeam = (typeof declarerId === 'number') ? st.players.find(p => p.id === declarerId)!.team : null;
-    const multiplierUsed = st.trumpMultiplier || 1;
-    let expectedT1 = teamRaw[1] + (weis.team1 || 0);
-    let expectedT2 = teamRaw[2] + (weis.team2 || 0);
-    if (declarerTeam === 1) expectedT1 = expectedT1 * multiplierUsed;
-    else if (declarerTeam === 2) expectedT2 = expectedT2 * multiplierUsed;
-    // match bonus if a team captured all cards
-    const team1Cards = st.players.filter(p=>p.team===1).reduce((s,p)=>s + (p.tricks?.length||0), 0);
-    const team2Cards = st.players.filter(p=>p.team===2).reduce((s,p)=>s + (p.tricks?.length||0), 0);
-    const matchBonus = st.matchBonus || 100;
-    if (team1Cards === 36) expectedT1 += (declarerTeam === 1 ? (matchBonus * multiplierUsed) : matchBonus);
-    if (team2Cards === 36) expectedT2 += (declarerTeam === 2 ? (matchBonus * multiplierUsed) : matchBonus);
-
-    console.log(`  Expected settled: Team1=${expectedT1} Team2=${expectedT2} Total=${expectedT1+expectedT2}`);
-    console.log(`  Settled (engine): Team1=${settled.team1} Team2=${settled.team2} Total=${settled.team1+settled.team2}`);
-    console.log(`  Cards counted=${totalCards}, settled-minus-expected=${(settled.team1+settled.team2)-(expectedT1+expectedT2)}`);
-    if (settled.team1 !== expectedT1 || settled.team2 !== expectedT2) {
-      console.warn(`  Settlement mismatch between engine and expected calculation. Diff Team1=${settled.team1-expectedT1} Team2=${settled.team2-expectedT2}`);
-    }
+    const ok = st.scores.team1 === expected.team1 && st.scores.team2 === expected.team2;
+    console.log(`Hand ${i + 1}: trump=${trump} ×${m} engine=${st.scores.team1}/${st.scores.team2} expected=${expected.team1}/${expected.team2}${ok ? '' : '  MISMATCH'}`);
+    if (!ok) fail('settlement mismatch');
   }
+  console.log(failures === 0 ? `${n} hands simulated, all consistent` : `${failures} simulation failure(s)`);
+  if (failures) process.exitCode = 1;
 }
 
-simulate(10);
+simulate(40);

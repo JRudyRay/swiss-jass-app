@@ -1051,7 +1051,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
       const updatedSt = Schieber.setTrumpAndDetectWeis(st, choice as any);
       
       // Determine Weis winner (authentic Swiss Jass competition)
-      const weisWinnerResult = determineWeisWinner(updatedSt.weis || {});
+      const weisWinnerResult = Schieber.bestWeis(updatedSt.players, updatedSt.trump as Schieber.TrumpContract, updatedSt.forehand);
       setWeisWinner(weisWinnerResult);
       
       saveLocalState(updatedSt);
@@ -1354,7 +1354,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
         try {
           const weisObj = (data.state && data.state.weis) ? data.state.weis : null;
           if (weisObj) {
-            const ww = determineWeisWinner(weisObj as Record<number, any[]>);
+            const withWeis = (data.players || []).map((p: any) => ({ id: p.id, team: p.team, weis: weisObj[p.id] || [] }));
+            const ww = Schieber.bestWeis(withWeis, null, null);
             setWeisWinner(ww);
           }
         } catch (e) {}
@@ -1408,49 +1409,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Determine Weis winner according to authentic Swiss Jass rules
-  const determineWeisWinner = (weis: Record<number, any[]>): {playerId: number, teamId: number} | null => {
-    let bestWeis: any = null;
-    let bestPlayer: number | null = null;
-    let bestTeam: number | null = null;
-
-    // Find the highest value Weis
-    Object.entries(weis).forEach(([playerId, playerWeis]) => {
-      if (!playerWeis || playerWeis.length === 0) return;
-      
-      const player = players.find(p => p.id === parseInt(playerId));
-      if (!player) return;
-      
-      playerWeis.forEach((w: any) => {
-        if (!bestWeis || w.points > bestWeis.points || 
-           (w.points === bestWeis.points && compareWeisEquality(w, bestWeis, player.team))) {
-          bestWeis = w;
-          bestPlayer = parseInt(playerId);
-          bestTeam = player.team;
-        }
-      });
-    });
-
-    return (bestPlayer !== null && bestTeam !== null) ? { playerId: bestPlayer, teamId: bestTeam } : null;
-  };
-
-  // Compare Weis of equal value according to Swiss Jass rules
-  const compareWeisEquality = (w1: any, w2: any, team: number): boolean => {
-    // Same points: longer sequence wins, then higher cards, then trump suit, then position
-    if (w1.points !== w2.points) return false;
-    
-    // For sequences, longer wins
-    if (w1.type.includes('sequence') && w2.type.includes('sequence')) {
-      return w1.cards.length > w2.cards.length;
-    }
-    
-    // For equal sequences, trump sequences win
-    const w1InTrump = w1.cards.some((c: any) => c.suit === gameState?.trumpSuit);
-    const w2InTrump = w2.cards.some((c: any) => c.suit === gameState?.trumpSuit);
-    
-    return w1InTrump && !w2InTrump;
   };
 
   const resetTotals = () => {

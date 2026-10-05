@@ -50,15 +50,100 @@ function testObenUndenOrdering() {
   assert(u6 < uA, 'Unden-ufe: 6 should be higher than A');
 }
 
-function testWeisTieNoScore() {
-  // Two equal Weis points should result in nobody scoring
+function testWeisTieGoesToForehandOrder() {
+  // Fully equal Weis: the player earlier in play order from the forehand wins.
   const st = Schieber.startGameLocal();
-  // Set simple weis for player 0 and player 1 both equal
-  st.players[0].weis = [{ type: 'sequence3', cards: [], points: 20, description: 'seq3' } as any];
-  st.players[1].weis = [{ type: 'sequence3', cards: [], points: 20, description: 'seq3' } as any];
-  const res = (Schieber as any).calculateTeamWeis(st.players);
-  // Both teams have equal best weis -> nobody scores
-  assert(res.team1 === 0 && res.team2 === 0, 'Tie Weis should award nobody points');
+  for (const p of st.players) p.weis = [];
+  const seq = (suit: string) => ({ type: 'sequence3', points: 20, description: 'seq3',
+    cards: ['6','7','8'].map(r => ({ id: suit+r, suit, rank: r })) } as any);
+  st.players[1].weis = [seq('rosen')];
+  st.players[2].weis = [seq('schellen')];
+  const res = (Schieber as any).calculateTeamWeis(st.players, 'eicheln', 2);
+  assert(res.team1 === 20 && res.team2 === 0, 'Forehand (player 2, team 1) should win the tie');
+  const res2 = (Schieber as any).calculateTeamWeis(st.players, 'eicheln', 1);
+  assert(res2.team2 === 20 && res2.team1 === 0, 'Forehand (player 1, team 2) should win the tie');
+  // Trump sequence beats an equal non-trump sequence regardless of seat.
+  const res3 = (Schieber as any).calculateTeamWeis(st.players, 'rosen', 2);
+  assert(res3.team2 === 20 && res3.team1 === 0, 'Trump sequence should win an equal tie');
+}
+
+function testWeisWinnerScoresAll() {
+  // The team with the best Weis scores all its Weis, including the partner's.
+  const st = Schieber.startGameLocal();
+  for (const p of st.players) p.weis = [];
+  st.players[0].weis = [{ type: 'sequence4', points: 50, description: '', cards: [] } as any];
+  st.players[2].weis = [{ type: 'sequence3', points: 20, description: '', cards: [] } as any];
+  st.players[1].weis = [{ type: 'sequence3', points: 20, description: '', cards: [] } as any];
+  const res = (Schieber as any).calculateTeamWeis(st.players, 'eicheln', 0);
+  assert(res.team1 === 70 && res.team2 === 0, `Expected 70/0, got ${res.team1}/${res.team2}`);
+}
+
+function testWeisSequenceTieBreaks() {
+  const mk = (ranks: string[], suit = 'rosen') => ({ type: 'sequence'+ranks.length, points: 20, description: '',
+    cards: ranks.map(r => ({ id: suit+r, suit, rank: r })) } as any);
+  const low = mk(['6','7','8']);
+  const high = mk(['9','10','U']);
+  assert(Schieber.isWeisBetter(high, low, 'eicheln'), 'Higher sequence should win');
+  assert(Schieber.isWeisBetter(low, high, 'unden-ufe'), 'Lower sequence should win in Undenufe');
+}
+
+function testNoFourSixesSevensEights() {
+  const hand = (['eicheln','schellen','rosen','schilten'] as const).map(s => ({ id: s+'7', suit: s, rank: '7' } as any));
+  const w = Schieber.detectWeis(hand, 'eicheln');
+  assert(w.length === 0, 'Four 7s should not be a Weis');
+  const unders = (['eicheln','schellen','rosen','schilten'] as const).map(s => ({ id: s+'U', suit: s, rank: 'U' } as any));
+  const wu = Schieber.detectWeis(unders, 'eicheln');
+  assert(wu.length === 1 && wu[0].points === 200, 'Four Unders should be 200');
+}
+
+function legalState(hand: [string, string][], trick: [string, string][], trump: string) {
+  const st = Schieber.startGameLocal();
+  st.trump = trump as any;
+  st.players[0].hand = hand.map(([suit, rank]) => ({ id: suit+rank, suit, rank } as any));
+  st.currentTrick = trick.map(([suit, rank], i) => ({ id: 't'+suit+rank, suit, rank, playerId: i + 1 } as any));
+  st.trickLead = (trick[0]?.[0] as any) || null;
+  return st;
+}
+const ids = (cards: any[]) => cards.map(c => c.id).sort().join(',');
+
+function testTrumpAllowedWhenFollowing() {
+  // Holding the lead suit, you may still play a trump instead.
+  const st = legalState([['rosen','K'],['eicheln','6'],['schellen','A']], [['rosen','9']], 'eicheln');
+  assert(ids(Schieber.getLegalCardsForPlayer(st, 0)) === 'eicheln6,rosenK', 'Should allow following suit or trumping');
+}
+
+function testNoForcedTrump() {
+  // Void in the lead suit: any card, trumping is optional.
+  const st = legalState([['eicheln','6'],['schellen','A']], [['rosen','9']], 'eicheln');
+  assert(Schieber.getLegalCardsForPlayer(st, 0).length === 2, 'Void in lead suit: any card is legal');
+}
+
+function testNoUndertrumping() {
+  // A trump lower than one already in the trick may not be played...
+  const st = legalState([['eicheln','6'],['schellen','A']], [['rosen','9'],['eicheln','A']], 'eicheln');
+  assert(ids(Schieber.getLegalCardsForPlayer(st, 0)) === 'schellenA', 'Undertrumping should not be allowed');
+  // ...unless you hold nothing else.
+  const st2 = legalState([['eicheln','6'],['eicheln','7']], [['rosen','9'],['eicheln','A']], 'eicheln');
+  assert(Schieber.getLegalCardsForPlayer(st2, 0).length === 2, 'Only trumps left: undertrumping is allowed');
+  // Overtrumping is fine.
+  const st3 = legalState([['eicheln','9'],['schellen','A']], [['rosen','9'],['eicheln','A']], 'eicheln');
+  assert(Schieber.getLegalCardsForPlayer(st3, 0).length === 2, 'Overtrumping should be allowed');
+}
+
+function testPuurException() {
+  // Trump led and your only trump is the Puur: you need not play it.
+  const st = legalState([['eicheln','U'],['schellen','A']], [['eicheln','9']], 'eicheln');
+  assert(Schieber.getLegalCardsForPlayer(st, 0).length === 2, 'Bare Puur need not follow trump');
+  const st2 = legalState([['eicheln','U'],['eicheln','6'],['schellen','A']], [['eicheln','9']], 'eicheln');
+  assert(ids(Schieber.getLegalCardsForPlayer(st2, 0)) === 'eicheln6,eichelnU', 'With other trumps you must follow trump');
+}
+
+function testContractTotals157() {
+  const deck = Schieber.createDeck();
+  for (const c of ['eicheln','oben-abe','unden-ufe'] as const) {
+    const sum = deck.reduce((s, card) => s + Schieber.cardPoints(card, c), 0);
+    assert(sum === 152, `${c}: card points should sum to 152 (157 with last trick), got ${sum}`);
+  }
 }
 
 function testLegalPlayEnforcement() {
@@ -73,19 +158,16 @@ function testLegalPlayEnforcement() {
 }
 
 function testDeclarerMultiplierEffect() {
-  // Ensure multiplier applies only to declarer's team
+  // The contract multiplier applies to both teams (standard Schieber)
   const st = Schieber.startGameLocal();
-  // Clear any Weis to avoid side-effects
   for (const p of st.players) p.weis = [];
   st.scores.team1 = 50;
   st.scores.team2 = 30;
-  st.trumpMultiplier = 2; // double
-  // make player 0 (team1) the declarer
+  st.trumpMultiplier = 2;
   st.declarer = 0;
   const settled = (Schieber as any).settleHand(st);
-  // declarer team (team1) should be doubled, team2 unchanged
-  assert(settled.scores.team1 === 100, 'Declarer multiplier should double declarer team score');
-  assert(settled.scores.team2 === 30, 'Non-declarer team score should remain unchanged by multiplier');
+  assert(settled.scores.team1 === 100, 'Multiplier should double team 1');
+  assert(settled.scores.team2 === 60, 'Multiplier should double team 2 as well');
 }
 
 function testMatchAllAward() {
@@ -109,21 +191,21 @@ function testMatchAllAward() {
 }
 
 function testTrumpChooserSchieben() {
-  // Dealer should be initial trump chooser
+  // The forehand (right of the dealer) chooses trump
   const st = Schieber.startGameLocal();
-  assert(st.currentPlayer === st.dealer, 'Initial currentPlayer should be dealer who chooses trump');
+  assert(st.currentPlayer === st.forehand, 'Initial currentPlayer should be the forehand');
+  assert(st.forehand === (st.dealer - 1 + 4) % 4, 'Forehand sits right of the dealer');
 
-  // If dealer schiebt (passes), the decision moves to partner (opposite player)
+  // Schieben passes the choice to the forehand's partner
   const passed = (Schieber as any).setTrumpAndDetectWeis(st, 'schieben');
-  const expectedPartner = (st.dealer + 2) % 4;
-  assert(passed.currentPlayer === expectedPartner, 'After schieben currentPlayer should be partner');
+  assert(passed.currentPlayer === (st.forehand! + 2) % 4, 'After schieben currentPlayer should be the partner');
   assert(passed.phase === 'trump_selection', 'After schieben we should remain in trump_selection phase');
 
-  // Partner now chooses a real trump; declarer should be the partner, but play should start with dealer
+  // The partner chooses; the forehand still leads
   const final = (Schieber as any).setTrumpAndDetectWeis(passed, 'eicheln');
-  assert(final.declarer === passed.currentPlayer, 'Declarer should be the player who selected trump (the partner)');
+  assert(final.declarer === passed.currentPlayer, 'Declarer should be the partner who chose');
   assert(final.phase === 'playing', 'After setting trump phase should be playing');
-  assert(final.currentPlayer === final.dealer, 'Play should start with the dealer even if partner declared via schieben');
+  assert(final.currentPlayer === st.forehand, 'The forehand leads even after schieben');
 }
 function testTenDoesNotOutrankHighCards() {
   // Setup two cards for same suit trump scenario
@@ -202,7 +284,9 @@ function testTotalsDuplicateGuard() {
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
   // existing extra tests
-  tests.push(testObenUndenOrdering, testWeisTieNoScore);
+  tests.push(testObenUndenOrdering, testWeisTieGoesToForehandOrder, testWeisWinnerScoresAll, testWeisSequenceTieBreaks, testNoFourSixesSevensEights);
+  // standard Schieber legal-play rules and contract points
+  tests.push(testTrumpAllowedWhenFollowing, testNoForcedTrump, testNoUndertrumping, testPuurException, testContractTotals157);
   // newly added settlement edge-case tests
   tests.push(testDeclarerMultiplierEffect, testMatchAllAward);
   // dealer/trump chooser and schieben behavior test
@@ -220,6 +304,7 @@ function runAll() {
     }
   }
   console.log(`${passed}/${tests.length} tests passed`);
+  if (passed !== tests.length) process.exitCode = 1;
 }
 
 runAll();

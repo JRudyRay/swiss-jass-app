@@ -75,9 +75,15 @@ const trumpOverride: Record<Rank, number> = {
 };
 
 // Comparators: higher returns positive
-function rankValue(rank: Rank, isTrump: boolean): number {
-  if (isTrump) return trumpOverride[rank];
-  return basePoints[rank];
+// Obenabe and Undenufe: no trump, every 8 is worth 8; in Undenufe the 6 takes
+// the Ass's 11 and the Ass is worth nothing. Each contract totals 152 + 5.
+const obenPoints: Record<Rank, number> = { ...basePoints, '8': 8 };
+const undenPoints: Record<Rank, number> = { ...basePoints, '8': 8, '6': 11, 'A': 0 };
+
+export function cardPoints(card: { suit: Suit; rank: Rank }, contract: TrumpContract | 'schieben' | null | undefined): number {
+  if (contract === 'oben-abe') return obenPoints[card.rank];
+  if (contract === 'unden-ufe') return undenPoints[card.rank];
+  return card.suit === contract ? trumpOverride[card.rank] : basePoints[card.rank];
 }
 
 // For ordering cards (not points) we need rank order lists.
@@ -92,8 +98,8 @@ const normalOrder: Rank[] = ['A','K','O','U','10','9','8','7','6'];
 export function rankOrderIndex(rank: Rank, contract: TrumpContract | null | undefined, isTrumpCard: boolean) {
   // Special contracts without a suit-trump: 'oben-abe' and 'unden-ufe'
   if (contract === 'unden-ufe') {
-    // In Unden-ufe the 6 is highest, then 7,8,9,U,O,K,10,A
-    const undenOrder: Rank[] = ['6','7','8','9','U','O','K','10','A'];
+    // In Unden-ufe the natural order is reversed: 6 highest, Ass lowest
+    const undenOrder: Rank[] = ['6','7','8','9','10','U','O','K','A'];
     return undenOrder.indexOf(rank);
   }
   if (contract === 'oben-abe') {
@@ -294,7 +300,7 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
   } else if (trump === 'oben-abe') {
     st.trumpMultiplier = 3; // Triple for "tops-down"
   } else if (trump === 'unden-ufe') {
-    st.trumpMultiplier = 4; // Quadruple for "bottoms-up"
+    st.trumpMultiplier = 3; // Triple, same as Oben-abe
   } else {
     st.trumpMultiplier = 1; // Normal for Eicheln/Rosen
   }
@@ -320,7 +326,7 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
       }
     }
   }
-  // After trump selection, play always starts with the dealer (even if partner chose via schieben)
+  // After trump selection the forehand leads, even if the partner chose via schieben
   st.phase = 'playing';
   st.currentPlayer = typeof st.forehand === 'number' ? st.forehand : st.dealer;
   st.trickLead = null;
@@ -337,20 +343,31 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
   const leadSuit = state.trickLead!;
   const trumpContract = state.trump as TrumpContract | null | undefined;
 
-  // If player has cards of the lead suit, they must follow suit.
-  const sameSuit = player.hand.filter(c => c.suit === leadSuit);
-  if (sameSuit.length > 0) return sameSuit;
-
-  // No lead suit: if there is a suit-trump, player must play a trump if they have any
+  const hand = player.hand;
+  const sameSuit = hand.filter(c => c.suit === leadSuit);
   const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
-  if (suitTrump) {
-    const trumpCards = player.hand.filter(c => c.suit === suitTrump);
-    if (trumpCards.length > 0) return trumpCards;
+
+  // Obenabe / Undenufe: follow suit if you can, otherwise anything.
+  if (!suitTrump) return sameSuit.length > 0 ? sameSuit : hand.slice();
+
+  // Trump led: follow with trump, except that the Puur never has to be played.
+  if (leadSuit === suitTrump) {
+    if (sameSuit.every(c => c.rank === 'U')) return hand.slice();
+    return sameSuit;
   }
 
-  // Otherwise any card allowed
-  const fallback = player.hand.slice();
-  return fallback.length > 0 ? fallback : [];
+  // Another suit led: follow suit or play trump; with no card of the lead
+  // suit anything goes. Undertrumping (a trump lower than one already in the
+  // trick) is only allowed when nothing else is left.
+  const trickTrumps = state.currentTrick.filter(c => c.suit === suitTrump);
+  const bestTrump = trickTrumps.length
+    ? Math.min(...trickTrumps.map(c => rankOrderIndex(c.rank, trumpContract, true)))
+    : Infinity;
+  const allowed = (c: Card) => c.suit !== suitTrump || rankOrderIndex(c.rank, trumpContract, true) < bestTrump;
+  const legal = sameSuit.length > 0
+    ? hand.filter(c => c.suit === leadSuit || (c.suit === suitTrump && allowed(c)))
+    : hand.filter(allowed);
+  return legal.length > 0 ? legal : hand.slice();
 }
 
 // compare two cards with knowledge of trump and lead suit
@@ -518,7 +535,8 @@ export function detectWeis(hand: Card[], trump?: string | null): WeisDeclaration
         : rank === 'K' ? { type: 'four_kings' as WeisType, points: 100, label: 'Vier Könige' }
         : rank === 'O' ? { type: 'four_queens' as WeisType, points: 100, label: 'Vier Damen' }
         : rank === '10' ? { type: 'four_tens' as WeisType, points: 100, label: 'Vier Zehner' }
-        : { type: 'four_misc' as WeisType, points: 100, label: 'Vier Gleiche' };
+        : null; // four 6s, 7s or 8s don't count
+      if (!base) continue;
       weis.push({
         type: base.type,
         cards,
@@ -560,74 +578,56 @@ function findSequences(sortedCards: Card[]): Card[][] {
   return sequences;
 }
 
-// Calculate Weis points for a team (only best Weis counts)
-export function calculateTeamWeis(players: Player[]): { team1: number, team2: number, details: { [playerId: number]: WeisDeclaration[] } } {
-  const team1Players = players.filter(p => p.team === 1);
-  const team2Players = players.filter(p => p.team === 2);
-  
-  let team1BestWeis: WeisDeclaration | null = null;
-  let team2BestWeis: WeisDeclaration | null = null;
-  
-  const details: { [playerId: number]: WeisDeclaration[] } = {};
-  
-  // Find best Weis for each team
-  for (const player of team1Players) {
-    details[player.id] = player.weis || [];
+// The player holding the single best Weis, or null when nobody has any.
+// Complete ties go to the player who comes first in play order from the forehand.
+export function bestWeis(players: { id: number; team: number; weis?: WeisDeclaration[] }[], trump?: TrumpContract | null, forehand?: number | null): { playerId: number; teamId: number } | null {
+  const start = typeof forehand === 'number' ? forehand : 0;
+  let best: { weis: WeisDeclaration; playerId: number; teamId: number; order: number } | null = null;
+  for (const player of players) {
+    const order = (player.id - start + 4) % 4;
     for (const weis of player.weis || []) {
-      if (!team1BestWeis || isWeisBetter(weis, team1BestWeis)) {
-        team1BestWeis = weis;
+      if (!best || isWeisBetter(weis, best.weis, trump)
+          || (!isWeisBetter(best.weis, weis, trump) && order < best.order)) {
+        best = { weis, playerId: player.id, teamId: player.team, order };
       }
     }
   }
-  
-  for (const player of team2Players) {
-    details[player.id] = player.weis || [];
-    for (const weis of player.weis || []) {
-      if (!team2BestWeis || isWeisBetter(weis, team2BestWeis)) {
-        team2BestWeis = weis;
-      }
-    }
-  }
-  
-  // Determine winning team and award all their Weis points
-  let team1Points = 0;
-  let team2Points = 0;
-  
-  if (team1BestWeis && team2BestWeis) {
-    if (isWeisBetter(team1BestWeis, team2BestWeis)) {
-      // Team 1 wins, gets all their Weis points
-      team1Points = team1Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
-    } else if (isWeisBetter(team2BestWeis, team1BestWeis)) {
-      // Team 2 wins, gets all their Weis points
-      team2Points = team2Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
-    }
-    // If equal, nobody scores Weis points
-  } else if (team1BestWeis) {
-    team1Points = team1Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
-  } else if (team2BestWeis) {
-    team2Points = team2Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
-  }
-  
-  return { team1: team1Points, team2: team2Points, details };
+  return best ? { playerId: best.playerId, teamId: best.teamId } : null;
 }
 
-// Compare two Weis to determine which is better
-export function isWeisBetter(a: WeisDeclaration, b: WeisDeclaration): boolean {
-  // Higher points wins
+// Weis scoring: the team holding the best Weis scores all of its Weis;
+// the other team scores none.
+export function calculateTeamWeis(players: Player[], trump?: TrumpContract | null, forehand?: number | null): { team1: number, team2: number, details: { [playerId: number]: WeisDeclaration[] } } {
+  const details: { [playerId: number]: WeisDeclaration[] } = {};
+  for (const player of players) details[player.id] = player.weis || [];
+  const winner = bestWeis(players, trump, forehand);
+  const teamTotal = (team: number) => players.filter(p => p.team === team)
+    .reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
+  return {
+    team1: winner?.teamId === 1 ? teamTotal(1) : 0,
+    team2: winner?.teamId === 2 ? teamTotal(2) : 0,
+    details,
+  };
+}
+
+// Is Weis a strictly better than b? Higher points; between sequences of equal
+// points the longer, then the higher (lower in Undenufe), then the trump one.
+export function isWeisBetter(a: WeisDeclaration, b: WeisDeclaration, trump?: TrumpContract | null): boolean {
   if (a.points !== b.points) return a.points > b.points;
-  
-  // Same points - check by type priority and length
   if (a.type.startsWith('sequence') && b.type.startsWith('sequence')) {
-    // Longer sequence wins
     if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
-    // Same length - higher top card wins
-    const aTop = Math.max(...a.cards.map(c => rankToNumber(c.rank)));
-    const bTop = Math.max(...b.cards.map(c => rankToNumber(c.rank)));
-    return aTop > bTop;
+    const top = (w: WeisDeclaration) => Math.max(...w.cards.map(c => rankToNumber(c.rank)));
+    const low = (w: WeisDeclaration) => Math.min(...w.cards.map(c => rankToNumber(c.rank)));
+    if (trump === 'unden-ufe') {
+      if (low(a) !== low(b)) return low(a) < low(b);
+    } else if (top(a) !== top(b)) {
+      return top(a) > top(b);
+    }
+    const aTrump = !!trump && a.cards.length > 0 && a.cards[0].suit === trump;
+    const bTrump = !!trump && b.cards.length > 0 && b.cards[0].suit === trump;
+    return aTrump && !bTrump;
   }
-  
-  // For equal Weis, consider trump suit sequences higher
-  return false; // Equal
+  return false;
 }
 
 export function resolveTrick(state: State): State {
@@ -644,10 +644,7 @@ export function resolveTrick(state: State): State {
   st.players.find(p=>p.id===winnerPlayer)!.tricks.push(...wonCards.map(c => ({ id: c.id, suit: c.suit, rank: c.rank })) as any);
   // compute trick points and add to winner team
   let trickPoints = 0;
-  for (const c of wonCards) {
-    const isTrump = st.trump && c.suit === st.trump;
-    trickPoints += isTrump ? trumpOverride[c.rank] : basePoints[c.rank];
-  }
+  for (const c of wonCards) trickPoints += cardPoints(c, st.trump);
   
   // Add 5 points bonus for winning the last trick (when all hands are empty)
   const isLastTrick = st.players.every(p => p.hand.length === 0);
@@ -694,7 +691,7 @@ export function settleHand(state: State): State {
   const multiplier = st.trumpMultiplier || 1;
 
   // Weis resolution (which team wins the Weis and their total Weis points)
-  const weisScore = calculateTeamWeis(st.players);
+  const weisScore = calculateTeamWeis(st.players, st.trump as TrumpContract | null, st.forehand);
 
   // Raw trick scores (should sum to 157 including last-trick bonus)
   // st.scores is cumulative across hands; only this hand's points are settled.
@@ -706,21 +703,11 @@ export function settleHand(state: State): State {
   let t1 = rawTeam1 + (weisScore.team1 || 0);
   let t2 = rawTeam2 + (weisScore.team2 || 0);
 
-  // Debug logging to diagnose scoring mismatches
-  try {
-    console.log('settleHand debug: rawTeam1=', rawTeam1, 'rawTeam2=', rawTeam2, 'weisTeam1=', weisScore.team1, 'weisTeam2=', weisScore.team2, 'multiplier=', multiplier, 'declarer=', st.declarer);
-    console.log('  after weis: t1=', t1, 't2=', t2);
-  } catch (e) {
-    // ignore console errors in environments without console
-  }
 
-  // Apply contract multiplier only to the declarer's team (authentic Schieber semantics)
+  // The contract multiplier applies to both teams (standard Schieber)
   t1 = t1 * multiplier;
   t2 = t2 * multiplier;
 
-  try {
-    console.log('  after multiplier: t1=', t1, 't2=', t2);
-  } catch (e) {}
 
   // Check for match-all (one team captured all tricks) and award match bonus (multiplied)
   try {
@@ -736,9 +723,6 @@ export function settleHand(state: State): State {
     // ignore
   }
 
-  try {
-    console.log('  after match bonus: t1=', t1, 't2=', t2);
-  } catch (e) {}
 
   st.scores.team1 = (base.team1 || 0) + t1;
   st.scores.team2 = (base.team2 || 0) + t2;
@@ -792,8 +776,8 @@ export function chooseBotCard(state: State, botId: number): string | null {
     if (canWin.length > 0) {
       // Win with the winning card that spends the fewest points (lowest point value)
       const best = canWin.slice().sort((x,y)=> {
-        const vx = (x.suit === trumpSuit ? trumpOverride[x.rank] : basePoints[x.rank]);
-        const vy = (y.suit === trumpSuit ? trumpOverride[y.rank] : basePoints[y.rank]);
+        const vx = cardPoints(x, state.trump);
+        const vy = cardPoints(y, state.trump);
         if (vx !== vy) return vx - vy; // lower point cost preferred
         return compareCardValue(x,y,trumpSuit,leadSuit);
       })[0];
@@ -867,8 +851,8 @@ function compareCardValue(a: Card, b: Card, trumpContract: TrumpContract | 'schi
   const bIsTrump = suitTrump ? b.suit === suitTrump : false;
 
   // Primary sort by point value (lower points first)
-  const aPts = aIsTrump ? trumpOverride[a.rank] : basePoints[a.rank];
-  const bPts = bIsTrump ? trumpOverride[b.rank] : basePoints[b.rank];
+  const aPts = cardPoints(a, trumpContract);
+  const bPts = cardPoints(b, trumpContract);
   if (aPts !== bPts) return aPts - bPts;
 
   // Tie-breaker: use rank order index (lower index is stronger) so we want weaker first for ascending order
