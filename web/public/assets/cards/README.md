@@ -10,7 +10,11 @@ on Wikimedia Commons as
 Regenerate with `python3 web/scripts/fetch-card-images.py` (needs Pillow).
 It checks every file's licence, trims the scan background and writes
 `<suit>_<rank>.webp` (suits `eicheln schellen rosen schilten`, ranks
-`6 7 8 9 10 U O K A`) plus `back.webp`, at 222x336 px.
+`6 7 8 9 10 U O K A`) plus `back.webp`, at 222x336 px, with levels, colour
+and sharpness lifted so the faded scan reads well on screen.
+
+The suit icons in `../suits/` are cut from the 6 of each suit by
+`python3 web/scripts/make-suit-icons.py`.
 
 Don't add images from commercial decks (AGMüller, Carta Mundi, jass sites):
 they are copyrighted. `SwissCard.tsx` falls back to the SVG card if an image

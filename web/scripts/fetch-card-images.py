@@ -17,7 +17,7 @@ import time
 import urllib.parse
 import urllib.request
 
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageEnhance, ImageOps
 
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'cards')
 SIZE = (222, 336)  # 3x the 74x112 card in SwissCard.tsx
@@ -41,6 +41,14 @@ def trim(img):
     return img.crop(box)
 
 
+def enhance(img):
+    """Lift the faded 1850 scan: stretch levels, richer colour, crisper lines."""
+    img = ImageOps.autocontrast(img, cutoff=(1, 0.5))
+    img = ImageEnhance.Color(img).enhance(1.35)
+    img = ImageEnhance.Contrast(img).enhance(1.12)
+    return ImageEnhance.Sharpness(img).enhance(1.3)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     api = ('https://commons.wikimedia.org/w/api.php?action=query&format=json'
@@ -59,7 +67,7 @@ def main():
             rank, suit = name.split(' of ')
             out = f'{SUITS[suit]}_{RANKS[rank]}.webp'
         img = trim(Image.open(io.BytesIO(get(info['thumburl']))).convert('RGB'))
-        img.resize(SIZE, Image.LANCZOS).save(os.path.join(OUT, out), 'WEBP', quality=82, method=6)
+        enhance(img.resize(SIZE, Image.LANCZOS)).save(os.path.join(OUT, out), 'WEBP', quality=82, method=6)
         done += 1
         time.sleep(0.3)
     print(f'wrote {done} images to {os.path.normpath(OUT)}')

@@ -53,8 +53,8 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
       border: '2px solid #e5e7eb',
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
       color: isSelected ? 'white' : 'black',
-      opacity: isPlayable === false ? 0.5 : 1,
-      filter: isPlayable === false ? 'grayscale(40%)' : 'none',
+      // Unplayable cards are only darkened a little so they stay readable.
+      filter: isPlayable === false ? 'brightness(0.72)' : 'none',
     };
     
     if (isSelected) {
@@ -64,6 +64,8 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
       baseStyle.zIndex = 101;
     } else if (isPlayable && !isSelected) {
       baseStyle.border = '2px solid #10b981';
+      baseStyle.transform = 'translateY(-8px)';
+      baseStyle.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px #10b981';
     }
     
     if (card.isTrump) {

@@ -2,8 +2,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import logo from './assets/logo.png';
 import { SwissCard } from './SwissCard';
 import CardCredits from './components/CardCredits';
+import ScoreBar, { TEAM_COLORS } from './components/table/ScoreBar';
+import { SuitIcon, trumpName } from './components/table/SuitBadge';
+import PlayerSeat from './components/table/PlayerSeat';
 import * as Schieber from './engine/schieber';
-import YouTubePlayer from './YouTubePlayer';
+import InfoPanels from './components/table/InfoPanels';
+import WeisPanel from './components/table/WeisPanel';
 import { API_URL, ONLINE_ENABLED } from './config';
 import { io, Socket } from 'socket.io-client';
 import Rankings from './components/Rankings';
@@ -31,19 +35,19 @@ type GameState = {
 
 type Player = { id: number; name: string; hand: any[]; team: number; position: string };
 
-const suitSymbols: { [key: string]: string } = {
-  eicheln: '🌰',
-  schellen: '🔔',
-  rosen: '🌹',
-  schilten: '🛡️',
-  'oben-abe': '⬆️',
-  'unden-ufe': '⬇️'
+// Where each seat's card lands in the trick area (small tilt, like a real pile).
+const TRICK_POS: Record<string, { left: string; top: string; rot: number }> = {
+  south: { left: '50%', top: '78%', rot: 2 },
+  north: { left: '50%', top: '22%', rot: -3 },
+  west: { left: '22%', top: '50%', rot: -6 },
+  east: { left: '78%', top: '50%', rot: 5 },
+  center: { left: '50%', top: '50%', rot: 0 },
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: { fontFamily: '"Helvetica Neue", "Arial", sans-serif', minHeight: '100vh', background: '#f5f2e8', paddingBottom: 40 },
   header: { background: '#D42E2C', color: 'white', padding: '1rem 1rem', textAlign: 'center' as const, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
-  gameArea: { maxWidth: 1200, margin: '2rem auto', background: 'rgba(255, 255, 255, 0.8)', borderRadius: 20, padding: 24, boxShadow: '0 10px 40px rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,0,0,0.05)' },
+  gameArea: { maxWidth: 960, margin: '12px auto', background: 'rgba(255, 255, 255, 0.8)', borderRadius: 20, padding: 'clamp(8px, 3vw, 24px)', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,0,0,0.05)' },
   controls: { display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' as const, justifyContent: 'center' },
   button: { 
     background: '#1A7A4C', 
@@ -57,8 +61,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     boxShadow: '0 2px 8px rgba(26, 122, 76, 0.3)',
     transition: 'all 0.2s ease'
   },
-  message: { textAlign: 'center' as const, marginBottom: 16, fontSize: 16, fontWeight: 600, color: '#3a2e20', padding: '12px 16px', background: 'rgba(255,255,255,0.7)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' },
-  hand: { display: 'flex', gap: 10, flexWrap: 'wrap' as const, justifyContent: 'center', padding: '12px 8px' },
+  message: { flex: 1, textAlign: 'center' as const, fontSize: 15, fontWeight: 600, color: '#3a2e20', padding: '12px 16px', background: 'rgba(255,255,255,0.7)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' },
+  hand: { display: 'flex', justifyContent: 'center', padding: '22px 4px 10px', maxWidth: 760, margin: '0 auto' },
   table: { padding: 14, background: 'rgba(25, 122, 76, 0.1)', borderRadius: 10, minHeight: 140, marginBottom: 12 },
 };
 
@@ -88,17 +92,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
     };
   }, []);
 
-  const ytRef = useRef<any>(null);
   // lang now comes from props (global state in App)
 
   const T: Record<string, Record<string,string>> = {
     en: {
   welcome: 'Welcome to Swiss Jass!',
   noCardsPlayed: 'No cards played',
+  roundHistory: 'Rounds played',
+  round: 'Round',
   weisPoints: 'Weis points',
-  weisNotCount: '(does not count)',
-  weisRulesTitle: 'Weis Rules',
-  weisRulesDesc: 'Only the team with the best Weis scores points. Weis are declared during the first trick and are detected automatically after trump is chosen.',
       currentTrump: 'Current Trump',
       roundScores: 'Round — Team1',
       yourHand: 'Your Hand',
@@ -116,8 +118,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
       schobenTo: 'Schieben: {name} chooses trump',
       trumpHintChooser: 'Tap a trump to play it, or schieben to let your partner choose.',
       trumpHintPartner: 'Your partner pushed the choice to you (schieben). You must choose.',
-      scoringDetails: 'Scoring Details',
-      musicPlaylist: 'Mountain Music Playlist',
       cards: 'Cards',
       team: 'Team',
       tricks: 'Tricks',
@@ -146,11 +146,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
     ch: {
   welcome: 'Willkomme bi Swiss Jass!',
   noCardsPlayed: 'Keini Chart gspielt',
+  roundHistory: 'Gspielti Runde',
+  round: 'Rundi',
   weisPoints: 'Weis Punkt',
-  weisNotCount: '(zählt nicht)',
-  weisRulesTitle: 'Weis Regle',
   confirmNewGame: 'Es neus Spiel starte? Aktuelle Fortschritt gaht verlore.',
-  weisRulesDesc: 'Nur d Team mit em bestä Weis kassiert Punkt. Weis wärend em erschte Stich angekündigt und werdet automatisch nach Trump-Auswahl entdeckt.',
       currentTrump: 'Trump jetzt',
       roundScores: 'Rundi — Team1',
       yourHand: 'Dini Chart',
@@ -168,8 +167,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
       schobenTo: 'Gschobe: {name} wählt de Trump',
       trumpHintChooser: 'Tipp uf en Trump, oder schieb und lass din Partner wähle.',
       trumpHintPartner: 'Din Partner het gschobe. Jetzt muesch du wähle.',
-      scoringDetails: 'Punktetabelle',
-      musicPlaylist: 'Bärgmusig Playlist',
       cards: 'Charte',
       team: 'Mannschaft',
       tricks: 'Stich',
@@ -568,19 +565,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
   }
 
   // Helper to render a prominent dealer badge and animated winner emoji
-  const renderPlayerBadge = (playerId?: number) => {
-    const isDealer = gameState?.dealer === playerId;
-    const isWinner = winnerFlash?.id === playerId;
+  const renderSeat = (pos: string, narrow = false) => {
+    const p = players.find(x => x.position === pos);
+    if (!p) return null;
+    const active = gameState?.phase === 'playing' || gameState?.phase === 'trump_selection';
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: isDealer ? 'linear-gradient(90deg,#fde68a,#fca5a5)' : 'transparent', padding: isDealer ? '6px 10px' : '2px 6px', borderRadius: 14, boxShadow: isDealer ? '0 6px 18px rgba(0,0,0,0.12)' : 'none', border: isDealer ? '2px solid rgba(0,0,0,0.06)' : '1px dashed rgba(0,0,0,0.04)', opacity: isDealer ? 1 : 0.6 }}>
-          <span style={{ fontWeight: 800, color: isDealer ? '#7c2d12' : '#6b7280', fontSize: 12 }}>{T[lang].dealer}</span>
-          <span style={{ fontSize: 18 }}>{isDealer ? '🎩' : ' '}</span>
-        </div>
-        {isWinner && winnerFlash && (
-          <span style={{ fontSize: 28, lineHeight: 1, display: 'inline-block', animation: 'bounceIn 550ms ease, pulse 1200ms infinite', transformOrigin: 'center' }}>{winnerFlash.emoji}</span>
-        )}
-      </div>
+      <PlayerSeat lang={lang} name={p.name} team={p.team} cardsLeft={p.hand?.length ?? 0} tricks={getTricksCount(p)}
+        isDealer={gameState?.dealer === p.id} isTurn={active && gameState?.currentPlayer === p.id}
+        flash={winnerFlash?.id === p.id ? winnerFlash.emoji : null} narrow={narrow} />
     );
   };
 
@@ -979,7 +971,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
         st = newState;
         setChosenTrump(chosen);
         const botPlayer = newState.players.find(p => p.id === newState.currentPlayer);
-        setMessage(`${botPlayer?.name || 'Bot'} chose trump: ${chosen}`);
+        setMessage(`${botPlayer?.name || 'Bot'} ${lang === 'ch' ? 'macht' : 'chose'}: ${trumpName(chosen, lang)}`);
         saveLocalState(newState);
   setGameState(toGameState(st));
         // update UI players and hand
@@ -2048,7 +2040,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
                   onMouseOver={(e) => e.currentTarget.style.background = '#dc2626'}
                   onMouseOut={(e) => e.currentTarget.style.background = '#ef4444'}
                 >
-                  🔄 {T[lang].newGame || 'New Game'}
+                  {T[lang].newGame || 'New Game'}
                 </button>
               )}
             </div>
@@ -2058,24 +2050,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
         {/* Game-only HUD (scores, trump, history) */}
         {showPlaySurface && (
           <>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 80, marginTop: 12, marginBottom: 16 }}>
-              <div style={{ textAlign: 'center', background: '#fff', borderRadius: 12, padding: '12px 20px', border: '2px solid #D42E2C', boxShadow: '0 4px 8px rgba(212, 46, 44, 0.15)' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#A42423', marginBottom: 2 }}>{teamNames[1] || 'Team 1'}</div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: '#D42E2C' }}>{gameState?.scores?.team1 ?? 0}</div>
-                <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
-              </div>
-              <div style={{ textAlign: 'center', background: '#fff', borderRadius: 12, padding: '12px 20px', border: '2px solid #1A7A4C', boxShadow: '0 4px 8px rgba(26, 122, 76, 0.15)' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#135A38', marginBottom: 2 }}>{teamNames[2] || 'Team 2'}</div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: '#1A7A4C' }}>{gameState?.scores?.team2 ?? 0}</div>
-                <div style={{ fontSize: 10, color: '#6b7280', marginTop: 1 }}>Punkte</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <div style={{ background: currentTrump ? '#fff' : '#f3f4f6', border: currentTrump ? '2px solid #1A7A4C' : '2px solid #9ca3af', borderRadius: 12, padding: '10px 18px', fontSize: 16, fontWeight: 700, color: currentTrump ? '#135A38' : '#6b7280', boxShadow: currentTrump ? '0 4px 12px rgba(26, 122, 76, 0.2)' : '0 2px 4px rgba(0,0,0,0.1)', minWidth: 200, textAlign: 'center' as const }}>
-                <span style={{ fontSize: 12, display: 'block', marginBottom: 2, opacity: 0.8 }}>{T[lang].currentTrump}</span>
-                <span style={{ fontSize: 18 }}>{currentTrump ? `${suitSymbols[currentTrump] || ''} ${currentTrump.toUpperCase()}` : '—'}</span>
-              </div>
-            </div>
+            <ScoreBar lang={lang} teamNames={teamNames} scores={gameState?.scores || { team1: 0, team2: 0 }} target={maxPoints} trump={currentTrump} myTeam={players.find(p => p.position === 'south')?.team} />
             {mode==='multi' && multiGameState && (
               <div style={{ margin: '0 auto 16px', maxWidth: 760, background:'#fff', padding:12, borderRadius:12, border:'1px solid #e5e7eb' }}>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:16, alignItems:'center' }}>
@@ -2095,119 +2070,44 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
               </div>
             )}
             {roundHistory.length > 0 && (
-              <div style={{ marginBottom: 16, background: '#f9fafb', borderRadius: 8, padding: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, textAlign: 'center' }}>Round History</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <details style={{ maxWidth: 700, margin: '0 auto 10px', background: '#fffaf0', border: '1px solid #e3d7bf', borderRadius: 10, padding: '6px 12px' }}>
+                <summary style={{ fontSize: 13, fontWeight: 600, color: '#3a2e20', cursor: 'pointer' }}>{T[lang].roundHistory} ({roundHistory.length})</summary>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', margin: '8px 0 4px' }}>
                   {roundHistory.map((round, idx) => (
                     <div key={idx} style={{ background: 'white', borderRadius: 6, padding: '4px 8px', fontSize: 12, border: '1px solid #e5e7eb', minWidth: 80, textAlign: 'center' }}>
-                      <div style={{ fontWeight: 600 }}>Round {round.round}</div>
-                      <div style={{ color: '#dc2626' }}>{round.team1}</div>
-                      <div style={{ color: '#2563eb' }}>{round.team2}</div>
-                      <div style={{ fontSize: 10, color: '#6b7280' }}>{round.trump}</div>
+                      <div style={{ fontWeight: 600 }}>{T[lang].round} {round.round}</div>
+                      <div style={{ color: TEAM_COLORS[1] }}>{round.team1}</div>
+                      <div style={{ color: TEAM_COLORS[2] }}>{round.team2}</div>
+                      <div style={{ fontSize: 10, color: '#6b7280' }}>{trumpName(round.trump, lang)}</div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </details>
             )}
           </>
         )}
 
   {showPlaySurface && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <div style={{ width: 700, height: 420, position: 'relative', background: 'radial-gradient(circle, rgba(25,122,76,1) 0%, rgba(19,93,58,1) 100%)', borderRadius: 16, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5), 0 8px 25px rgba(0,0,0,0.2)', padding: 8, border: '4px solid #135A38' }}>
+            <div style={{ width: '100%', maxWidth: 700, height: 440, position: 'relative', background: 'radial-gradient(ellipse at center, #22875a 0%, #17683f 60%, #0f4c2d 100%)', borderRadius: 18, boxShadow: 'inset 0 0 40px rgba(0,0,0,0.45), 0 8px 25px rgba(0,0,0,0.2)', border: '6px solid #6b4423', boxSizing: 'border-box' }}>
               
-              {/* North player (id 2) - Compact layout */}
-              <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 100 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 4 }}>
-                  {renderPlayerBadge(players.find(p=>p.position==='north')?.id)}
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
-                      {players.find(p=>p.position==='north')?.name || 'North'}
-                      {winnerFlash?.id === (players.find(p=>p.position==='north')?.id) ? <span style={{ marginLeft: 4, fontSize: '1.2rem' }}>{winnerFlash?.emoji}</span> : null}
-                    </div>
-                    <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', gap: 8, justifyContent: 'center' }}>
-                      <span>{players.find(p=>p.position==='north')?.hand?.length ?? 0} {T[lang].cards}</span>
-                      <span>{T[lang].team} {players.find(p=>p.position==='north')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='north'))} {T[lang].tricks}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Seats: north/south centred, west/east on the sides */}
+              <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 5 }}>{renderSeat('north')}</div>
+              <div style={{ position: 'absolute', top: '24%', left: 6, transform: 'translateY(-50%)', zIndex: 5 }}>{renderSeat('west', true)}</div>
+              <div style={{ position: 'absolute', top: '24%', right: 6, transform: 'translateY(-50%)', zIndex: 5 }}>{renderSeat('east', true)}</div>
+              <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 5 }}>{renderSeat('south')}</div>
 
-              {/* West player (id 1) - Compact layout */}
-              <div style={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)', textAlign: 'center', minWidth: 80 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 4, flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {renderPlayerBadge(players.find(p=>p.position==='west')?.id)}
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
-                        {players.find(p=>p.position==='west')?.name || 'West'}
-                        {winnerFlash?.id === (players.find(p=>p.position==='west')?.id) ? <span style={{ marginLeft: 4, fontSize: '1.2rem' }}>{winnerFlash?.emoji}</span> : null}
-                      </div>
-                      <div style={{ fontSize: 9, color: '#6b7280' }}>
-                        <div>{players.find(p=>p.position==='west')?.hand?.length ?? 0} {T[lang].cards}</div>
-                        <div>{T[lang].team} {players.find(p=>p.position==='west')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='west'))} {T[lang].tricks}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* East player (id 3) - Compact layout */}
-              <div style={{ position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)', textAlign: 'center', minWidth: 80 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 4, flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
-                        {players.find(p=>p.position==='east')?.name || 'East'}
-                        {winnerFlash?.id === (players.find(p=>p.position==='east')?.id) ? <span style={{ marginLeft: 4, fontSize: '1.2rem' }}>{winnerFlash?.emoji}</span> : null}
-                      </div>
-                      <div style={{ fontSize: 9, color: '#6b7280' }}>
-                        <div>{players.find(p=>p.position==='east')?.hand?.length ?? 0} {T[lang].cards}</div>
-                        <div>{T[lang].team} {players.find(p=>p.position==='east')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='east'))} {T[lang].tricks}</div>
-                      </div>
-                    </div>
-                    {renderPlayerBadge(players.find(p=>p.position==='east')?.id)}
-                  </div>
-                </div>
-              </div>
-
-              {/* South player (human) - Compact layout */}
-              <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', minWidth: 100 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: '800', fontSize: 13, color: '#1f2937', marginBottom: 1 }}>
-                      {players.find(p=>p.position==='south')?.name || 'You'}
-                      {winnerFlash?.id === (players.find(p=>p.position==='south')?.id) ? <span style={{ marginLeft: 4, fontSize: '1.2rem' }}>{winnerFlash?.emoji}</span> : null}
-                    </div>
-                    <div style={{ fontSize: 10, color: '#6b7280', display: 'flex', gap: 8, justifyContent: 'center' }}>
-                      <span>{players.find(p=>p.position==='south')?.hand?.length ?? 0} {T[lang].cards}</span>
-                      <span>{T[lang].team} {players.find(p=>p.position==='south')?.team ?? '-'} • {getTricksCount(players.find(p=>p.position==='south'))} {T[lang].tricks}</span>
-                    </div>
-                  </div>
-                  {renderPlayerBadge(players.find(p=>p.position==='south')?.id)}
-                </div>
-              </div>
-
-              {/* Center trick area - more compact design */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 280, height: 280 }}>
+              {/* Trick: cards upright, nudged toward the player who played them */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 'min(260px, 58%)', height: 270 }}>
                 <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                   {/* If showing last trick at round end, render that first (override) */}
                   {showLastTrick && showLastTrick.length > 0 ? (
                     showLastTrick.map((c:any, i:number) => {
                       const seat = positionForPlayerId(c.playerId ?? i);
-                      const posMap = {
-                        south: { left: '50%', top: '75%', rot: 0 },
-                        north: { left: '50%', top: '25%', rot: 180 },
-                        west:  { left: '25%', top: '50%', rot: 90 },
-                        east:  { left: '75%', top: '50%', rot: -90 },
-                      };
-                      const pos = posMap[seat] || { left: '50%', top: '50%', rot: 0 };
+                      const pos = TRICK_POS[seat] || TRICK_POS.center;
                       return (
-                        <div key={c.id || i} style={{ position: 'absolute', left: pos.left, top: pos.top, transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`, textAlign: 'center' as const }}>
+                        <div key={c.id || i} style={{ position: 'absolute', left: pos.left, top: pos.top, transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`, zIndex: i + 1 }}>
                           <SwissCard card={c} />
-                          <div style={{ fontSize: 9, color: '#374151', fontWeight: '600', marginTop: 2 }}>
-                            {players.find(p=>p.id===c.playerId)?.name ?? 'Player'}
-                          </div>
                         </div>
                       );
                     })
@@ -2216,23 +2116,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
                     !isAnimating && gameState?.currentTrick && gameState.currentTrick.length > 0 && (
                       gameState.currentTrick.map((c:any, i:number) => {
                         const seat = positionForPlayerId(c.playerId ?? i);
-                          const posMap = {
-                            south: { left: '50%', top: '75%', rot: 0 },
-                            north: { left: '50%', top: '25%', rot: 180 },
-                            west:  { left: '25%', top: '50%', rot: 90 },
-                            east:  { left: '75%', top: '50%', rot: -90 },
-                          };
-                        const pos = posMap[seat] || { left: '50%', top: '50%', rot: 0 };
+                        const pos = TRICK_POS[seat] || TRICK_POS.center;
                         const isSwooping = animCards.findIndex((ac:any) => ac.id === c.id) !== -1;
                         const swoopStyle: React.CSSProperties = isSwooping && (animatingSwoop?.winnerId ?? null) !== null
                           ? { transition: 'transform 700ms ease, left 700ms ease, top 700ms ease', zIndex: 40 }
                           : {};
                         return (
-                          <div key={c.id || i} style={{ position: 'absolute', left: pos.left, top: pos.top, transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`, textAlign: 'center' as const, ...swoopStyle }}>
+                          <div key={c.id || i} style={{ position: 'absolute', left: pos.left, top: pos.top, transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`, zIndex: i + 1, ...swoopStyle }}>
                             <SwissCard card={c} />
-                            <div style={{ fontSize: 9, color: '#374151', fontWeight: '600', marginTop: 2 }}>
-                              {players.find(p=>p.id===c.playerId)?.name ?? 'Player'}
-                            </div>
                           </div>
                         );
                       })
@@ -2240,13 +2131,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
                     )}
 
                   {isAnimating && (
-                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: '#6b7280', fontWeight: '600', fontSize: 14 }}>
-                      Resolving...
+                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: 'rgba(255,250,240,0.8)', fontWeight: '600', fontSize: 14 }}>
+                      …
                     </div>
                   )}
 
                   {!gameState?.currentTrick?.length && !uiPendingResolve && !isAnimating && (
-                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: '#6b7280', fontWeight: '500', fontSize: 12 }}>
+                    <div style={{ position:'absolute', left:'50%', top:'50%', transform:'translate(-50%,-50%)', color: 'rgba(255,250,240,0.65)', fontWeight: '500', fontSize: 13, whiteSpace: 'nowrap' }}>
                       {T[lang].noCardsPlayed}
                     </div>
                   )}
@@ -2550,13 +2441,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
 
         {/* Hand */}
         <div>
-          <h3>{T[lang].yourHand}</h3>
+          {/* Fanned hand: wrappers shrink so cards overlap on narrow screens, corner index stays visible. */}
           <div style={styles.hand}>
-            {hand.length ? sortHandForDisplay(hand, chosenTrump).map(card => {
+            {hand.length ? sortHandForDisplay(hand, chosenTrump).map((card, i, arr) => {
               const playable = legalCards.some((c: any) => c.id === card.id);
               const reason = !playable ? notPlayableReason(card) : null;
               return (
-                <div key={card.id} style={{ position: 'relative' }}>
+                <div key={card.id} style={{ position: 'relative', flex: i === arr.length - 1 ? '0 0 78px' : '0 1 84px', minWidth: 0 }}>
                   {/* Tap to select, tap again to play (dblclick never fires reliably on touch). */}
                   <div data-card-id={card.id} data-playable={playable ? 'true' : 'false'} title={reason || undefined} onClick={() => {
                     if (!playable) { if (reason) setMessage(reason); return; }
@@ -2564,7 +2455,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
                     setSelectedCard(null);
                     if (isLocal) playLocalCard(card.id); else playCard(card.id);
                   }}>
-                    <SwissCard card={card} isSelected={selectedCard === card.id} isPlayable={playable} />
+                    {/* Only mark playability while it's our turn, so the hand isn't dimmed while waiting. */}
+                    <SwissCard card={card} isSelected={selectedCard === card.id} isPlayable={legalCards.length ? playable : undefined} />
                   </div>
                 </div>
               );
@@ -2581,14 +2473,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map(t => (
-                <button key={t} data-trump={t} style={styles.button} onClick={() => submitTrump(t)}>
-                  {t === 'oben-abe' ? 'Oben-abe' : t === 'unden-ufe' ? 'Unden-ufe' : `${suitSymbols[t]} ${t}`}
+                <button key={t} data-trump={t} onClick={() => submitTrump(t)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minWidth: 76, padding: '8px 10px', background: '#fffaf0', border: '2px solid #d9c9a8', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#3a2e20' }}>
+                  <SuitIcon trump={t} size={34} />
+                  {trumpName(t, lang)}
                 </button>
               ))}
               {/* Only the original chooser (forehand) may schieben; the partner can't push it back. */}
               {isLocal && gameState.forehand === 0 && (
                 <button data-trump="schieben" style={{ ...styles.button, background: '#6b7280' }} onClick={() => submitTrump('schieben')}>
-                  🔄 {T[lang].schieben}
+                  ↻ {T[lang].schieben}
                 </button>
               )}
             </div>
@@ -2598,99 +2491,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
           </div>
         )}
 
-        {/* Enhanced Weis (Melds) Display with Swiss Authenticity */}
-        {gameState?.weis && Object.keys(gameState.weis).length > 0 && (
-          <div style={{ marginTop: 16, padding: 16, background: '#f0f9ff', border: '2px solid #10b981', borderRadius: 12 }}>
-            <h4 style={{ margin: '0 0 12px 0', color: '#064e3b', fontSize: '18px', textAlign: 'center' }}>
-              🎯 Weis (Melds) - Swiss Jass Tradition
-            </h4>
-            
-            {weisWinner && (
-              <div style={{ 
-                background: '#d1fae5', 
-                border: '1px solid #10b981', 
-                borderRadius: 8, 
-                padding: 8, 
-                marginBottom: 12,
-                textAlign: 'center',
-                fontSize: 14,
-                fontWeight: '600',
-                color: '#064e3b'
-              }}>
-                🏆 Weis Winner: {players.find(p => p.id === weisWinner.playerId)?.name} (Team {weisWinner.teamId})
-                <br />
-                <span style={{ fontSize: '12px', fontWeight: '400' }}>
-                  Only this team's Weis count for scoring (authentic Swiss Jass rules)
-                </span>
-              </div>
-            )}
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-              {Object.entries(gameState.weis as Record<string, any[]>).map(([playerId, weis]) => {
-                const player = players.find(p => p.id === parseInt(playerId));
-                const weisArr = weis as any[];
-                if (!weisArr || weisArr.length === 0) return null;
-                
-                const isWinningTeam = weisWinner?.teamId === player?.team;
-                
-                return (
-                  <div key={playerId} style={{ 
-                    padding: 12, 
-                    background: isWinningTeam ? '#ecfdf4' : 'white', 
-                    borderRadius: 8, 
-                    border: isWinningTeam ? '2px solid #10b981' : '1px solid #e5e7eb',
-                    opacity: weisWinner && !isWinningTeam ? 0.6 : 1
-                  }}>
-                    <div style={{ 
-                      fontWeight: '700', 
-                      color: isWinningTeam ? '#064e3b' : '#1e40af', 
-                      marginBottom: 6,
-                      fontSize: 15
-                    }}>
-                      {player?.name || `Player ${playerId}`} (Team {player?.team || '?'})
-                      {isWinningTeam && <span style={{ marginLeft: 8 }}>👑</span>}
-                    </div>
-                    {weisArr.map((w: any, idx: number) => (
-                      <div key={idx} style={{ 
-                        fontSize: 13, 
-                        color: '#374151', 
-                        marginBottom: 3,
-                        padding: '4px 8px',
-                        background: isWinningTeam ? '#f0fdf4' : '#f9fafb',
-                        borderRadius: 4,
-                        border: `1px solid ${isWinningTeam ? '#bbf7d0' : '#e5e7eb'}`
-                      }}>
-                        <span style={{ 
-                          fontWeight: '600', 
-                          color: isWinningTeam ? '#059669' : '#6b7280',
-                          marginRight: 8
-                        }}>
-                          {w.points} {T[lang].weisPoints}
-                        </span>
-                        {w.description}
-                        {weisWinner && !isWinningTeam && (
-                          <span style={{ color: '#ef4444', fontSize: 11, fontStyle: 'italic' }}> {T[lang].weisNotCount}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-            
-            <div style={{ 
-              marginTop: 12, 
-              padding: 8, 
-              background: '#fef3c7', 
-              borderRadius: 6, 
-              fontSize: 12, 
-              color: '#92400e',
-              textAlign: 'center'
-            }}>
-              <strong>{T[lang].weisRulesTitle}:</strong> {T[lang].weisRulesDesc}
-            </div>
-          </div>
-        )}
+        <WeisPanel lang={lang} weis={gameState?.weis as any} players={players as any} weisWinner={weisWinner as any} />
 
         {/* Victory Celebration Modal */}
         {matchFinished && gameState?.phase === 'finished' && (
@@ -2748,36 +2549,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
           </div>
         )}
 
-        {/* Bottom info: Scoring details + Music player as two columns */}
-        <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, alignItems: 'start' }}>
-          <div style={{ background: '#fffaf0', border: '1px solid #fde2b6', padding: 8, borderRadius: 8 }}>
-            <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 14 }}>{T[lang].scoringDetails}</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2px 8px', fontSize: 12, lineHeight: 1.3 }}>
-              <div style={{ fontWeight: 600, fontSize: 11 }}>Non-trump</div><div></div><div style={{ fontWeight: 600, fontSize: 11 }}>Trump</div><div></div>
-              <div>A: 11</div><div>K: 4</div><div>U: 20</div><div>A: 11</div>
-              <div>10: 10</div><div>O: 3</div><div>9: 14</div><div>10: 10</div>
-              <div>U: 2</div><div>9,8,7,6: 0</div><div>K: 4</div><div>O,8,7,6: 0</div>
-            </div>
-            <div style={{ marginTop: 4, fontSize: 11, color: '#6b7280', lineHeight: 1.3 }}>
-              Last trick: +5 bonus • Total: 157 pts (152+5)
-            </div>
-          </div>
-
-          <div style={{ maxWidth: 320, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>{T[lang].musicPlaylist}</div>
-            <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb', padding: 8, background: '#fff' }}>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:8 }}>
-                <button style={{ ...styles.button, background:'#374151' }} onClick={() => ytRef.current?.prev()}>Prev</button>
-                <button style={{ ...styles.button, background:'#059669' }} onClick={() => ytRef.current?.play()}>Play</button>
-                <button style={{ ...styles.button, background:'#ef4444' }} onClick={() => ytRef.current?.pause()}>Pause</button>
-                <button style={{ ...styles.button, background:'#111827' }} onClick={() => ytRef.current?.next()}>Next</button>
-              </div>
-              <div style={{ borderRadius: 6, overflow: 'hidden' }}>
-                <YouTubePlayer ref={ytRef} playlistId={'PL4-gXKkSsfQpRt16x8SUGSz6wLk2Lyxdp'} width={280} height={175} autoplay={true} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <InfoPanels lang={lang} />
 
         <CardCredits lang={lang} />
       </div>
