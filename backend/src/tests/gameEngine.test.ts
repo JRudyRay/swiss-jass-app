@@ -329,6 +329,7 @@ testRunner('Trumping is never forced', () => {
 testRunner('No undertrumping unless only trumps remain', () => {
   assertEquals(legalFor([['eicheln','6'],['schellen','A']], [['rosen','9'],['eicheln','A']], 'eicheln'), 'schellenA', 'no undertrump');
   assertEquals(legalFor([['eicheln','6'],['eicheln','7']], [['rosen','9'],['eicheln','A']], 'eicheln'), 'eicheln6,eicheln7', 'only trumps');
+  assertEquals(legalFor([['eicheln','U'],['eicheln','7']], [['rosen','9'],['eicheln','A']], 'eicheln'), 'eichelnU,eicheln7'.split(',').sort().join(','), 'only trumps, one higher');
 });
 
 testRunner('A bare Puur need not follow trump', () => {

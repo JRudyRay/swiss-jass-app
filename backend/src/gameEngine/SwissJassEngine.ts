@@ -710,6 +710,7 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
       const onlyPuur = sameSuit.length === 1 && sameSuit[0].rank === 'U';
       return sameSuit.length && !onlyPuur ? sameSuit : hand.slice();
     }
+    if (hand.every(c => c.suit === trump)) return hand.slice();
     const trumpsInTrick = trick.filter(c => c.suit === trump);
     const bestTrump = trumpsInTrick.reduce((best, c) => Math.min(best, TRUMP_HIERARCHY.indexOf(c.rank)), 99);
     const allowed = (c: SwissCard) => c.suit !== trump || TRUMP_HIERARCHY.indexOf(c.rank) < bestTrump;

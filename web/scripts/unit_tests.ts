@@ -125,6 +125,8 @@ function testNoUndertrumping() {
   // ...unless you hold nothing else.
   const st2 = legalState([['eicheln','6'],['eicheln','7']], [['rosen','9'],['eicheln','A']], 'eicheln');
   assert(Schieber.getLegalCardsForPlayer(st2, 0).length === 2, 'Only trumps left: undertrumping is allowed');
+  const st2b = legalState([['eicheln','U'],['eicheln','7']], [['rosen','9'],['eicheln','A']], 'eicheln');
+  assert(Schieber.getLegalCardsForPlayer(st2b, 0).length === 2, 'Only trumps left, one higher: the lower trump is allowed too');
   // Overtrumping is fine.
   const st3 = legalState([['eicheln','9'],['schellen','A']], [['rosen','9'],['eicheln','A']], 'eicheln');
   assert(Schieber.getLegalCardsForPlayer(st3, 0).length === 2, 'Overtrumping should be allowed');

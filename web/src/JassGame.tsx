@@ -405,8 +405,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         const base = newSt.handStartScores || { team1: 0, team2: 0 };
         setRoundHistory(h => [...h, { round: h.length + 1, team1: t1 - base.team1, team2: t2 - base.team2, trump: String(newSt.trump || '') }]);
         if (t1 >= maxPoints || t2 >= maxPoints) {
-          // NEW UX: Show victory modal with confetti!
-          const winner = t1 >= maxPoints ? 1 : 2;
+          // Both teams can pass the target in the same hand: the higher total wins.
+          const winner = t1 >= t2 ? 1 : 2;
           setWinningTeam(winner);
           setShowVictory(true);
           setMatchFinished(true);
@@ -849,12 +849,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           break;
         }
         // let engine pick a smart trump for bots
+        const chooser = st.players.find(p => p.id === st.currentPlayer);
         const chosen = Schieber.chooseBotTrump(st, st.currentPlayer);
         const newState = Schieber.setTrumpAndDetectWeis(st, chosen);
         st = newState;
-        setChosenTrump(chosen);
-        const botPlayer = newState.players.find(p => p.id === newState.currentPlayer);
-        setMessage(t.botChose(botPlayer?.name || 'Bot', trumpName(chosen, lang)));
+        if (chosen === 'schieben') {
+          setMessage(t.schobenTo(newState.players.find(p => p.id === newState.currentPlayer)?.name || ''));
+        } else {
+          setChosenTrump(chosen);
+          setMessage(t.botChose(chooser?.name || 'Bot', trumpName(chosen, lang)));
+        }
         saveLocalState(newState);
   setGameState(toGameState(st));
         // update UI players and hand

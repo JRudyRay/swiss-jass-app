@@ -190,90 +190,53 @@ export function chooseRandomTrump(): Suit {
   return suits[Math.floor(Math.random()*suits.length)];
 }
 
-// Smart bot trump selection based on hand analysis
+// How good a hand is for each contract (rough expected strength, not points).
+function contractStrength(hand: Card[], contract: TrumpContract): number {
+  const has = (s: Suit, r: Rank) => hand.some(c => c.suit === s && c.rank === r);
+  if (contract === 'oben-abe' || contract === 'unden-ufe') {
+    // Count the cards that will win their trick from the top of each suit.
+    const order: Rank[] = contract === 'oben-abe' ? ['A','K','O','U','10','9','8','7','6'] : ['6','7','8','9','10','U','O','K','A'];
+    let score = 0;
+    for (const s of suits) {
+      for (const r of order) { if (!has(s, r)) break; score += 3.2; }
+    }
+    return score;
+  }
+  const trump = contract as Suit;
+  const trumpValue: Partial<Record<Rank, number>> = { U: 6, '9': 4.5, A: 3, K: 2, O: 1.5 };
+  let score = 0;
+  for (const c of hand) {
+    if (c.suit === trump) score += trumpValue[c.rank] ?? 1;
+    else if (c.rank === 'A') score += 2;
+    else if (c.rank === 'K' && has(c.suit, 'A')) score += 1;
+  }
+  return score;
+}
+
+// Bot contract choice. The forehand may schieben with a weak hand; after
+// schieben the partner must choose.
 export function chooseBotTrump(state: State, playerId: number): TrumpContract | 'schieben' {
   const player = state.players.find(p => p.id === playerId);
   if (!player) return chooseRandomTrump();
-  
-  const hand = player.hand;
-  
-  // Count cards by suit
-  const suitCounts: Record<Suit, number> = {
-    'eicheln': 0,
-    'schellen': 0, 
-    'rosen': 0,
-    'schilten': 0
-  };
-  
-  const suitStrength: Record<Suit, number> = {
-    'eicheln': 0,
-    'schellen': 0,
-    'rosen': 0, 
-    'schilten': 0
-  };
-  
-  // Analyze hand strength by suit
-  hand.forEach(card => {
-    suitCounts[card.suit]++;
-    
-    // Add strength points for high cards
-    switch(card.rank) {
-      case 'A': suitStrength[card.suit] += 4; break;
-      case 'K': suitStrength[card.suit] += 3; break;
-      case 'O': suitStrength[card.suit] += 3; break;
-      case 'U': suitStrength[card.suit] += 5; break; // Jack is strong in trump
-      case '10': suitStrength[card.suit] += 2; break;
-      case '9': suitStrength[card.suit] += 1; break; // 9 is strong in trump
-    }
-  });
-  
-  // Find best suit (combination of count and strength)
-  let bestSuit: Suit = 'eicheln';
-  let bestScore = 0;
-  
-  (Object.keys(suitCounts) as Suit[]).forEach(suit => {
-    const score = suitCounts[suit] * 2 + suitStrength[suit];
-    if (score > bestScore) {
-      bestScore = score;
-      bestSuit = suit;
-    }
-  });
-  
-  // Sometimes choose special contracts with good hands
-  const totalHighCards = hand.filter(c => ['A', 'K', 'O'].includes(c.rank)).length;
-  const random = Math.random();
-  
-  // 10% chance to choose oben-abe with many high cards
-  if (totalHighCards >= 5 && random < 0.1) {
-    return 'oben-abe';
+  const contracts: TrumpContract[] = ['eicheln','schellen','rosen','schilten','oben-abe','unden-ufe'];
+  let best: TrumpContract = 'eicheln';
+  let bestScore = -1;
+  for (const c of contracts) {
+    const s = contractStrength(player.hand, c);
+    if (s > bestScore) { bestScore = s; best = c; }
   }
-
-  // 5% chance to choose unden-ufe with many low cards
-  const totalLowCards = hand.filter(c => ['6', '7', '8'].includes(c.rank)).length;
-  if (totalLowCards >= 5 && random < 0.05) {
-    return 'unden-ufe';
-  }
-
-  // If hand is weak overall, sometimes choose to pass (schieben) to partner
-  // Reduce pass probability if hand contains several trumps or high cards (don't pass strong hands)
-  const handStrength = Object.values(suitStrength).reduce((a,b)=>a+b,0) + totalHighCards*2 - totalLowCards;
-  const trumpCount = ['eicheln','schellen','rosen','schilten'].reduce((s, su) => s + player.hand.filter(c => c.suit === su).length, 0);
-  let passProb = 0.2;
-  if (trumpCount >= 4 || bestScore >= 10) passProb = 0.05; // strong hand -> rarely pass
-  if (totalLowCards >= 6) passProb = 0.35; // very low hand -> more likely to pass
-  if (handStrength < 6 && Math.random() < passProb) {
-    return 'schieben';
-  }
-
-  return bestSuit;
+  const pushed = typeof state.forehand === 'number' && playerId !== state.forehand;
+  if (!pushed && bestScore < 12) return 'schieben';
+  return best;
 }
 
-// Set trump and detect all Weis
 export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schieben'): State {
   const st = JSON.parse(JSON.stringify(state)) as State;
   // If trump passed as 'schieben' from bots, pass the decision to the partner (opposite player).
   // In Schieber a player may 'schieben' to their partner who must then choose; partner cannot pass back.
   if ((trump as any) === 'schieben') {
+    // Only the forehand may schieben; the partner can't push it back.
+    if (typeof state.forehand === 'number' && state.currentPlayer !== state.forehand) return st;
     // pass selection to partner (opposite player)
     st.currentPlayer = (state.currentPlayer + 2) % 4;
     // remain in trump_selection phase
@@ -358,7 +321,8 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
 
   // Another suit led: follow suit or play trump; with no card of the lead
   // suit anything goes. Undertrumping (a trump lower than one already in the
-  // trick) is only allowed when nothing else is left.
+  // trick) is only allowed when nothing but trumps is left.
+  if (hand.every(c => c.suit === suitTrump)) return hand.slice();
   const trickTrumps = state.currentTrick.filter(c => c.suit === suitTrump);
   const bestTrump = trickTrumps.length
     ? Math.min(...trickTrumps.map(c => rankOrderIndex(c.rank, trumpContract, true)))
@@ -729,92 +693,84 @@ export function settleHand(state: State): State {
   return st;
 }
 
-// Enhanced bot choice: strategic Swiss Jass AI
+// Bot card play: lead boss cards and pull trumps when holding the Puur,
+// let the partner's trick stand (and add points to it when it is safe),
+// win tricks as cheaply as possible, otherwise give away the cheapest card.
 export function chooseBotCard(state: State, botId: number): string | null {
   const legal = getLegalCardsForPlayer(state, botId);
-  if (legal.length === 0) {
-    const fallback = state.players.find(p => p.id === botId)?.hand?.[0];
-    return fallback ? fallback.id : null;
-  }
-  
-  const bot = state.players.find(p => p.id === botId)!;
-  const trumpSuit = state.trump;
+  const bot = state.players.find(p => p.id === botId);
+  if (legal.length === 0) return bot?.hand?.[0]?.id ?? null;
+  if (legal.length === 1) return legal[0].id;
+
+  const contract = state.trump as TrumpContract | null;
+  const trumpSuit: Suit | null = contract && (suits as string[]).includes(contract) ? contract as Suit : null;
   const trick = state.currentTrick;
-  const isFirstCard = trick.length === 0;
-  const isLastCard = trick.length === 3;
-  const leadSuit = state.trickLead;
-  
-  // Strategy 1: If leading, play strong trump or high non-trump
-  if (isFirstCard) {
-    // Look for strong trump cards (U, O, K, A in trump)
-    const trumpCards = legal.filter(c => c.suit === trumpSuit);
-    if (trumpCards.length > 0) {
-      // Prefer to lead with non-wasting strong trump but avoid U unless safe
-      const strongTrump = trumpCards.filter(c => ['O', 'K', 'A'].includes(c.rank));
-      if (strongTrump.length > 0) {
-        return strongTrump[Math.floor(Math.random() * strongTrump.length)].id;
-      }
-      // If only U is strong and we have many trumps, consider holding it
-      if (trumpCards.some(c => c.rank === 'U') && trumpCards.length <= 2) {
-        return trumpCards.find(c=>c.rank==='U')!.id;
-      }
+  const lead = state.trickLead;
+  const isTrump = (c: Card) => c.suit === trumpSuit;
+  const pts = (c: Card) => cardPoints(c, contract);
+  const strength = (c: Card) => rankOrderIndex(c.rank, contract, isTrump(c)); // lower = stronger
+  // Cheapest card to give away: keep trumps, keep points, keep strong cards.
+  const byCheapest = (a: Card, b: Card) =>
+    (Number(isTrump(a)) - Number(isTrump(b))) || (pts(a) - pts(b)) || (strength(b) - strength(a));
+  const cheapest = () => legal.slice().sort(byCheapest)[0];
+
+  // Cards already out of play (won tricks plus the current trick).
+  const played = new Set<string>();
+  for (const p of state.players) for (const c of p.tricks || []) played.add(`${c.suit}${c.rank}`);
+  for (const c of trick) played.add(`${c.suit}${c.rank}`);
+  const isBoss = (c: Card) => !ranks.some(r =>
+    r !== c.rank && rankOrderIndex(r, contract, isTrump(c)) < strength(c)
+    && !played.has(`${c.suit}${r}`) && !bot!.hand.some(h => h.suit === c.suit && h.rank === r));
+
+  if (trick.length === 0) {
+    const trumps = legal.filter(isTrump);
+    const ourContract = typeof state.declarer === 'number'
+      && state.players.find(p => p.id === state.declarer)?.team === bot!.team;
+    const trumpsOut = trumpSuit ? ranks.filter(r => !played.has(`${trumpSuit}${r}`)).length - trumps.length : 0;
+    // Pull the opponents' trumps with a boss trump when it's our contract.
+    if (ourContract && trumpsOut > 0) {
+      const bossTrump = trumps.find(isBoss);
+      if (bossTrump) return bossTrump.id;
     }
-    
-    // Otherwise play high non-trump
-    const nonTrump = legal.filter(c => c.suit !== trumpSuit);
-    if (nonTrump.length > 0) {
-      const highCards = nonTrump.filter(c => ['A', 'K', 'O'].includes(c.rank));
-      if (highCards.length > 0) {
-        return highCards[Math.floor(Math.random() * highCards.length)].id;
-      }
+    const sideBoss = legal.filter(c => !isTrump(c) && isBoss(c)).sort((a, b) => pts(b) - pts(a));
+    if (sideBoss.length) return sideBoss[0].id;
+    // Otherwise a low card from the longest side suit.
+    const side = legal.filter(c => !isTrump(c));
+    if (side.length) {
+      const count = (s: Suit) => side.filter(c => c.suit === s).length;
+      return side.sort((a, b) => (count(b.suit) - count(a.suit)) || byCheapest(a, b))[0].id;
     }
+    return cheapest().id;
   }
-  
-  // Strategy 2: If last to play, try to win or play low
-  if (isLastCard) {
-  const canWin = canBotWinTrick(legal, trick, trumpSuit, leadSuit);
-    if (canWin.length > 0) {
-      // Win with the winning card that spends the fewest points (lowest point value)
-      const best = canWin.slice().sort((x,y)=> {
-        const vx = cardPoints(x, state.trump);
-        const vy = cardPoints(y, state.trump);
-        if (vx !== vy) return vx - vy; // lower point cost preferred
-        return compareCardValue(x,y,trumpSuit,leadSuit);
-      })[0];
-      return best.id;
-    } else {
-      // Can't win, play lowest card
-      const lowest = legal.sort((a, b) => compareCardValue(a, b, trumpSuit, leadSuit))[0];
-      return lowest.id;
+
+  const winning = getCurrentTrickWinner(trick, contract, lead)!;
+  const partnerWinning = state.players.find(p => p.id === winning.playerId)?.team === bot!.team;
+  const last = trick.length === 3;
+
+  if (partnerWinning) {
+    // Partner's card can't be beaten (last to play, or it's the boss): add points to it.
+    const safe = last || (isBoss(winning) && (isTrump(winning) || !trumpSuit));
+    if (safe) {
+      const smear = legal.filter(c => !isTrump(c) && !(isBoss(c) && !last && pts(c) === 0))
+        .sort((a, b) => (pts(b) - pts(a)) || (strength(b) - strength(a)))[0];
+      if (smear && pts(smear) > 0) return smear.id;
     }
+    return cheapest().id;
   }
-  
-  // Strategy 3: Middle positions - cooperative play
-  const partner = state.players.find(p => p.team === bot.team && p.id !== bot.id);
-  const currentWinner = getCurrentTrickWinner(trick, trumpSuit, leadSuit);
-  const isPartnerWinning = partner && currentWinner?.playerId === partner.id;
-  
-  if (isPartnerWinning) {
-    // Partner is winning, play low to save good cards
-    // Prefer to avoid playing high trump if partner is winning
-    const nonTrump = legal.filter(c => c.suit !== trumpSuit);
-    if (nonTrump.length > 0) return nonTrump.sort((a,b)=>compareCardValue(a,b, trumpSuit, leadSuit))[0].id;
-    const lowest = legal.sort((a, b) => compareCardValue(a, b, trumpSuit, leadSuit))[0];
-    return lowest.id;
-  } else {
-    // Try to win the trick
-    const canWin = canBotWinTrick(legal, trick, trumpSuit, leadSuit);
-    if (canWin.length > 0) {
-      // avoid using U (Jack) to win unless necessary
-      const nonUBest = canWin.filter(c => c.rank !== 'U');
-      if (nonUBest.length > 0) return nonUBest.sort((a, b) => compareCardValue(a, b, trumpSuit, leadSuit))[0].id;
-      return canWin.sort((a, b) => compareCardValue(a, b, trumpSuit, leadSuit))[0].id;
-    }
+
+  const winners = canBotWinTrick(legal, trick, contract, lead);
+  if (winners.length) {
+    const trickPts = trick.reduce((s, c) => s + pts(c), 0);
+    // Last to play: take it with the card that is cheapest to spend.
+    // Earlier: take it with a boss card when possible so it holds.
+    const pick = winners.slice().sort((a, b) => last
+      ? (Number(isTrump(a)) - Number(isTrump(b))) || (strength(b) - strength(a))
+      : (Number(isBoss(b)) - Number(isBoss(a))) || (Number(isTrump(a)) - Number(isTrump(b))) || (strength(b) - strength(a)))[0];
+    // Don't spend the Puur or the Nell on a trick with hardly any points.
+    const precious = isTrump(pick) && (pick.rank === 'U' || pick.rank === '9');
+    if (!(precious && trickPts < 10 && !last)) return pick.id;
   }
-  
-  // Fallback: play a reasonable card
-  const pick = legal[Math.floor(Math.random() * legal.length)];
-  return pick.id;
+  return cheapest().id;
 }
 
 // Helper: Check which cards can win the current trick

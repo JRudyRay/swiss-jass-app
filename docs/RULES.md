@@ -46,6 +46,8 @@ implement everything below as of 2026-10-05.
   If still equal, the player first in play order from the forehand wins.
 - Stöck counts regardless of Weis.
 - Game target: 1000 (the target is adjustable per match in the UI).
+- Bots: the forehand schiebt with a weak hand; after schieben the partner
+  must choose (it can't be pushed back).
 
 ## Open questions (owner)
 
@@ -53,6 +55,9 @@ implement everything below as of 2026-10-05.
 | --- | --- | --- |
 | Four of a kind vs. a sequence of equal points (e.g. 4 Ass vs. a 5-sequence, both 100) | Seat order from the forehand decides | Some rule sets rank four of a kind higher |
 | Game target | 1000 by default, adjustable | Standard varies: 1000, 1500 or 2500 |
+| Reaching the target mid-hand ("Stöck, Weis, Stich" order: whoever reaches it first wins at once) | Checked only at the end of the hand; if both teams pass it, the higher total wins | Pagat lists this as a common variant, not universal |
+| Undenufe multiplier | ×3 (settled) | Some rule sets (e.g. pagat) use ×4 for Undenufe |
+| First forehand of a match | Fixed seat (dealer 0) | Pagat: the holder of the Rosen 7 leads the first hand |
 
 When the owner answers, move the row into a "Settled" section (with the date)
 and fix both engines and their tests in the same change.
