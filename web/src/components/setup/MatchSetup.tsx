@@ -46,7 +46,7 @@ export const MatchSetup: React.FC<Props> = ({ lang, bots, teamNames, onTeamNames
   const commitDraft = () => { const n = Math.max(100, Math.round(Number(draft) || 0)); setDraft(String(n)); onTarget(n); };
 
   const segment = (active: boolean): React.CSSProperties => ({
-    flex: 1, minWidth: 0, padding: '10px 4px', borderRadius: 8, border: 'none', cursor: 'pointer',
+    flex: 1, minWidth: 0, minHeight: 44, padding: '10px 4px', borderRadius: 8, border: 'none', cursor: 'pointer',
     fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
     background: active ? '#fff' : 'transparent', color: active ? ink : muted,
     boxShadow: active ? '0 1px 3px rgba(60,40,10,0.18)' : 'none', transition: 'background 150ms ease, color 150ms ease',
@@ -128,7 +128,7 @@ export const MatchSetup: React.FC<Props> = ({ lang, bots, teamNames, onTeamNames
           }}>{s.start}</button>
           <div style={{ display: 'flex', justifyContent: onBack ? 'space-between' : 'center', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             {onBack && (
-              <button onClick={onBack} style={{ border: 'none', background: 'none', color: muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', padding: 0 }}>← {backLabel}</button>
+              <button onClick={onBack} style={{ border: 'none', background: 'none', color: muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', padding: '12px 8px 12px 0', minHeight: 44 }}>← {backLabel}</button>
             )}
             <span style={{ fontSize: 12, color: muted, textAlign: 'center' }}>{m.game.autosaveHint}</span>
           </div>

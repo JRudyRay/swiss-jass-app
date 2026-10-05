@@ -4,7 +4,7 @@ import { SwissCard } from '../../SwissCard';
 // Where each seat's card lands in the trick area (small tilt, like a real pile).
 const TRICK_POS: Record<string, { left: string; top: string; rot: number }> = {
   south: { left: '50%', top: '78%', rot: 2 },
-  north: { left: '50%', top: '22%', rot: -3 },
+  north: { left: '50%', top: '27%', rot: -3 },
   west: { left: '22%', top: '50%', rot: -6 },
   east: { left: '78%', top: '50%', rot: 5 },
   center: { left: '50%', top: '50%', rot: 0 },

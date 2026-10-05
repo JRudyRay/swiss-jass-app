@@ -360,7 +360,7 @@ html {
     --card-w: 62px;
     --card-h: 94px;
     --table-h: clamp(230px, calc(100dvh - 600px), 340px);
-    --trick-w: min(210px, 62%);
+    --trick-w: min(190px, 54%);
     --trick-h: 200px;
   }
   .app-header { position: static !important; }
@@ -369,6 +369,8 @@ html {
   .trump-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
   .trump-grid > button { min-width: 0 !important; min-height: 56px !important; }
   .trump-hint, .trump-dealer { display: none; }
+  /* North/south plates shrink to a name so the trick cards have room between them. */
+  .seat-stats { display: none !important; }
   .app-header img { width: 32px !important; height: 32px !important; }
   .trump-grid > button[data-trump="schieben"] { grid-column: 1 / -1; }
 }

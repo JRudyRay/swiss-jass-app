@@ -43,7 +43,7 @@ export const CardValues: React.FC<{ lang: Lang }> = ({ lang }) => {
             <button key={id} role="tab" aria-selected={active} onClick={() => setMode(id)} style={{
               flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
               padding: '8px 4px', borderRadius: 8, border: 'none', cursor: 'pointer',
-              fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden',
+              fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden',
               background: active ? '#fff' : 'transparent', color: active ? ink : muted,
               boxShadow: active ? '0 1px 3px rgba(60,40,10,0.18)' : 'none',
               transition: 'background 150ms ease, color 150ms ease',
@@ -55,7 +55,7 @@ export const CardValues: React.FC<{ lang: Lang }> = ({ lang }) => {
         })}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '12px 2px 8px', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: muted }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '12px 2px 8px', fontSize: 12, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: muted }}>
         <span>{t.strongest}</span>
         <span aria-hidden="true" style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #d9cbae, transparent)' }} />
       </div>
@@ -84,7 +84,7 @@ export const CardValues: React.FC<{ lang: Lang }> = ({ lang }) => {
         })}
       </div>
 
-      <div style={{ marginTop: 12, padding: '8px 10px', borderRadius: 8, background: '#f7efdf', fontSize: 12.5, color: muted, textAlign: 'center' }}>
+      <div style={{ marginTop: 12, padding: '8px 10px', borderRadius: 8, background: '#f7efdf', fontSize: 13, color: muted, textAlign: 'center' }}>
         {t.footer}
       </div>
     </div>

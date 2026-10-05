@@ -458,7 +458,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     if (!p) return null;
     const active = gameState?.phase === 'playing' || gameState?.phase === 'trump_selection';
     return (
-      <PlayerSeat lang={lang} name={p.name} team={p.team} cardsLeft={p.hand?.length ?? 0} tricks={getTricksCount(p)}
+      <PlayerSeat lang={lang} name={p.name.replace(/\s*\(bot\)$/i, '')} team={p.team} cardsLeft={p.hand?.length ?? 0} tricks={getTricksCount(p)}
         isDealer={gameState?.dealer === p.id} isTurn={active && gameState?.currentPlayer === p.id}
         taking={collect?.winnerId === p.id} seat={pos} narrow={narrow} />
     );
