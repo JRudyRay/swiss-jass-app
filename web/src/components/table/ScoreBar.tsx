@@ -1,15 +1,12 @@
 import React from 'react';
 import { SuitIcon, trumpName } from './SuitBadge';
+import { messages, type Lang } from '../../i18n';
 
-const L = {
-  en: { trump: 'Trump', none: 'not chosen', us: 'us', pts: 'pts' },
-  ch: { trump: 'Trumpf', none: 'no offe', us: 'mir', pts: 'Pkt.' },
-};
 
 export const TEAM_COLORS: Record<number, string> = { 1: '#d8473f', 2: '#2f74d0' };
 
 type Props = {
-  lang: 'en' | 'ch';
+  lang: Lang;
   teamNames: Record<number, string>;
   scores: { team1: number; team2: number };
   target: number;
@@ -19,7 +16,7 @@ type Props = {
 
 // Compact match header: both teams with progress to the target and the trump in between.
 const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myTeam }) => {
-  const t = L[lang] || L.en;
+  const t = messages(lang).scoreBar;
   const team = (n: 1 | 2) => {
     const score = n === 1 ? scores.team1 : scores.team2;
     const pct = Math.max(0, Math.min(100, (score / (target || 1)) * 100));

@@ -1,18 +1,8 @@
 import React from 'react';
 import { TEAM_COLORS } from './ScoreBar';
+import { messages, type Lang } from '../../i18n';
 
-type Lang = 'en' | 'ch';
 
-const L = {
-  en: {
-    title: 'Weis (melds)', team: 'Team', points: 'pts', notCounted: 'does not count',
-    winner: (name: string) => `Best Weis: ${name}. Only their team scores Weis.`,
-  },
-  ch: {
-    title: 'Wiis', team: 'Team', points: 'Pkt', notCounted: 'zellt nöd',
-    winner: (name: string) => `Bescht Wiis: ${name}. Nur sis Team zellt.`,
-  },
-};
 
 interface Props {
   lang: Lang;
@@ -23,7 +13,7 @@ interface Props {
 
 // Compact list of announced Weis; hidden when nobody has any.
 export const WeisPanel: React.FC<Props> = ({ lang, weis, players, weisWinner }) => {
-  const t = L[lang];
+  const t = messages(lang).weis;
   const entries = Object.entries(weis || {}).filter(([, arr]) => Array.isArray(arr) && arr.length > 0);
   if (entries.length === 0) return null;
   const winnerName = weisWinner ? players.find(p => p.id === weisWinner.playerId)?.name : undefined;

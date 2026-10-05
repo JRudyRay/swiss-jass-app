@@ -1,20 +1,8 @@
 import React, { useRef, useState } from 'react';
 import YouTubePlayer from '../../YouTubePlayer';
+import { messages, type Lang } from '../../i18n';
 
-type Lang = 'en' | 'ch';
 
-const L = {
-  en: {
-    scoring: 'Card values', nonTrump: 'Non-trump', trump: 'Trump',
-    footer: 'Last trick: +5 • Total: 157 points (152 + 5)',
-    music: 'Mountain music', prev: 'Prev', play: 'Play', pause: 'Pause', next: 'Next',
-  },
-  ch: {
-    scoring: 'Chartewärt', nonTrump: 'Nöd Trumpf', trump: 'Trumpf',
-    footer: 'Letschte Stich: +5 • Total: 157 Pünkt (152 + 5)',
-    music: 'Bärgmusig', prev: 'Zrugg', play: 'Spiele', pause: 'Pause', next: 'Wiiter',
-  },
-};
 
 const panel: React.CSSProperties = {
   background: '#fffaf0', border: '1px solid #fde2b6', borderRadius: 10, padding: '8px 12px',
@@ -26,7 +14,7 @@ const btn: React.CSSProperties = {
 
 // Collapsed by default so the table stays the focus; the video only loads once opened.
 export const InfoPanels: React.FC<{ lang: Lang }> = ({ lang }) => {
-  const t = L[lang];
+  const t = messages(lang).info;
   const yt = useRef<any>(null);
   const [musicOpen, setMusicOpen] = useState(false);
   return (

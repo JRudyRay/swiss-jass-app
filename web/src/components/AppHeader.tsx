@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import logo from '../assets/logo.png';
+import { LANGS, messages, type Lang } from '../i18n';
 
 export type View = 'dashboard' | 'game' | 'tables' | 'rankings' | 'friends';
 
@@ -10,18 +11,14 @@ interface AppHeaderProps {
   currentView: View;
   onViewChange: (view: View) => void;
   online: boolean;
-  lang: 'en' | 'ch';
-  onLangChange: (lang: 'en' | 'ch') => void;
+  lang: Lang;
+  onLangChange: (lang: Lang) => void;
 }
 
-const L = {
-  en: { play: 'Play', home: 'Home', tables: 'Tables', rankings: 'Rankings', friends: 'Friends', signIn: 'Sign in', logout: 'Log out', subtitle: 'Swiss Schieber' },
-  ch: { play: 'Spiele', home: 'Start', tables: 'Tisch', rankings: 'Rangliste', friends: 'Fründe', signIn: 'Aamelde', logout: 'Abmelde', subtitle: 'Schwizer Schieber' },
-};
 
 const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onSignIn, currentView, onViewChange, online, lang, onLangChange }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const t = L[lang];
+  const t = messages(lang).header;
 
   // Online views only make sense with a backend and an account.
   const navItems: { id: View; label: string; icon: string }[] = [{ id: 'game', label: t.play, icon: '🃏' }];
@@ -61,17 +58,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onSignIn, current
         )}
 
         <div style={styles.actions}>
-          <div style={styles.langSelector}>
-            {(['en', 'ch'] as const).map((l) => (
-              <button
-                key={l}
-                style={{ ...styles.langButton, ...(lang === l ? styles.langButtonActive : {}) }}
-                onClick={() => onLangChange(l)}
-              >
-                {l === 'en' ? 'EN' : 'CH'}
-              </button>
-            ))}
-          </div>
+          <label style={styles.langSelector}>
+            <span style={styles.srOnly}>{t.language}</span>
+            <select
+              value={lang}
+              onChange={(e) => onLangChange(e.target.value as Lang)}
+              style={styles.langSelect}
+              aria-label={t.language}
+            >
+              {LANGS.map((l) => (
+                <option key={l.code} value={l.code} style={{ color: '#111' }}>{l.short} · {l.label}</option>
+              ))}
+            </select>
+          </label>
 
           {online && !user && (
             <button style={styles.signInButton} onClick={onSignIn}>{t.signIn}</button>
@@ -128,9 +127,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   navButtonActive: { background: 'white', color: '#DC143C' },
   actions: { display: 'flex', alignItems: 'center', gap: 8 },
-  langSelector: { display: 'flex', background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 3 },
-  langButton: { padding: '6px 10px', background: 'transparent', border: 'none', borderRadius: 8, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer' },
-  langButtonActive: { background: 'white', color: '#DC143C' },
+  langSelector: { display: 'flex', position: 'relative' },
+  langSelect: { maxWidth: 150, padding: '7px 8px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer' },
+  srOnly: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' },
   signInButton: { padding: '8px 14px', background: 'white', color: '#DC143C', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' },
   userButton: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
   userAvatar: {

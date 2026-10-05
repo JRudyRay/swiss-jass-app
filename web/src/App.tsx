@@ -9,6 +9,7 @@ import SwissFriends from './components/SwissFriends';
 import Rankings from './components/Rankings';
 import { API_URL, ONLINE_ENABLED } from './config';
 import './GameTable.css';
+import { detectLang, isLang, messages, type Lang } from './i18n';
 
 function App() {
   // Nobody has to sign in to play: guests (user === null) get single-player.
@@ -17,13 +18,15 @@ function App() {
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>('game');
-  const [lang, setLang] = useState<'en' | 'ch'>('en'); // Global language state
+  const [lang, setLang] = useState<Lang>(() => {
+    try { const saved = localStorage.getItem('jassLang'); if (isLang(saved)) return saved; } catch {}
+    return detectLang();
+  });
 
   useEffect(() => {
     // Check for saved token and language on mount
     const savedToken = localStorage.getItem('jassToken');
     const savedUser = localStorage.getItem('jassUser');
-    const savedLang = localStorage.getItem('jassLang') as 'en' | 'ch' | null;
     
     if (ONLINE_ENABLED && savedToken && savedUser) {
       try {
@@ -32,14 +35,15 @@ function App() {
       } catch {}
     }
     
-    if (savedLang) {
-      setLang(savedLang);
-    }
   }, []);
 
-  const handleLangChange = (newLang: 'en' | 'ch') => {
+  useEffect(() => {
+    document.documentElement.lang = lang === 'ch' ? 'gsw' : lang;
+  }, [lang]);
+
+  const handleLangChange = (newLang: Lang) => {
     setLang(newLang);
-    localStorage.setItem('jassLang', newLang);
+    try { localStorage.setItem('jassLang', newLang); } catch {}
   };
 
   const handleLogin = (newToken: string, newUser: any) => {
@@ -67,7 +71,7 @@ function App() {
       <ErrorBoundary>
         <div style={{ position: 'relative' }}>
           <button style={styles.backButton} onClick={() => setShowAuth(false)}>
-            ← {lang === 'ch' ? 'Zrugg zum Spiel' : 'Back to the game'}
+            ← {messages(lang).header.backToGame}
           </button>
           <EnhancedAuthForm onLogin={handleLogin} />
         </div>

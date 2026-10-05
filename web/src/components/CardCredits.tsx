@@ -1,18 +1,9 @@
 import React from 'react';
+import { messages, type Lang } from '../i18n';
 
-const L = {
-  en: {
-    title: 'The cards',
-    body: 'Swiss-German deck printed around 1850 in Hasle bei Burgdorf. Scans: Bibliothèque nationale de France, public domain:',
-  },
-  ch: {
-    title: 'D Charte',
-    body: 'Dütschschwizer Jasscharte, druckt um 1850 z Hasle bi Burgdorf. Scans: Bibliothèque nationale de France, gmeinfrei:',
-  },
-};
 
-const CardCredits: React.FC<{ lang: 'en' | 'ch' }> = ({ lang }) => {
-  const t = L[lang] || L.en;
+const CardCredits: React.FC<{ lang: Lang }> = ({ lang }) => {
+  const t = messages(lang).credits;
   return (
     <div style={{
       marginTop: 24, padding: '12px 16px', background: '#f3f4f6', borderRadius: 8,

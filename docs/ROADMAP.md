@@ -30,7 +30,10 @@ So every later change can be verified.
       and `DEPLOYMENT.md` to match reality, briefly.
 - [ ] Add ESLint + Prettier (one shared config), format once in its own commit.
 - [ ] Untrack `web/dist/` and decide on `swiss_jass.db` (prefer seed script).
-- [ ] Move translations out of `JassGame.tsx` into `web/src/i18n/{en,ch}.ts`.
+- [x] (2026-10-05) Move translations out of `JassGame.tsx` into `web/src/i18n/`:
+      en, ch, de, fr, it, rm. Romansh (`rm.ts`) needs a native speaker's
+      review. Still untranslated: the welcome hero (only shown with a
+      backend) and multiplayer status messages in `JassGame.tsx`.
 
 ## M2: One rules engine
 

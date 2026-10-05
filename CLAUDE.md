@@ -20,15 +20,17 @@ Authentic rules are the core value. When rules are unclear, check
 `docs/RULES.md`; if it doesn't settle it, add the question to its "Open
 questions" and ask the owner. Don't decide house rules yourself.
 
-UI languages: English and Swiss German (`'en' | 'ch'`). Every user-facing
-string needs both.
+UI languages (`web/src/i18n/`): English, Swiss German, Standard German,
+French, Italian, Romansh (`'en' | 'ch' | 'de' | 'fr' | 'it' | 'rm'`). Every
+user-facing string goes in `en.ts` and all the others (the `Messages` type
+enforces it).
 
 ## Map
 
 - `web/` React 18 + Vite + Tailwind, no router; `App.tsx` switches views.
   - `src/engine/schieber.ts`: pure, immutable rules engine for single-player.
   - `src/JassGame.tsx`: **2.9k-line god file** (game UI, bot loop, multiplayer
-    sockets, profile, stats, and the inline `T[lang]` translations). Don't
+    sockets, profile, stats). Don't
     grow it: put new code in new hooks/components and extract what you touch.
   - `src/config.ts`: API URL, hardcoded to `https://192.168.1.141` on Pages.
 - `backend/` Express + Socket.IO + Prisma on SQLite.

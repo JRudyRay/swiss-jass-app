@@ -1,18 +1,13 @@
 import React from 'react';
 
-// Trump modes with their names. Suit icons are cut from the 1850 deck
-// (scripts/make-suit-icons.py); Obenabe/Undenufe get an arrow.
-const NAMES: Record<string, { en: string; ch: string }> = {
-  eicheln: { en: 'Acorns', ch: 'Eichle' },
-  schellen: { en: 'Bells', ch: 'Schelle' },
-  rosen: { en: 'Roses', ch: 'Rose' },
-  schilten: { en: 'Shields', ch: 'Schilte' },
-  'oben-abe': { en: 'Top down', ch: 'Obenabe' },
-  'unden-ufe': { en: 'Bottom up', ch: 'Undenufe' },
-};
+import { messages, type Lang } from '../../i18n';
 
-export function trumpName(trump: string, lang: 'en' | 'ch'): string {
-  return NAMES[trump]?.[lang] ?? trump;
+// Suit icons are cut from the 1850 deck (scripts/make-suit-icons.py);
+// Obenabe/Undenufe get an arrow.
+const SUITS = new Set(['eicheln', 'schellen', 'rosen', 'schilten']);
+
+export function trumpName(trump: string, lang: Lang): string {
+  return messages(lang).suits[trump] ?? trump;
 }
 
 export const SuitIcon: React.FC<{ trump: string; size?: number }> = ({ trump, size = 24 }) => {
@@ -24,7 +19,7 @@ export const SuitIcon: React.FC<{ trump: string; size?: number }> = ({ trump, si
       </svg>
     );
   }
-  if (!NAMES[trump]) return null;
+  if (!SUITS.has(trump)) return null;
   const base: string = ((import.meta as any).env?.BASE_URL) || '/';
   return <img src={`${base}assets/suits/${trump}.png`} alt="" width={size} height={size} style={{ display: 'block', objectFit: 'contain' }} />;
 };

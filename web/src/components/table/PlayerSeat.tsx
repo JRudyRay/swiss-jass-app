@@ -1,13 +1,10 @@
 import React from 'react';
 import { TEAM_COLORS } from './ScoreBar';
+import { messages, type Lang } from '../../i18n';
 
-const L = {
-  en: { dealer: 'Dealer', tricks: (n: number) => `${n} ${n === 1 ? 'trick' : 'tricks'}`, cards: 'cards left', turn: 'to play' },
-  ch: { dealer: 'Gäber', tricks: (n: number) => `${n} Stich`, cards: 'Charte i dr Hand', turn: 'am Zug' },
-};
 
 type Props = {
-  lang: 'en' | 'ch';
+  lang: Lang;
   name: string;
   team?: number;
   cardsLeft: number;
@@ -20,7 +17,7 @@ type Props = {
 
 // Name plate on the felt: light text on a dark plate so it reads on green.
 const PlayerSeat: React.FC<Props> = ({ lang, name, team, cardsLeft, tricks, isDealer, isTurn, flash, narrow }) => {
-  const t = L[lang] || L.en;
+  const t = messages(lang).seat;
   const base: string = ((import.meta as any).env?.BASE_URL) || '/';
   return (
     <div data-seat-turn={isTurn ? 'true' : 'false'} style={{
