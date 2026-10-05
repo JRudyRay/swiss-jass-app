@@ -10,7 +10,6 @@ interface CardProps {
 
 export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, onClick }) => {
   const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const suitColors: { [key: string]: string } = {
     eicheln: '#8B4513',
@@ -29,28 +28,19 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
   const isCourtCard = ['U', 'O', 'K'].includes(card.rank);
   const suitColor = suitColors[card.suit] || '#000';
 
-  // Get card image path (public folder)
-  const getCardImagePath = () => {
-    return `/assets/cards/${card.suit}_${card.rank}.png`;
-  };
-
-  const handleImageError = () => {
-    setImageError(true);
-    setImageLoaded(false);
-  };
-
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-    setImageError(false);
-  };
+  // Scans of a public-domain 1850 Hasle deck (see public/assets/cards/README.md).
+  // BASE_URL keeps the path right under the GitHub Pages subpath.
+  const baseUrl: string = ((import.meta as any).env?.BASE_URL) || '/';
+  const cardImagePath = `${baseUrl}assets/cards/${card.suit}_${card.rank}.webp`;
+  const useImage = !imageError;
 
   const getCardStyle = () => {
     const baseStyle: React.CSSProperties = {
-      width: '80px',
+      width: '74px',
       height: '112px',
-      backgroundColor: imageLoaded && !imageError ? 'transparent' : 'white',
-      borderRadius: '10px',
-      padding: imageLoaded && !imageError ? '0' : '6px',
+      backgroundColor: useImage ? '#efe6d2' : 'white',
+      borderRadius: '8px',
+      padding: useImage ? '0' : '6px',
       margin: '2px',
       display: 'flex',
       flexDirection: 'column',
@@ -88,36 +78,24 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
 
   // Render using real card image if available, fallback to SVG
   const renderCardContent = () => {
-    if (!imageError) {
+    if (useImage) {
       return (
         <>
           <img
-            src={getCardImagePath()}
+            src={cardImagePath}
             alt={`${card.suit} ${card.rank}`}
-            onError={handleImageError}
-            onLoad={handleImageLoad}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              borderRadius: '10px',
-              display: imageLoaded ? 'block' : 'none',
-            }}
+            draggable={false}
+            onError={() => setImageError(true)}
+            style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }}
           />
-          {/* Show loading state while image loads */}
-          {!imageLoaded && (
-            <div style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '10px',
-              color: '#999'
-            }}>
-              Loading...
-            </div>
-          )}
+          {/* Corner index: pips are hard to count at hand size. */}
+          <div style={{
+            position: 'absolute', top: 3, left: 3, minWidth: 16, padding: '1px 3px',
+            background: 'rgba(255,250,238,0.92)', borderRadius: 4, border: '1px solid rgba(0,0,0,0.15)',
+            fontSize: 11, fontWeight: 800, lineHeight: '13px', textAlign: 'center', color: '#2b2118',
+          }}>
+            {displayRank}
+          </div>
         </>
       );
     }

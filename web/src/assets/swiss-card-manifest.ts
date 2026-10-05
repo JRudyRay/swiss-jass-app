@@ -17,22 +17,10 @@
  * Ace: A (As/Ace)
  * 
  * CARD RENDERING APPROACH:
- * 1. SVG Components (Current): Custom-designed SVG graphics in SwissCardSVG.tsx
- *    - Suit icons with cultural authenticity
- *    - Court figures with Swiss styling (Unter, Ober, König)
- *    - Programmatic rendering (no external assets needed)
- * 
- * 2. Future Enhancement Options:
- *    a) Public Domain Images:
- *       - Source: Wikimedia Commons, Swiss National Museum archives
- *       - License: CC0, Public Domain Mark
- *       - Format: PNG or SVG, 300x450px recommended
- *       - Directory: web/src/assets/cards/swiss/
- *    
- *    b) Commercial Card Decks:
- *       - AG Müller (Swiss playing card manufacturer since 1828)
- *       - Requires licensing agreement
- *       - Authentic historical designs
+ * 1. Images (current): scans of a public-domain 1850 Hasle deck in
+ *    web/public/assets/cards/<suit>_<rank>.webp, see the README there and
+ *    scripts/fetch-card-images.py.
+ * 2. SVG fallback: SwissCardSVG.tsx, used if an image fails to load.
  * 
  * CARD ID FORMAT:
  * {rank}_{suit} (e.g., "A_eicheln", "U_schellen", "6_rosen")

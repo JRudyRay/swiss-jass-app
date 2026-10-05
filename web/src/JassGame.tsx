@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import logo from './assets/logo.png';
 import { SwissCard } from './SwissCard';
+import CardCredits from './components/CardCredits';
 import * as Schieber from './engine/schieber';
 import YouTubePlayer from './YouTubePlayer';
 import { API_URL, ONLINE_ENABLED } from './config';
@@ -2778,32 +2779,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: 'en' 
           </div>
         </div>
 
-        {/* Credits Footer */}
-        <div style={{
-          marginTop: 24,
-          padding: '12px 16px',
-          background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
-          borderRadius: 8,
-          border: '1px solid #d1d5db',
-          fontSize: 11,
-          color: '#6b7280',
-          lineHeight: 1.6,
-          textAlign: 'center'
-        }}>
-          <div style={{ fontWeight: 600, marginBottom: 4, color: '#374151' }}>
-            Swiss Jass Card Designs
-          </div>
-          <div>
-            Card symbols rendered using custom SVG graphics based on authentic Swiss Jass traditions.
-            <br />
-            Eicheln (Acorns) • Schellen (Bells) • Rosen (Roses) • Schilten (Shields)
-          </div>
-          <div style={{ marginTop: 8, fontSize: 10, color: '#9ca3af' }}>
-            Court figures (Unter, Ober, König) represent traditional Swiss card characters.
-            <br />
-            © 2025 Swiss Jass App - Cultural heritage preserved digitally
-          </div>
-        </div>
+        <CardCredits lang={lang} />
       </div>
       
       {/* NEW UX COMPONENTS */}
