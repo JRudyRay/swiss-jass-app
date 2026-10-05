@@ -207,8 +207,8 @@ export class SwissJassEngine {
       
       setTimeout(() => {
         this.gameState.phase = 'trump_selection';
-        // In Schieber, the dealer chooses the trump; set currentPlayer to dealer for selection.
-        this.gameState.currentPlayer = this.gameState.dealer;
+        // The forehand chooses trump (or schiebt to their partner).
+        this.gameState.currentPlayer = this.gameState.forehand;
         this.emit('phaseChange', 'trump_selection');
       }, 3000);
     }, 2000);
@@ -266,7 +266,7 @@ export class SwissJassEngine {
     } else if (trump === 'obenabe') {
       (this.gameState as any).trumpMultiplier = 3;
     } else if (trump === 'undenufe') {
-      (this.gameState as any).trumpMultiplier = 4;
+      (this.gameState as any).trumpMultiplier = 3;
     } else {
       (this.gameState as any).trumpMultiplier = 1;
     }
@@ -285,10 +285,18 @@ export class SwissJassEngine {
       // ignore errors in detection, continue
     }
 
-  this.gameState.phase = 'playing';
-  // Dealer (declarer) leads first trick in Schieber variant (your requirement)
-  this.gameState.currentPlayer = this.gameState.dealer;
-  this.gameState.trickLeader = this.gameState.dealer;
+    // Stöck (trump King + Ober in one hand) always counts, independent of Weis.
+    (this.gameState as any).stoeckTeam = null;
+    if (trump !== 'obenabe' && trump !== 'undenufe') {
+      const holder = this.players.find(p => p.hand.some(c => c.suit === trump && c.rank === 'K')
+        && p.hand.some(c => c.suit === trump && c.rank === 'O'));
+      if (holder) (this.gameState as any).stoeckTeam = holder.team;
+    }
+
+    this.gameState.phase = 'playing';
+    // The forehand leads the first trick, even after schieben.
+    this.gameState.currentPlayer = this.gameState.forehand;
+    this.gameState.trickLeader = this.gameState.forehand;
 
     this.updateCardValues();
     this.emit('trumpSelected', { trump, playerId });
@@ -366,26 +374,7 @@ export class SwissJassEngine {
   }
 
   private isLegalPlay(card: SwissCard, playerId: number): boolean {
-    // First card of trick - any card allowed
-    if (this.gameState.currentTrick.length === 0) return true;
-
-    const leadCard = this.gameState.currentTrick[0];
-    const player = this.players[playerId];
-    const hand = player.hand;
-    const trump = this.gameState.trumpSuit;
-
-    // Must follow suit if possible
-    const hasLeadSuit = hand.some(c => c.suit === leadCard.suit);
-    if (hasLeadSuit) {
-      return card.suit === leadCard.suit;
-    }
-    // If no lead suit, must play trump if possible (only for standard suit trump)
-    if (trump && trump !== 'obenabe' && trump !== 'undenufe') {
-      const hasTrump = hand.some(c => c.suit === trump);
-      if (hasTrump) return card.suit === trump;
-    }
-    // Otherwise, any card
-    return true;
+    return this.getLegalCards(playerId).some(c => c.id === card.id);
   }
 
   private completeTrick(): void {
@@ -494,6 +483,9 @@ export class SwissJassEngine {
     // Get raw round scores (base trick points + weis)
     let team1Score = this.gameState.roundScores.team1 + weisScores.team1;
     let team2Score = this.gameState.roundScores.team2 + weisScores.team2;
+    const stoeckTeam = (this.gameState as any).stoeckTeam;
+    if (stoeckTeam === 1) team1Score += 20;
+    else if (stoeckTeam === 2) team2Score += 20;
 
     // Apply trump multiplier (authentic Swiss Jass: multiplier applies to all scores)
     const multiplier = this.gameState.trumpMultiplier || 1;
@@ -541,8 +533,8 @@ export class SwissJassEngine {
   private prepareNextRound(): void {
     // Rotate dealer counter-clockwise
     this.gameState.dealer = (this.gameState.dealer + 3) % 4;
-    // In this variant dealer leads after trump, so forehand aligns with dealer
-    this.gameState.forehand = this.gameState.dealer;
+    // The forehand sits to the dealer's right (next in counter-clockwise play)
+    this.gameState.forehand = (this.gameState.dealer + 3) % 4;
     
     // Reset round state
     this.gameState.roundScores = { team1: 0, team2: 0 };
@@ -630,7 +622,7 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
   for (const s in bySuit) {
     const seqs = this.findSequencesInSuit(bySuit[s]);
     for (const seq of seqs) {
-      if (seq.length >= 5) res.push({ type: 'sequence5plus', cards: seq, points: 100, description: `Sequenz ${seq.length} (${s})` });
+      if (seq.length >= 5) res.push({ type: 'sequence5plus', cards: seq, points: 100 + 50 * (seq.length - 5), description: `Sequenz ${seq.length} (${s})` });
       else if (seq.length === 4) res.push({ type: 'sequence4', cards: seq, points: 50, description: `Sequenz 4 (${s})` });
       else if (seq.length === 3) res.push({ type: 'sequence3', cards: seq, points: 20, description: `Sequenz 3 (${s})` });
     }
@@ -641,96 +633,60 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
   hand.forEach(c => { (byRank[c.rank] = byRank[c.rank] || []).push(c); });
   for (const r in byRank) {
     if (byRank[r].length === 4) {
-      let pts = 100;
-      if (r === 'U') pts = 200; else if (r === '9') pts = 150; else pts = 100;
+      if (r === '6' || r === '7' || r === '8') continue; // four 6s, 7s or 8s don't count
+      const pts = r === 'U' ? 200 : r === '9' ? 150 : 100;
       res.push({ type: `four_${r}`, cards: byRank[r], points: pts, description: `Vier ${r}` });
     }
   }
 
-  // Stöck (K + O of trump)
-  if (trump) {
-    const k = hand.find(c => c.rank === 'K' && c.suit === trump);
-    const o = hand.find(c => c.rank === 'O' && c.suit === trump);
-    if (k && o) res.push({ type: 'stoeck', cards: [k,o], points: 20, description: `Stöck (${trump})` });
-  }
-
+  // Stöck is not a Weis; it is scored separately in completeRound.
   return res;
 }
 
   /**
-   * Calculate Weis scores for both teams according to Swiss Jass rules:
-   * - Only the team with the BEST Weis scores (all their Weis points)
-   * - If teams have equal best Weis, NOBODY scores (authentic Swiss rule)
+   * Weis scoring: the team holding the single best Weis scores all of its Weis;
+   * the other team scores none. Complete ties go to the player who comes first
+   * in play order (counter-clockwise from the forehand).
    */
   private calculateTeamWeis(): { team1: number; team2: number } {
-    const team1Players = this.players.filter(p => p.team === 1);
-    const team2Players = this.players.filter(p => p.team === 2);
-    
-    let team1BestWeis: WeisDeclaration | null = null;
-    let team2BestWeis: WeisDeclaration | null = null;
-    
-    // Find best Weis for each team
-    for (const player of team1Players) {
+    const forehand = this.gameState.forehand;
+    let best: { weis: WeisDeclaration; team: number; order: number } | null = null;
+    for (const player of this.players) {
+      const order = (forehand - player.id + 4) % 4;
       for (const weis of player.weis || []) {
-        if (!team1BestWeis || this.isWeisBetter(weis, team1BestWeis)) {
-          team1BestWeis = weis;
+        if (!best || this.isWeisBetter(weis, best.weis)
+            || (!this.isWeisBetter(best.weis, weis) && order < best.order)) {
+          best = { weis, team: player.team, order };
         }
       }
     }
-    
-    for (const player of team2Players) {
-      for (const weis of player.weis || []) {
-        if (!team2BestWeis || this.isWeisBetter(weis, team2BestWeis)) {
-          team2BestWeis = weis;
-        }
-      }
-    }
-    
-    // Determine winning team and award all their Weis points
-    let team1Points = 0;
-    let team2Points = 0;
-    
-    if (team1BestWeis && team2BestWeis) {
-      const team1Wins = this.isWeisBetter(team1BestWeis, team2BestWeis);
-      const team2Wins = this.isWeisBetter(team2BestWeis, team1BestWeis);
-      
-      // Authentic Swiss Jass rule: only team with strictly better Weis scores
-      if (team1Wins && !team2Wins) {
-        team1Points = team1Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
-      } else if (team2Wins && !team1Wins) {
-        team2Points = team2Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
-      }
-      // If equal (both return false), nobody scores
-    } else if (team1BestWeis) {
-      team1Points = team1Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
-    } else if (team2BestWeis) {
-      team2Points = team2Players.reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
-    }
-    
-    return { team1: team1Points, team2: team2Points };
+    const teamTotal = (team: number) => this.players.filter(p => p.team === team)
+      .reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
+    return {
+      team1: best?.team === 1 ? teamTotal(1) : 0,
+      team2: best?.team === 2 ? teamTotal(2) : 0,
+    };
   }
 
   /**
-   * Compare two Weis declarations to determine which is better
-   * Returns true if 'a' is strictly better than 'b'
+   * Is Weis a strictly better than b? Higher points; between sequences of equal
+   * points the longer, then the higher (lower in Undenufe), then the trump one.
    */
   private isWeisBetter(a: WeisDeclaration, b: WeisDeclaration): boolean {
-    // Higher points wins
     if (a.points !== b.points) return a.points > b.points;
-    
-    // Same points - check by type priority and length
     if (a.type.startsWith('sequence') && b.type.startsWith('sequence')) {
-      // Longer sequence wins
       if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
-      
-      // Same length - higher top card wins (compare rank values)
-      const rankValues: Record<string, number> = { '6': 0, '7': 1, '8': 2, '9': 3, '10': 4, 'U': 5, 'O': 6, 'K': 7, 'A': 8 };
-      const aTop = Math.max(...a.cards.map(c => rankValues[c.rank] || 0));
-      const bTop = Math.max(...b.cards.map(c => rankValues[c.rank] || 0));
-      return aTop > bTop;
+      const trump = this.gameState.trumpSuit;
+      const ranks = (w: WeisDeclaration) => w.cards.map(c => this.rankIndex(c.rank));
+      if (trump === 'undenufe') {
+        const aLow = Math.min(...ranks(a)), bLow = Math.min(...ranks(b));
+        if (aLow !== bLow) return aLow < bLow;
+      } else {
+        const aTop = Math.max(...ranks(a)), bTop = Math.max(...ranks(b));
+        if (aTop !== bTop) return aTop > bTop;
+      }
+      return a.cards[0]?.suit === trump && b.cards[0]?.suit !== trump;
     }
-    
-    // For equal Weis, return false (neither is better)
     return false;
   }
 
@@ -738,20 +694,28 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
     return this.players.find(p => p.id === playerId) || null;
   }
 
+  // Standard Schieber: follow suit or trump (trumping is never forced), no
+  // undertrumping unless only trumps remain, and a bare Puur need not follow trump.
   public getLegalCards(playerId: number): SwissCard[] {
     const player = this.players[playerId];
     const hand = player.hand;
-    if (this.gameState.currentTrick.length === 0) return hand.slice();
-    const leadCard = this.gameState.currentTrick[0];
-    const leadSuit = leadCard.suit;
-    const followSuit = hand.filter(c => c.suit === leadSuit);
-    if (followSuit.length) return followSuit;
-    // No lead suit; if standard trump suit contract enforce trump if present
+    const trick = this.gameState.currentTrick;
+    if (trick.length === 0) return hand.slice();
+    const leadSuit = trick[0].suit;
     const trump = this.gameState.trumpSuit;
-    if (trump && ['eicheln','schellen','rosen','schilten'].includes(trump as string)) {
-      const trumps = hand.filter(c => c.suit === trump);
-      if (trumps.length) return trumps;
+    const isSuitTrump = !!trump && ['eicheln', 'schellen', 'rosen', 'schilten'].includes(trump as string);
+    const sameSuit = hand.filter(c => c.suit === leadSuit);
+    if (!isSuitTrump) return sameSuit.length ? sameSuit : hand.slice();
+    if (leadSuit === trump) {
+      const onlyPuur = sameSuit.length === 1 && sameSuit[0].rank === 'U';
+      return sameSuit.length && !onlyPuur ? sameSuit : hand.slice();
     }
-    return hand.slice();
+    const trumpsInTrick = trick.filter(c => c.suit === trump);
+    const bestTrump = trumpsInTrick.reduce((best, c) => Math.min(best, TRUMP_HIERARCHY.indexOf(c.rank)), 99);
+    const allowed = (c: SwissCard) => c.suit !== trump || TRUMP_HIERARCHY.indexOf(c.rank) < bestTrump;
+    const legal = sameSuit.length
+      ? hand.filter(c => c.suit === leadSuit || (c.suit === trump && allowed(c)))
+      : hand.filter(allowed);
+    return legal.length ? legal : hand.slice();
   }
 }

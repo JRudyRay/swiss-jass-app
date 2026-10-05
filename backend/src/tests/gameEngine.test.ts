@@ -3,7 +3,7 @@
  * 
  * Tests for SwissJassEngine covering:
  * - Schieben (trump pass to partner)
- * - Trump multipliers (1x/2x/3x/4x)
+ * - Trump multipliers (1x/2x/3x)
  * - Match bonus (100 points for all 9 tricks)
  * - Weis scoring and tie-breaking
  * - Card point values for all contracts
@@ -48,7 +48,7 @@ testRunner('Schieben passes trump to partner (player + 2)', () => {
   engine.startRound();
   
   // Manually set phase to trump_selection (bypassing async setTimeout)
-  const state: any = engine.getGameState();
+  const state: any = (engine as any).gameState; // live state; getGameState() returns a copy
   (state as any).phase = 'trump_selection';
   const dealer = state.dealer;
   (state as any).currentPlayer = dealer;
@@ -69,7 +69,7 @@ testRunner('Partner cannot schieben back (anti-double-schieben)', () => {
   engine.startRound();
   
   // Manually set phase
-  const state: any = engine.getGameState();
+  const state: any = (engine as any).gameState; // live state; getGameState() returns a copy
   (state as any).phase = 'trump_selection';
   const dealer = state.dealer;
   (state as any).currentPlayer = dealer;
@@ -88,7 +88,7 @@ testRunner('Partner can choose trump after schieben', () => {
   engine.startRound();
   
   // Manually set phase
-  const state: any = engine.getGameState();
+  const state: any = (engine as any).gameState; // live state; getGameState() returns a copy
   (state as any).phase = 'trump_selection';
   const dealer = state.dealer;
   (state as any).currentPlayer = dealer;
@@ -117,7 +117,7 @@ testRunner('Eicheln/Rosen contracts have 1x multiplier', () => {
   engine.startRound();
   
   // Set phase for testing
-  const state: any = engine.getGameState();
+  const state: any = (engine as any).gameState; // live state; getGameState() returns a copy
   (state as any).phase = 'trump_selection';
   const dealer = state.dealer;
   (state as any).currentPlayer = dealer;
@@ -127,7 +127,7 @@ testRunner('Eicheln/Rosen contracts have 1x multiplier', () => {
   
   const engine2 = new SwissJassEngine('schieber');
   engine2.startRound();
-  const state2: any = engine2.getGameState();
+  const state2: any = (engine2 as any).gameState;
   (state2 as any).phase = 'trump_selection';
   (state2 as any).currentPlayer = state2.dealer;
   
@@ -138,7 +138,7 @@ testRunner('Eicheln/Rosen contracts have 1x multiplier', () => {
 testRunner('Schellen/Schilten contracts have 2x multiplier', () => {
   const engine = new SwissJassEngine('schieber');
   engine.startRound();
-  const state: any = engine.getGameState();
+  const state: any = (engine as any).gameState; // live state; getGameState() returns a copy
   (state as any).phase = 'trump_selection';
   (state as any).currentPlayer = state.dealer;
   
@@ -147,7 +147,7 @@ testRunner('Schellen/Schilten contracts have 2x multiplier', () => {
   
   const engine2 = new SwissJassEngine('schieber');
   engine2.startRound();
-  const state2: any = engine2.getGameState();
+  const state2: any = (engine2 as any).gameState;
   (state2 as any).phase = 'trump_selection';
   (state2 as any).currentPlayer = state2.dealer;
   
@@ -158,7 +158,7 @@ testRunner('Schellen/Schilten contracts have 2x multiplier', () => {
 testRunner('Obenabe has 3x multiplier', () => {
   const engine = new SwissJassEngine('schieber');
   engine.startRound();
-  const state: any = engine.getGameState();
+  const state: any = (engine as any).gameState; // live state; getGameState() returns a copy
   (state as any).phase = 'trump_selection';
   (state as any).currentPlayer = state.dealer;
   
@@ -169,12 +169,12 @@ testRunner('Obenabe has 3x multiplier', () => {
 testRunner('Undenufe has 4x multiplier', () => {
   const engine = new SwissJassEngine('schieber');
   engine.startRound();
-  const state: any = engine.getGameState();
+  const state: any = (engine as any).gameState; // live state; getGameState() returns a copy
   (state as any).phase = 'trump_selection';
   (state as any).currentPlayer = state.dealer;
   
   engine.selectTrump('undenufe', state.dealer);
-  assertEquals(engine.getGameState().trumpMultiplier, 4, 'Undenufe should have 4x multiplier');
+  assertEquals(engine.getGameState().trumpMultiplier, 3, 'Undenufe should have 3x multiplier');
 });
 
 // ========================================
@@ -216,7 +216,7 @@ testRunner('Team with better Weis gets all their Weis points', () => {
   assertEquals(weisScores.team2, 0, 'Team 2 should get no Weis points');
 });
 
-testRunner('Equal Weis means nobody scores (Swiss rule)', () => {
+testRunner('Equal Weis goes to the earlier player from the forehand', () => {
   const engine = new SwissJassEngine('schieber');
   engine.startRound();
 
@@ -235,10 +235,16 @@ testRunner('Equal Weis means nobody scores (Swiss rule)', () => {
     ];
   }
 
+  (engine as any).gameState.forehand = 1;
   const weisScores = (engine as any).calculateTeamWeis();
-  
-  assertEquals(weisScores.team1, 0, 'Team 1 should get no Weis on tie');
-  assertEquals(weisScores.team2, 0, 'Team 2 should get no Weis on tie');
+  assertEquals(weisScores.team2, 50, 'Forehand (player 1) should win the tie');
+  assertEquals(weisScores.team1, 0, 'Team 1 should get no Weis on a lost tie');
+
+  // Counter-clockwise from forehand 2: 2, 1, 0, 3 -> player 1 comes before player 0
+  (engine as any).gameState.forehand = 2;
+  assertEquals((engine as any).calculateTeamWeis().team2, 50, 'Player 1 plays before player 0');
+  (engine as any).gameState.forehand = 0;
+  assertEquals((engine as any).calculateTeamWeis().team1, 50, 'Forehand (player 0) should win the tie');
 });
 
 testRunner('Team with no Weis gets zero points', () => {
@@ -291,12 +297,50 @@ testRunner('Each player gets 9 cards after deal', () => {
   });
 });
 
-testRunner('Initial game phase is trump_selection', () => {
+testRunner('A new round starts by dealing (trump selection follows on a timer)', () => {
   const engine = new SwissJassEngine('schieber');
   engine.startRound();
-  
-  const state = engine.getGameState();
-  assertEquals(state.phase, 'trump_selection', 'Initial phase should be trump_selection');
+  assertEquals(engine.getGameState().phase, 'dealing', 'Initial phase should be dealing');
+});
+
+// ========================================
+// TEST SUITE: LEGAL PLAY (standard Schieber)
+// ========================================
+
+console.log('\n🧪 TEST SUITE: Legal play\n');
+
+function legalFor(hand: [string, string][], trick: [string, string][], trump: string): string {
+  const engine = new SwissJassEngine('schieber');
+  const state: any = (engine as any).gameState;
+  state.trumpSuit = trump;
+  (engine as any).players[0].hand = hand.map(([suit, rank]) => ({ id: suit + rank, suit, rank }));
+  state.currentTrick = trick.map(([suit, rank], i) => ({ id: 't' + suit + rank, suit, rank, playerId: i + 1 }));
+  return engine.getLegalCards(0).map(c => c.id).sort().join(',');
+}
+
+testRunner('Trump may be played instead of following suit', () => {
+  assertEquals(legalFor([['rosen','K'],['eicheln','6'],['schellen','A']], [['rosen','9']], 'eicheln'), 'eicheln6,rosenK', 'follow or trump');
+});
+
+testRunner('Trumping is never forced', () => {
+  assertEquals(legalFor([['eicheln','6'],['schellen','A']], [['rosen','9']], 'eicheln'), 'eicheln6,schellenA', 'any card when void');
+});
+
+testRunner('No undertrumping unless only trumps remain', () => {
+  assertEquals(legalFor([['eicheln','6'],['schellen','A']], [['rosen','9'],['eicheln','A']], 'eicheln'), 'schellenA', 'no undertrump');
+  assertEquals(legalFor([['eicheln','6'],['eicheln','7']], [['rosen','9'],['eicheln','A']], 'eicheln'), 'eicheln6,eicheln7', 'only trumps');
+});
+
+testRunner('A bare Puur need not follow trump', () => {
+  assertEquals(legalFor([['eicheln','U'],['schellen','A']], [['eicheln','9']], 'eicheln'), 'eichelnU,schellenA', 'bare Puur');
+  assertEquals(legalFor([['eicheln','U'],['eicheln','6'],['schellen','A']], [['eicheln','9']], 'eicheln'), 'eichelnU,eicheln6'.split(',').sort().join(','), 'must follow trump');
+});
+
+testRunner('Four 6s, 7s or 8s are not a Weis; four Nell are 150', () => {
+  const engine = new SwissJassEngine('schieber');
+  const four = (rank: string) => ['eicheln','schellen','rosen','schilten'].map(suit => ({ id: suit + rank, suit, rank }));
+  assertEquals((engine as any).detectWeisForHand(four('7'), 'eicheln').length, 0, 'four 7s');
+  assertEquals((engine as any).detectWeisForHand(four('9'), 'eicheln')[0].points, 150, 'four Nell');
 });
 
 // ========================================

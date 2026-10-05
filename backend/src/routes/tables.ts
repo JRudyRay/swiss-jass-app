@@ -116,8 +116,8 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     const dealerIndex = Math.floor(Math.random() * Math.max(userIds.length, 1));
     const dealerUserId = userIds[dealerIndex];
     (engine as any).gameState.dealer = dealerIndex;
-    // Counter-clockwise & dealer leads first trick: forehand = dealer
-    (engine as any).gameState.forehand = dealerIndex;
+    // Play runs counter-clockwise; the forehand (dealer's right) chooses trump and leads
+    (engine as any).gameState.forehand = (dealerIndex + 3) % 4;
 
     // Start the first round: this will deal cards and progress phases
     engine.startRound();
