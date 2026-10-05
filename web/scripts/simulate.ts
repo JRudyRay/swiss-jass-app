@@ -1,4 +1,5 @@
 import * as Schieber from '../src/engine/schieber';
+import * as Bot from '../src/engine/bot';
 
 // Plays random hands with the bots and checks the engine's settlement against
 // an independent calculation. Exits non-zero on any mismatch or illegal play.
@@ -23,7 +24,7 @@ function runOneHand() {
   const dealt = JSON.parse(JSON.stringify(st.players)) as Schieber.Player[];
   while (st.phase === 'trump_selection') {
     const p = st.currentPlayer;
-    const t = p === 0 ? Schieber.chooseRandomTrump() : Schieber.chooseBotTrump(st, p);
+    const t = p === 0 ? Schieber.chooseRandomTrump() : Bot.chooseTrump(st, p);
     st = Schieber.setTrumpAndDetectWeis(st, t as any);
   }
   const forehand = st.forehand;
@@ -33,7 +34,7 @@ function runOneHand() {
   while (st.phase !== 'finished') {
     const p = st.currentPlayer;
     const legal = Schieber.getLegalCardsForPlayer(st, p);
-    const pick = p === 0 ? legal[0]?.id : Schieber.chooseBotCard(st, p);
+    const pick = p === 0 ? legal[0]?.id : Bot.chooseCard(st, p);
     if (!pick) { fail(`player ${p} has no card to play`); break; }
     if (!legal.some(c => c.id === pick)) fail(`player ${p} played illegal card ${pick}`);
     st = Schieber.playCardLocal(st, p, pick);

@@ -62,8 +62,13 @@ So every later change can be verified.
 ## M4: Product
 
 - [ ] Mobile-first table layout (phone portrait is the main target).
-- [ ] Stronger bots (card memory, partner play, smarter trump choice and
-      schieben).
+- [x] Stronger bots (card memory, partner play, smarter trump choice and
+      schieben), 2026-10-06. `web/src/engine/bot.ts`; `npm run h2h` (duplicate
+      deals vs the old bot): +6.5 points per hand (2.3 SE) over 1000 deals,
+      51.7% (SE 2.9) of 300 1000-point matches. Margin target met, 55% match
+      target not reached. The trump/schieben model gives most of the gain; the
+      new lead logic lost points, so leading still uses the old bot
+      (`TUNE.oldLead`). Single-player only.
 - [ ] PWA: installable, playable offline.
 - [ ] Multiplayer: reconnect, spectate, rankings/TrueSkill from human games
       only.

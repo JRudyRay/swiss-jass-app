@@ -63,10 +63,15 @@ export type State = {
   target?: number;
   // Set when the match is over: the team that reached the target first.
   matchWinner?: 1 | 2 | null;
+  // Every card played this hand, in order, with the suit that was led. Public
+  // information that bots use as card memory. Missing in old saved games (treat as []).
+  played?: PlayedCard[];
 };
 
-const suits: Suit[] = ['eicheln','schellen','rosen','schilten'];
-const ranks: Rank[] = ['6','7','8','9','10','U','O','K','A'];
+export type PlayedCard = { playerId: number; suit: Suit; rank: Rank; lead: Suit | null; trickNo: number };
+
+export const suits: Suit[] = ['eicheln','schellen','rosen','schilten'];
+export const ranks: Rank[] = ['6','7','8','9','10','U','O','K','A'];
 
 // Point values for non-trump
 const basePoints: Record<Rank, number> = {
@@ -182,6 +187,7 @@ export function startGameLocal(previousDealer?: number, botNames: string[] = pic
     players, 
     scores: { team1: 0, team2: 0 },
     target,
+    played: [],
   };
   return st;
 }
@@ -206,6 +212,7 @@ export function startNewHand(previousState: State): State {
     scores: { ...previousState.scores }, // Keep cumulative scores
     handStartScores: { ...previousState.scores },
     target: previousState.target,
+    played: [],
   };
   return st;
 }
@@ -216,7 +223,7 @@ export function chooseRandomTrump(): Suit {
 }
 
 // How good a hand is for each contract (rough expected strength, not points).
-function contractStrength(hand: Card[], contract: TrumpContract): number {
+export function contractStrength(hand: Card[], contract: TrumpContract): number {
   const has = (s: Suit, r: Rank) => hand.some(c => c.suit === s && c.rank === r);
   if (contract === 'oben-abe' || contract === 'unden-ufe') {
     // Count the cards that will win their trick from the top of each suit.
@@ -238,7 +245,8 @@ function contractStrength(hand: Card[], contract: TrumpContract): number {
   return score;
 }
 
-// Bot contract choice. The forehand may schieben with a weak hand; after
+// BASELINE bot (kept unchanged as the opponent for scripts/h2h.ts; the game
+// uses engine/bot.ts). Bot contract choice. The forehand may schieben with a weak hand; after
 // schieben the partner must choose.
 export function chooseBotTrump(state: State, playerId: number): TrumpContract | 'schieben' {
   const player = state.players.find(p => p.id === playerId);
@@ -442,6 +450,9 @@ export function playCardLocal(state: State, playerId: number, cardId: string): S
   }
   // include who played the card so UI can label it
   st.currentTrick.push({ ...card, playerId });
+  // card memory for bots (single-player only; the backend has its own engine)
+  const playedSoFar = st.played || [];
+  st.played = [...playedSoFar, { playerId, suit: card.suit, rank: card.rank, lead: st.trickLead ?? null, trickNo: Math.floor(playedSoFar.length / 4) }];
 
   // if trick complete
   if (st.currentTrick.length===4) {
@@ -758,7 +769,8 @@ export function settleHand(state: State): State {
   return st;
 }
 
-// Bot card play: lead boss cards and pull trumps when holding the Puur,
+// BASELINE bot (kept unchanged as the opponent for scripts/h2h.ts; the game
+// uses engine/bot.ts). Bot card play: lead boss cards and pull trumps when holding the Puur,
 // let the partner's trick stand (and add points to it when it is safe),
 // win tricks as cheaply as possible, otherwise give away the cheapest card.
 export function chooseBotCard(state: State, botId: number): string | null {
@@ -853,7 +865,7 @@ function canBotWinTrick(legal: Card[], trick: (Card & { playerId: number })[], t
 }
 
 // Helper: Get current trick winner
-function getCurrentTrickWinner(trick: (Card & { playerId: number })[], trumpContract: TrumpContract | 'schieben' | null | undefined, leadSuit: Suit | null | undefined): (Card & { playerId: number }) | null {
+export function getCurrentTrickWinner(trick: (Card & { playerId: number })[], trumpContract: TrumpContract | 'schieben' | null | undefined, leadSuit: Suit | null | undefined): (Card & { playerId: number }) | null {
   if (trick.length === 0) return null;
   
   let winner = trick[0];
@@ -883,7 +895,7 @@ function compareCardValue(a: Card, b: Card, trumpContract: TrumpContract | 'schi
 }
 
 // Helper: Check if card A beats card B in the current context
-function isCardBetter(a: Card, b: Card, trumpContract: TrumpContract | 'schieben' | null | undefined, leadSuit: Suit | null | undefined): boolean {
+export function isCardBetter(a: Card, b: Card, trumpContract: TrumpContract | 'schieben' | null | undefined, leadSuit: Suit | null | undefined): boolean {
   const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
   const aIsTrump = suitTrump ? a.suit === suitTrump : false;
   const bIsTrump = suitTrump ? b.suit === suitTrump : false;

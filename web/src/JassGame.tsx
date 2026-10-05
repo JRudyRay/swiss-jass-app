@@ -6,6 +6,7 @@ import ScoreBar, { TEAM_COLORS } from './components/table/ScoreBar';
 import { SuitIcon, trumpName } from './components/table/SuitBadge';
 import PlayerSeat from './components/table/PlayerSeat';
 import * as Schieber from './engine/schieber';
+import * as Bot from './engine/bot';
 import InfoPanels from './components/table/InfoPanels';
 import WeisPanel from './components/table/WeisPanel';
 import TrickArea, { COLLECT_MS } from './components/table/TrickArea';
@@ -569,7 +570,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               // Attempt auto-play if it's a bot's turn and not waiting on user
               if (st.currentPlayer !== 0 && st.phase === 'playing' && !st.pendingResolve) {
                 try {
-                  const pick = Schieber.chooseBotCard(st, st.currentPlayer);
+                  const pick = Bot.chooseCard(st, st.currentPlayer);
                   if (pick) {
                     const progressed = Schieber.playCardLocal(st, st.currentPlayer, pick);
                     saveLocalState(progressed);
@@ -855,7 +856,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         }
         // let engine pick a smart trump for bots
         const chooser = st.players.find(p => p.id === st.currentPlayer);
-        const chosen = Schieber.chooseBotTrump(st, st.currentPlayer);
+        const chosen = Bot.chooseTrump(st, st.currentPlayer);
         const newState = Schieber.setTrumpAndDetectWeis(st, chosen);
         st = newState;
         if (chosen === 'schieben') {
@@ -875,7 +876,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       }      // if it's a bot's turn (0 is our south player), let bots play automatically
       if (st.currentPlayer !== 0) {
         const id = st.currentPlayer;
-        const pick = Schieber.chooseBotCard(st, id);
+        const pick = Bot.chooseCard(st, id);
         if (!pick) break;
   st = Schieber.playCardLocal(st, id, pick);
         saveLocalState(st);

@@ -1,4 +1,5 @@
 import * as Schieber from '../src/engine/schieber';
+import * as Bot from '../src/engine/bot';
 
 
 function assert(cond: boolean, msg: string) {
@@ -358,6 +359,51 @@ function testWeisCountsBeforeFirstTrick() {
   assert(st.scores.team2 === 1010 && st.scores.team1 === 990, `Totals after Weis (got ${st.scores.team1}/${st.scores.team2})`);
 }
 
+
+function botState(hand: [string, string][], trick: [string, string][], trump: string) {
+  const st = legalState(hand, trick, trump);
+  st.forehand = 0 as any;
+  st.played = trick.map(([suit, rank], i) => ({ playerId: i + 1, suit, rank, lead: trick[0][0], trickNo: 0 })) as any;
+  return st;
+}
+function testBotPlaysLegal() {
+  const st = botState([['schellen', 'A'], ['rosen', 'K'], ['eicheln', '6']], [['schellen', '7'], ['eicheln', '8']], 'eicheln');
+  const id = Bot.chooseCard(st, 0);
+  assert(Schieber.getLegalCardsForPlayer(st, 0).some(c => c.id === id), 'bot card must be legal');
+}
+function testBotSmearsOnPartnersSureWin() {
+  // seat 2 (partner) wins with the Ace, I play last: give the Ten, not the Six
+  const st = botState([['schellen', '10'], ['schellen', '6'], ['rosen', '7']], [['schellen', '8'], ['schellen', 'A'], ['schellen', '7']], 'eicheln');
+  assert(Bot.chooseCard(st, 0) === 'schellen10', 'should smear the Ten on partner\'s winning Ace');
+}
+function testBotDoesNotOvertakePartner() {
+  const st = botState([['schellen', 'K'], ['schellen', '6'], ['rosen', '7']], [['schellen', '8'], ['schellen', 'A'], ['schellen', '7']], 'eicheln');
+  const id = Bot.chooseCard(st, 0);
+  assert(id === 'schellenK' || id === 'schellen6', 'must follow suit');
+}
+function testBotWinsCheaplyAgainstOpponent() {
+  // opponents lead the Ten; I hold King and Ace, last to play: win with the cheaper King? only the Ace beats the Ten in suit order A>K.. so Ace
+  const st = botState([['schellen', 'A'], ['schellen', '6'], ['rosen', '7']], [['schellen', '10'], ['schellen', '7'], ['schellen', '8']], 'eicheln');
+  assert(Bot.chooseCard(st, 0) === 'schellenA', 'should take the Ten with the Ace');
+}
+function testBotChooseTrump() {
+  const strong = botState([['eicheln', 'U'], ['eicheln', '9'], ['eicheln', 'A'], ['eicheln', 'K'], ['eicheln', 'O'], ['rosen', 'A'], ['rosen', '7'], ['schilten', '6'], ['schellen', '7']], [], 'eicheln');
+  strong.trump = null as any;
+  assert(Bot.chooseTrump(strong, 0) !== 'schieben', 'strong hand should not schieben');
+  assert(Bot.evaluateContract(strong.players[0].hand, 'eicheln', true) > Bot.SCHIEBEN_BELOW.margin, 'strong trump suit scores well');
+  const weak = botState([['eicheln', '6'], ['eicheln', '7'], ['rosen', '8'], ['rosen', '6'], ['schilten', '7'], ['schilten', '8'], ['schellen', '6'], ['schellen', '7'], ['eicheln', '8']], [], 'eicheln');
+  weak.trump = null as any;
+  weak.forehand = 1 as any;
+  assert(Bot.chooseTrump(weak, 0) !== 'schieben', 'non-forehand must choose');
+}
+function testBotMemory() {
+  const st = botState([['schellen', 'A']], [['schellen', '8'], ['rosen', '7']], 'eicheln');
+  st.played = [{ playerId: 1, suit: 'schellen', rank: '8', lead: 'schellen', trickNo: 0 }, { playerId: 2, suit: 'rosen', rank: '7', lead: 'schellen', trickNo: 0 }] as any;
+  const m = Bot.buildMemory(st, 0);
+  assert(m.out.has('schellen8') && m.out.has('rosen7'), 'played cards remembered');
+  assert(m.voids[2] && m.voids[2].has('schellen' as any), 'seat 2 is void in the lead suit after discarding');
+}
+
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
   tests.push(testBotNamesKeptAcrossHands);
@@ -373,6 +419,7 @@ function runAll() {
   tests.push(testTrumpChooserSchieben);
   // Totals persistence tests (localStorage-mocked)
   tests.push(testTotalsUpdateSimple, testTotalsDuplicateGuard);
+  tests.push(testBotPlaysLegal, testBotSmearsOnPartnersSureWin, testBotDoesNotOvertakePartner, testBotWinsCheaplyAgainstOpponent, testBotChooseTrump, testBotMemory);
   let passed = 0;
   for (const t of tests) {
     try {
