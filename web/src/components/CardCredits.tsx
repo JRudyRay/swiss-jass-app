@@ -12,7 +12,7 @@ const CardCredits: React.FC<{ lang: Lang }> = ({ lang }) => {
       <div style={{ fontWeight: 600, marginBottom: 4, color: '#374151' }}>{t.title}</div>
       <div>
         {t.body}{' '}
-        <a href="https://commons.wikimedia.org/wiki/Category:Swiss_card_deck_-_1850" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
+        <a href="https://commons.wikimedia.org/wiki/File:Print,_playing-card_(BM_1896,0501.805).jpg" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
           Wikimedia Commons
         </a>
       </div>

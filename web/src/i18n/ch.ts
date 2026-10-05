@@ -17,7 +17,7 @@ const ch: Messages = {
   },
   credits: {
     title: 'D Charte',
-    body: 'Dütschschwizer Jasscharte, druckt um 1850 z Hasle bi Burgdorf. Scans: Bibliothèque nationale de France, gmeinfrei:',
+    body: 'Dütschschwizer Jasscharte, handkoloriert Lithografie us Hasle bi Burgdorf, spaats 19. Jahrhundert. Scans: British Museum, gmeinfrei:',
   },
   trick: { takes: (name: string) => `${name} macht dä Stich`, youTake: 'Du machsch dä Stich' },
   victory: { youWon: 'Eues Team gwünnt dä Match.', youLost: 'D Gägner gwünned dä Match.', rounds: 'Runde', breakdown: 'Rundi für Rundi', close: 'Schliesse' },

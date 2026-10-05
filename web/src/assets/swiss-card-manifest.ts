@@ -17,7 +17,7 @@
  * Ace: A (As/Ace)
  * 
  * CARD RENDERING APPROACH:
- * 1. Images (current): scans of a public-domain 1850 Hasle deck in
+ * 1. Images (current): scans of a public-domain Hasle deck (late 19th c.) in
  *    web/public/assets/cards/<suit>_<rank>.webp, see the README there and
  *    scripts/fetch-card-images.py.
  * 2. SVG fallback: SwissCardSVG.tsx, used if an image fails to load.

@@ -3,6 +3,12 @@
    ======================================== */
 
 :root {
+  /* Playing-card and table sizes; bigger on desktop (see SwissCard, TrickArea). */
+  --card-w: 74px;
+  --card-h: 112px;
+  --table-h: 440px;
+  --trick-w: min(260px, 58%);
+  --trick-h: 270px;
   /* Swiss-themed Color Palette */
   --color-swiss-red: #DC291E;
   --color-swiss-white: #FFFFFF;
@@ -334,5 +340,15 @@ html {
 @media (max-width: 480px) {
   :root {
     font-size: 13px;
+  }
+}
+
+@media (min-width: 900px) and (min-height: 760px) {
+  :root {
+    --card-w: 94px;
+    --card-h: 142px;
+    --table-h: 520px;
+    --trick-w: min(320px, 58%);
+    --trick-h: 330px;
   }
 }

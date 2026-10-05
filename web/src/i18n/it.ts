@@ -17,7 +17,7 @@ const it: Messages = {
   },
   credits: {
     title: 'Le carte',
-    body: 'Mazzo svizzero tedesco stampato verso il 1850 a Hasle bei Burgdorf. Scansioni: Bibliothèque nationale de France, pubblico dominio:',
+    body: 'Mazzo svizzero tedesco, litografia colorata a mano, Hasle bei Burgdorf, fine del XIX secolo. Scansioni: British Museum, pubblico dominio:',
   },
   trick: { takes: (name: string) => `${name} fa la presa`, youTake: 'Fai la presa' },
   victory: { youWon: 'La vostra squadra vince la partita.', youLost: 'Gli avversari vincono la partita.', rounds: 'Mani', breakdown: 'Mano per mano', close: 'Chiudi' },

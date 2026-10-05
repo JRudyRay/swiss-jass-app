@@ -18,7 +18,7 @@ const rm: Messages = {
   },
   credits: {
     title: 'Las cartas',
-    body: 'Cartas da jass svizras tudestgas, stampadas enturn il 1850 a Hasle bei Burgdorf. Scans: Bibliothèque nationale de France, domena publica:',
+    body: 'Cartas da jass svizras tudestgas, litografia colurada a maun da Hasle bei Burgdorf, fin dal 19avel tschientaner. Scans: British Museum, domena publica:',
   },
   trick: { takes: (name: string) => `${name} fa il stich`, youTake: 'Ti fas il stich' },
   victory: { youWon: 'Vossa equipa gudogna la partida.', youLost: 'Ils adversaris gudognan la partida.', rounds: 'Rundas', breakdown: 'Runda per runda', close: 'Serrar' },

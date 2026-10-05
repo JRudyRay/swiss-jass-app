@@ -28,7 +28,7 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
   const isCourtCard = ['U', 'O', 'K'].includes(card.rank);
   const suitColor = suitColors[card.suit] || '#000';
 
-  // Scans of a public-domain 1850 Hasle deck (see public/assets/cards/README.md).
+  // Public-domain Hasle deck, late 19th century (see public/assets/cards/README.md).
   // BASE_URL keeps the path right under the GitHub Pages subpath.
   const baseUrl: string = ((import.meta as any).env?.BASE_URL) || '/';
   const cardImagePath = `${baseUrl}assets/cards/${card.suit}_${card.rank}.webp`;
@@ -36,8 +36,8 @@ export const SwissCard: React.FC<CardProps> = ({ card, isSelected, isPlayable, o
 
   const getCardStyle = () => {
     const baseStyle: React.CSSProperties = {
-      width: '74px',
-      height: '112px',
+      width: 'var(--card-w, 74px)',
+      height: 'var(--card-h, 112px)',
       backgroundColor: useImage ? '#efe6d2' : 'white',
       borderRadius: '8px',
       padding: useImage ? '0' : '6px',

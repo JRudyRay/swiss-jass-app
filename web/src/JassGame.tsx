@@ -56,7 +56,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     transition: 'all 0.2s ease'
   },
   message: { flex: 1, textAlign: 'center' as const, fontSize: 15, fontWeight: 600, color: '#3a2e20', padding: '12px 16px', background: 'rgba(255,255,255,0.7)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' },
-  hand: { display: 'flex', justifyContent: 'center', padding: '22px 4px 10px', maxWidth: 760, margin: '0 auto' },
+  hand: { display: 'flex', justifyContent: 'center', padding: '22px 4px 10px', maxWidth: 940, margin: '0 auto' },
   table: { padding: 14, background: 'rgba(25, 122, 76, 0.1)', borderRadius: 10, minHeight: 140, marginBottom: 12 },
 };
 
@@ -1931,7 +1931,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   {showPlaySurface && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <div data-jass-table style={{ width: '100%', maxWidth: 700, height: 440, position: 'relative', background: 'radial-gradient(ellipse at center, #22875a 0%, #17683f 60%, #0f4c2d 100%)', borderRadius: 18, boxShadow: 'inset 0 0 40px rgba(0,0,0,0.45), 0 8px 25px rgba(0,0,0,0.2)', border: '6px solid #6b4423', boxSizing: 'border-box' }}>
+            <div data-jass-table style={{ width: '100%', maxWidth: 760, height: 'var(--table-h)', position: 'relative', background: 'radial-gradient(ellipse at center, #22875a 0%, #17683f 60%, #0f4c2d 100%)', borderRadius: 18, boxShadow: 'inset 0 0 40px rgba(0,0,0,0.45), 0 8px 25px rgba(0,0,0,0.2)', border: '6px solid #6b4423', boxSizing: 'border-box' }}>
               
               {/* Seats: north/south centred, west/east on the sides */}
               <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 5 }}>{renderSeat('north')}</div>
@@ -1940,7 +1940,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 5 }}>{renderSeat('south')}</div>
 
               {/* Trick: cards upright, nudged toward the player who played them */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 'min(260px, 58%)', height: 270 }}>
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 'var(--trick-w)', height: 'var(--trick-h)' }}>
                 <TrickArea
                   cards={(gameState?.currentTrick || []).map((c: any, i: number) => ({ card: c, seat: positionForPlayerId(c.playerId ?? i) }))}
                   collect={collect ? { winnerSeat: positionForPlayerId(collect.winnerId), winningCardId: String((gameState?.currentTrick || []).find((c: any) => c.playerId === collect.winnerId)?.id ?? '') } : null}
@@ -2203,7 +2203,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               const playable = legalCards.some((c: any) => c.id === card.id);
               const reason = !playable ? notPlayableReason(card) : null;
               return (
-                <div key={card.id} style={{ position: 'relative', flex: i === arr.length - 1 ? '0 0 78px' : '0 1 84px', minWidth: 0 }}>
+                <div key={card.id} style={{ position: 'relative', flex: i === arr.length - 1 ? '0 0 calc(var(--card-w) + 4px)' : '0 1 calc(var(--card-w) + 10px)', minWidth: 0 }}>
                   {/* Tap to select, tap again to play (dblclick never fires reliably on touch). */}
                   <div data-card-id={card.id} data-playable={playable ? 'true' : 'false'} title={reason || undefined} onClick={() => {
                     if (!playable) { if (reason) setMessage(reason); return; }

@@ -17,7 +17,7 @@ const fr: Messages = {
   },
   credits: {
     title: 'Les cartes',
-    body: 'Jeu de cartes suisse allemand imprimé vers 1850 à Hasle bei Burgdorf. Numérisation : Bibliothèque nationale de France, domaine public :',
+    body: 'Jeu de cartes suisse allemand, lithographie coloriée à la main, Hasle bei Burgdorf, fin du XIXe siècle. Numérisation : British Museum, domaine public :',
   },
   trick: { takes: (name: string) => `${name} remporte le pli`, youTake: 'Vous remportez le pli' },
   victory: { youWon: 'Votre équipe remporte la partie.', youLost: 'Les adversaires remportent la partie.', rounds: 'Manches', breakdown: 'Manche par manche', close: 'Fermer' },

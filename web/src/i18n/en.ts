@@ -15,7 +15,7 @@ const en = {
   },
   credits: {
     title: 'The cards',
-    body: 'Swiss-German deck printed around 1850 in Hasle bei Burgdorf. Scans: Bibliothèque nationale de France, public domain:',
+    body: 'Swiss-German deck, hand-coloured lithograph from Hasle bei Burgdorf, late 19th century. Scans: British Museum, public domain:',
   },
   trick: { takes: (name: string) => `${name} takes the trick`, youTake: 'You take the trick' },
   victory: { youWon: 'Your team wins the match.', youLost: 'The opponents win the match.', rounds: 'Rounds', breakdown: 'Round by round', close: 'Close' },

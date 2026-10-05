@@ -2,7 +2,7 @@ import React from 'react';
 
 import { messages, type Lang } from '../../i18n';
 
-// Suit icons are cut from the 1850 deck (scripts/make-suit-icons.py);
+// Suit icons are cut from an 1850 Hasle deck (scripts/make-suit-icons.py);
 // Obenabe/Undenufe get an arrow.
 const SUITS = new Set(['eicheln', 'schellen', 'rosen', 'schilten']);
 

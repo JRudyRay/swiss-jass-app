@@ -68,7 +68,7 @@ export const CardValues: React.FC<{ lang: Lang }> = ({ lang }) => {
           return (
             <div key={r} style={{ width: 'calc((100% - 24px) / 5)', maxWidth: 64, display: 'grid', justifyItems: 'center', gap: 6 }}>
               <img src={`${base}assets/cards/${SUIT}_${r}.webp`} alt={r} loading="lazy" style={{
-                width: '100%', aspectRatio: '222 / 336', objectFit: 'cover', borderRadius: 5, background: '#fff',
+                width: '100%', aspectRatio: '282 / 426', objectFit: 'cover', borderRadius: 5, background: '#fff',
                 boxShadow: best ? '0 0 0 2px #e0a526, 0 4px 10px rgba(60,40,10,0.25)' : '0 2px 6px rgba(60,40,10,0.2)',
                 opacity: zero ? 0.62 : 1, filter: zero ? 'saturate(0.55)' : 'none', transition: 'opacity 150ms ease',
               }} />

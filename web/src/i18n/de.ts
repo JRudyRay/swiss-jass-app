@@ -17,7 +17,7 @@ const de: Messages = {
   },
   credits: {
     title: 'Die Karten',
-    body: 'Deutschschweizer Jasskarten, gedruckt um 1850 in Hasle bei Burgdorf. Scans: Bibliothèque nationale de France, gemeinfrei:',
+    body: 'Deutschschweizer Jasskarten, handkolorierte Lithografie aus Hasle bei Burgdorf, spätes 19. Jahrhundert. Scans: British Museum, gemeinfrei:',
   },
   trick: { takes: (name: string) => `${name} macht den Stich`, youTake: 'Du machst den Stich' },
   victory: { youWon: 'Euer Team gewinnt die Partie.', youLost: 'Die Gegner gewinnen die Partie.', rounds: 'Runden', breakdown: 'Runde für Runde', close: 'Schliessen' },
