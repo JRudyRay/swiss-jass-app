@@ -16,10 +16,9 @@ So every later change can be verified.
       `testTrumpChooserSchieben` (code lets the forehand choose and lead; test
       expects the dealer). Fix `simulate.ts`'s expected settlement the same
       way, and the outdated comments at `schieber.ts` ~318 and ~696.
-- [ ] Add `typecheck` scripts (`tsc --noEmit`) to `web` and `backend`, and a
-      `check` script per package that runs typecheck + tests + build.
-- [ ] CI: run both packages' `check` on Node 22 (match the Pi); make
-      `deploy.yml` depend on it.
+- [x] (2026-10-06) `typecheck` and `check` scripts in `web` and `backend`.
+- [x] (2026-10-06) CI and deploy use Node 22; `deploy.yml` runs web `check`
+      before building. (Backend `check` is not in CI yet.)
 - [ ] Update the Commands section of `CLAUDE.md` to the new `check` scripts.
 
 ## M1: Clean foundation

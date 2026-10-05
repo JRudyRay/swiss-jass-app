@@ -4,6 +4,8 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "rimraf dist node_modules/.prisma && npx prisma generate && tsc",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && ts-node src/tests/gameEngine.test.ts",
     "start": "node dist/index.js",
     "start:prod": "node dist/index.js",
     "smoke": "ts-node src/tests/friendAndTable.test.ts",
