@@ -59,6 +59,10 @@ export type State = {
   matchBonus?: number; // 100 for taking all 9 tricks
   // player id who declared the contract (set during trump selection)
   declarer?: number | null;
+  // Match target. The first team to reach it wins at once, even mid-hand ("Stöck, Weis, Stich").
+  target?: number;
+  // Set when the match is over: the team that reached the target first.
+  matchWinner?: 1 | 2 | null;
 };
 
 const suits: Suit[] = ['eicheln','schellen','rosen','schilten'];
@@ -161,10 +165,10 @@ export function deal(names: string[] = ['You', ...pickBotNames()]): Player[] {
   return players;
 }
 
-export function startGameLocal(previousDealer?: number, botNames: string[] = pickBotNames()): State {
+export function startGameLocal(previousDealer?: number, botNames: string[] = pickBotNames(), target?: number, rand: () => number = Math.random): State {
   const players = deal(['You', ...botNames]);
-  // Dealer rotates counter-clockwise in Swiss Jass (0->3->2->1->0)
-  const dealer = previousDealer !== undefined ? (previousDealer - 1 + 4) % 4 : 0;
+  // Dealer rotates counter-clockwise in Swiss Jass (0->3->2->1->0); the first dealer is random.
+  const dealer = previousDealer !== undefined ? (previousDealer - 1 + 4) % 4 : Math.floor(rand() * 4);
   const forehand = (dealer - 1 + 4) % 4;
   // Forehand (player to the right of dealer) chooses trump first
   const st: State = { 
@@ -176,7 +180,8 @@ export function startGameLocal(previousDealer?: number, botNames: string[] = pic
     currentTrick: [], 
     trickLead: null, 
     players, 
-    scores: { team1: 0, team2: 0 } 
+    scores: { team1: 0, team2: 0 },
+    target,
   };
   return st;
 }
@@ -200,6 +205,7 @@ export function startNewHand(previousState: State): State {
     players, 
     scores: { ...previousState.scores }, // Keep cumulative scores
     handStartScores: { ...previousState.scores },
+    target: previousState.target,
   };
   return st;
 }
@@ -622,6 +628,7 @@ export function resolveTrick(state: State): State {
   const winnerCard = st.currentTrick[winnerIdx];
   const winnerPlayer = winnerCard.playerId;
   const wonCards = st.currentTrick.slice();
+  const isFirstTrick = st.players.every(p => (p.tricks?.length || 0) === 0);
   // store lastTrick for UI to display briefly
   st.lastTrick = wonCards.slice();
   st.players.find(p=>p.id===winnerPlayer)!.tricks.push(...wonCards.map(c => ({ id: c.id, suit: c.suit, rank: c.rank })) as any);
@@ -635,22 +642,35 @@ export function resolveTrick(state: State): State {
     trickPoints += 5;
   }
   const winnerTeam = st.players.find(p=>p.id===winnerPlayer)!.team;
-  if (winnerTeam === 1) st.scores.team1 += trickPoints; else st.scores.team2 += trickPoints;
-  
-  // Weis points are tracked separately and applied elsewhere; do not add them here
-  
+
   st.currentTrick = [];
   st.trickLead = null;
   st.currentPlayer = winnerPlayer;
   st.pendingResolve = false;
-  
+
+  // Reaching the target ends the match at once, counted in the order Stöck, Weis, Stich.
+  // Stöck from this trick is already in st.scores; Weis counts with the first trick.
+  let reachedBy: 1 | 2 | null = null;
+  let reachedTotals: { team1: number; team2: number } | null = null;
+  const check = (withWeis: boolean) => {
+    if (reachedBy || !st.target) return;
+    const totals = runningTotals(st, withWeis);
+    const team = teamAtTarget(totals, st.target);
+    if (team) { reachedBy = team; reachedTotals = totals; }
+  };
+  check(!isFirstTrick);
+  if (isFirstTrick) check(true);
+
+  if (winnerTeam === 1) st.scores.team1 += trickPoints; else st.scores.team2 += trickPoints;
+
   // if all hands empty, finish: perform final settlement (Weis, multiplier, match bonus) and distribute scores
-  if (st.players.every(p => p.hand.length === 0)) {
+  if (!reachedBy && st.players.every(p => p.hand.length === 0)) {
     const settled = settleHand(st);
     st.scores = settled.scores;
     st.trumpMultiplier = settled.trumpMultiplier;
     st.matchBonus = settled.matchBonus;
     st.phase = 'finished';
+    if (st.target) st.matchWinner = teamAtTarget(st.scores, st.target);
 
     // Distribute team scores to individual players for rankings
     const team1Players = st.players.filter(p => p.team === 1);
@@ -663,9 +683,35 @@ export function resolveTrick(state: State): State {
     // The hand is over. The caller decides whether the match continues
     // (startNewHand) or someone reached the target score.
   } else {
-    st.phase = 'playing';
+    if (!reachedBy) check(true);
+    if (reachedBy) {
+      st.scores = reachedTotals!;
+      st.phase = 'finished';
+      st.matchWinner = reachedBy;
+      st.players.forEach(p => p.points = p.team === 1 ? st.scores.team1 : st.scores.team2);
+    } else {
+      st.phase = 'playing';
+    }
   }
   return st;
+}
+
+// Match totals at this point of the hand: start-of-hand score + multiplier × (points so far, plus Weis).
+export function runningTotals(state: State, withWeis: boolean): { team1: number; team2: number } {
+  const mult = state.trumpMultiplier || 1;
+  const base = state.handStartScores || { team1: 0, team2: 0 };
+  const weis = withWeis ? calculateTeamWeis(state.players, state.trump as TrumpContract | null, state.forehand) : { team1: 0, team2: 0 };
+  return {
+    team1: base.team1 + mult * ((state.scores.team1 - base.team1) + (weis.team1 || 0)),
+    team2: base.team2 + mult * ((state.scores.team2 - base.team2) + (weis.team2 || 0)),
+  };
+}
+
+// The team at or over the target (the higher total if both are).
+export function teamAtTarget(scores: { team1: number; team2: number }, target: number): 1 | 2 | null {
+  const a = scores.team1 >= target, b = scores.team2 >= target;
+  if (a && b) return scores.team2 > scores.team1 ? 2 : 1;
+  return a ? 1 : b ? 2 : null;
 }
 
 // Apply Weis points, contract multiplier and match bonus in one settlement step

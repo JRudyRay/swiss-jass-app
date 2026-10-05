@@ -409,8 +409,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         const t1 = newSt.scores.team1 || 0; const t2 = newSt.scores.team2 || 0;
         const base = newSt.handStartScores || { team1: 0, team2: 0 };
         setRoundHistory(h => [...h, { round: h.length + 1, team1: t1 - base.team1, team2: t2 - base.team2, trump: String(newSt.trump || '') }]);
-        if (t1 >= maxPoints || t2 >= maxPoints) {
-          // Both teams can pass the target in the same hand: the higher total wins.
+        if (newSt.matchWinner || t1 >= (newSt.target || maxPoints) || t2 >= (newSt.target || maxPoints)) {
+          // The first team to reach the target wins, even mid-hand (the engine sets matchWinner).
           setShowVictory(true);
           setMatchFinished(true);
           setGameState({ ...toGameState(newSt), phase: 'finished' });
@@ -481,10 +481,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     // Try to resume a local game from localStorage
     let st = loadLocalState();
     // A trick that was waiting for its resolve animation when the page closed
+    if (st && !st.target) st.target = maxPoints; // games saved before the target lived in the state
     if (st?.pendingResolve) { st = Schieber.resolveTrick(st); saveLocalState(st); }
     if (st) {
       // If the stored local game already finished, start a fresh hand instead of resuming finished state
-      const matchOver = st.phase === 'finished' && Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= maxPoints;
+      const matchOver = st.phase === 'finished' && (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
       if (st.phase === 'finished' && !matchOver) {
         const fresh = Schieber.startNewHand(st);
         saveLocalState(fresh);
@@ -755,7 +756,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   // --- Local play with simple bots ---
   const startLocalGame = () => {
-    const st = Schieber.startGameLocal(undefined, botNames);
+    const st = Schieber.startGameLocal(undefined, botNames, maxPoints);
     setBotNames(Schieber.pickBotNames());
     // map engine players to our UI players
   setPlayers(mapPlayersWithSeats(st.players));

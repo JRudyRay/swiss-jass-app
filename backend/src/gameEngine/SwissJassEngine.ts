@@ -111,12 +111,15 @@ export class SwissJassEngine {
   }
 
   private initializeGameState(gameType: string): GameState {
+    // The first dealer is random; the forehand sits to the dealer's right.
+    const dealer = Math.floor(Math.random() * 4);
+    const forehand = (dealer + 3) % 4;
     return {
       phase: 'waiting',
-      dealer: 3,
-      forehand: 0,
-      currentPlayer: 0,
-      trickLeader: 0,
+      dealer,
+      forehand,
+      currentPlayer: forehand,
+      trickLeader: forehand,
       trumpSuit: null,
       contract: null,
       currentTrick: [],
@@ -287,10 +290,16 @@ export class SwissJassEngine {
 
     // Stöck (trump King + Ober in one hand) always counts, independent of Weis.
     (this.gameState as any).stoeckTeam = null;
+    (this.gameState as any).stoeckHolder = null;
+    (this.gameState as any).stoeckCounted = false;
+    (this.gameState as any).weisCounted = false;
     if (trump !== 'obenabe' && trump !== 'undenufe') {
       const holder = this.players.find(p => p.hand.some(c => c.suit === trump && c.rank === 'K')
         && p.hand.some(c => c.suit === trump && c.rank === 'O'));
-      if (holder) (this.gameState as any).stoeckTeam = holder.team;
+      if (holder) {
+        (this.gameState as any).stoeckTeam = holder.team;
+        (this.gameState as any).stoeckHolder = holder.id;
+      }
     }
 
     this.gameState.phase = 'playing';
@@ -391,13 +400,35 @@ export class SwissJassEngine {
     this.gameState.currentTrick = [];
     this.gameState.lastTrickWinner = trickWinner;
 
-    // Award points to winning team
-    const winnerTeam = this.players[trickWinner].team;
-    this.gameState.roundScores[`team${winnerTeam}`] += totalTrickPoints;
-
     // Winner leads next trick
     this.gameState.currentPlayer = trickWinner;
     this.gameState.trickLeader = trickWinner;
+
+    // Reaching the target ends the match at once, counted in the order Stöck, Weis, Stich.
+    const gs = this.gameState as any;
+    const holder = gs.stoeckHolder;
+    if (gs.stoeckTeam && !gs.stoeckCounted && holder !== null && holder !== undefined) {
+      const played = this.gameState.playedTricks.flat().filter(c => c.playerId === holder && c.suit === this.gameState.trumpSuit);
+      if (played.some(c => c.rank === 'K') && played.some(c => c.rank === 'O')) gs.stoeckCounted = true;
+    }
+    let reached = this.teamAtTarget(this.runningTotals(false));
+    if (!gs.weisCounted) {
+      gs.weisCounted = true; // Weis counts with the first trick
+      reached = reached || this.teamAtTarget(this.runningTotals(false));
+    }
+
+    // Award points to winning team
+    const winnerTeam = this.players[trickWinner].team;
+    if (!reached) {
+      this.gameState.roundScores[`team${winnerTeam}`] += totalTrickPoints;
+      reached = this.teamAtTarget(this.runningTotals(isLastTrick));
+    }
+
+    if (reached) {
+      this.emit('trickCompleted', { winner: trickWinner, points: totalTrickPoints, isLastTrick });
+      this.finishAtTarget(reached);
+      return;
+    }
 
     this.emit('trickCompleted', {
       winner: trickWinner,
@@ -472,6 +503,45 @@ export class SwissJassEngine {
 
   private calculateTrickPoints(): number {
     return this.gameState.currentTrick.reduce((sum, card) => sum + card.points, 0);
+  }
+
+  // Match totals at this point of the hand: Stöck and Weis once counted, plus the Match bonus at the end.
+  private runningTotals(withMatchBonus: boolean): { team1: number; team2: number } {
+    const gs = this.gameState as any;
+    const mult = this.gameState.trumpMultiplier || 1;
+    const weis = gs.weisCounted ? this.calculateTeamWeis() : { team1: 0, team2: 0 };
+    const hand = (team: 1 | 2) => {
+      let pts = this.gameState.roundScores[`team${team}`] + weis[`team${team}`];
+      if (gs.stoeckCounted && gs.stoeckTeam === team) pts += 20;
+      return pts * mult;
+    };
+    const totals = { team1: this.gameState.scores.team1 + hand(1), team2: this.gameState.scores.team2 + hand(2) };
+    if (withMatchBonus) {
+      const cards = (team: number) => this.gameState.playedTricks.reduce((n, t) => n + t.filter(c => this.players[c.playerId].team === team).length, 0);
+      if (cards(1) === 36) totals.team1 += 100 * mult;
+      else if (cards(2) === 36) totals.team2 += 100 * mult;
+    }
+    return totals;
+  }
+
+  // The team at or over the target (the higher total if both are).
+  private teamAtTarget(t: { team1: number; team2: number }): 1 | 2 | null {
+    const goal = this.gameState.pointsToWin;
+    const a = t.team1 >= goal, b = t.team2 >= goal;
+    if (a && b) return t.team2 > t.team1 ? 2 : 1;
+    return a ? 1 : b ? 2 : null;
+  }
+
+  // A team reached the target mid-hand: the match ends now with the totals counted so far.
+  private finishAtTarget(winner: 1 | 2): void {
+    const gs = this.gameState as any;
+    const totals = this.runningTotals(this.players.every(p => p.hand.length === 0));
+    const roundScores = { team1: totals.team1 - this.gameState.scores.team1, team2: totals.team2 - this.gameState.scores.team2 };
+    const weisScores = gs.weisCounted ? this.calculateTeamWeis() : { team1: 0, team2: 0 };
+    this.gameState.scores = totals;
+    this.gameState.phase = 'finished';
+    this.emit('roundCompleted', { roundScores, totalScores: this.gameState.scores, weisScores });
+    this.emit('gameFinished', { winner, finalScores: this.gameState.scores });
   }
 
   private completeRound(): void {

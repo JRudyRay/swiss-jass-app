@@ -345,6 +345,85 @@ testRunner('Four 6s, 7s or 8s are not a Weis; four Nell are 150', () => {
 });
 
 // ========================================
+// TEST SUITE: TARGET REACHED MID-HAND (Stöck, Weis, Stich)
+// ========================================
+
+console.log('\n🧪 TEST SUITE: Target reached mid-hand\n');
+
+const TRUMP_PTS: Record<string, number> = { U: 20, '9': 14, A: 11, '10': 10, K: 4, O: 3 };
+const PLAIN_PTS: Record<string, number> = { A: 11, '10': 10, K: 4, O: 3, U: 2 };
+const card = (suit: string, rank: string, playerId: number) =>
+  ({ id: suit + rank, suit, rank, playerId, points: (suit === 'eicheln' ? TRUMP_PTS : PLAIN_PTS)[rank] || 0 });
+
+// Eicheln trump, scores before the hand, one trick on the table (players 0..3), first trick or not.
+function midHandEngine(start: { team1: number; team2: number }, trick: [string, string][], firstTrick: boolean) {
+  const engine = new SwissJassEngine('schieber');
+  const state: any = (engine as any).gameState;
+  state.phase = 'playing';
+  state.trumpSuit = 'eicheln';
+  state.trumpMultiplier = 1;
+  state.pointsToWin = 1000;
+  state.scores = { ...start };
+  state.roundScores = { team1: 0, team2: 0 };
+  state.weisCounted = !firstTrick;
+  state.playedTricks = firstTrick ? [] : [[card('schellen', '6', 0), card('schellen', '7', 1), card('schellen', '8', 2), card('schellen', 'K', 3)]];
+  state.currentTrick = trick.map(([suit, rank], i) => card(suit, rank, i));
+  (engine as any).players.forEach((p: any) => { p.hand = [card('schilten', '6', p.id)]; p.weis = []; });
+  const events: string[] = [];
+  let winner: any = null;
+  engine.on('gameFinished', (d: any) => { events.push('gameFinished'); winner = d.winner; });
+  return { engine, state, events, get winner() { return winner; } };
+}
+
+testRunner('A trick that reaches the target ends the match at once', () => {
+  // Player 0 (team 1) takes rosen A + eicheln U = 31.
+  const t = midHandEngine({ team1: 990, team2: 980 }, [['eicheln', 'U'], ['rosen', '6'], ['rosen', 'A'], ['rosen', '7']], false);
+  (t.engine as any).completeTrick();
+  assertEquals(t.state.phase, 'finished', 'match over mid-hand');
+  assertEquals(t.winner, 1, 'team 1 wins');
+  assertEquals(t.state.scores.team1, 1021, 'team 1 total');
+  assertEquals(t.state.scores.team2, 980, 'team 2 total');
+});
+
+testRunner('Below the target the hand goes on', () => {
+  const t = midHandEngine({ team1: 900, team2: 980 }, [['eicheln', 'U'], ['rosen', '6'], ['rosen', 'A'], ['rosen', '7']], false);
+  (t.engine as any).completeTrick();
+  assertEquals(t.state.phase, 'playing', 'still playing');
+  assertEquals(t.events.length, 0, 'no gameFinished');
+});
+
+testRunner('Stöck counts before the trick points', () => {
+  // Player 1 (team 2) plays the trump Ober, having played the König earlier; team 1 takes the trick.
+  const t = midHandEngine({ team1: 990, team2: 985 }, [['eicheln', 'U'], ['eicheln', 'O'], ['rosen', 'A'], ['rosen', '7']], false);
+  t.state.playedTricks[0][1] = card('eicheln', 'K', 1);
+  t.state.stoeckTeam = 2; t.state.stoeckHolder = 1; t.state.stoeckCounted = false;
+  (t.engine as any).completeTrick();
+  assertEquals(t.winner, 2, 'team 2 wins through Stöck');
+  assertEquals(t.state.scores.team2, 1005, 'team 2 total');
+  assertEquals(t.state.scores.team1, 990, 'trick points after the win do not count');
+});
+
+testRunner('Weis counts before the first trick', () => {
+  const t = midHandEngine({ team1: 990, team2: 960 }, [['eicheln', 'U'], ['rosen', '6'], ['rosen', 'A'], ['rosen', '7']], true);
+  const seq = ['6', '7', '8', '9'].map(r => ({ id: 'schellen' + r, suit: 'schellen', rank: r }));
+  (t.engine as any).players[1].weis = (t.engine as any).detectWeisForHand(seq, 'eicheln');
+  (t.engine as any).completeTrick();
+  assertEquals(t.winner, 2, 'team 2 wins through Weis');
+  assertEquals(t.state.scores.team2, 1010, 'team 2 total');
+  assertEquals(t.state.scores.team1, 990, 'team 1 total');
+});
+
+testRunner('The first dealer is random; the forehand sits to the right', () => {
+  const dealers = new Set<number>();
+  for (let i = 0; i < 60; i++) {
+    const s = new SwissJassEngine('schieber').getGameState();
+    assertEquals(s.forehand, (s.dealer + 3) % 4, 'forehand right of the dealer');
+    dealers.add(s.dealer);
+  }
+  assert(dealers.size > 1, 'dealer varies');
+});
+
+// ========================================
 // SUMMARY
 // ========================================
 

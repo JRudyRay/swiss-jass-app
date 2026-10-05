@@ -49,15 +49,23 @@ implement everything below as of 2026-10-05.
 - Bots: the forehand schiebt with a weak hand; after schieben the partner
   must choose (it can't be pushed back).
 
+## Settled 2026-10-05 (owner answers)
+
+- The first team to reach the target wins at once, even mid-hand; the
+  match ends there. Points count in the order Stöck, Weis, Stich: Stöck when
+  its second card is played (before that trick's points), Weis with the
+  first trick (before its points), then each trick's points (the last trick
+  with its +5 and any Match bonus). Totals stop where the target was reached.
+- Undenufe stays ×3.
+- The first dealer of a match is random; the forehand (who chooses trump and
+  leads) is always the dealer's right. No Rosen-7 rule.
+
 ## Open questions (owner)
 
 | Topic | Current code | Notes |
 | --- | --- | --- |
 | Four of a kind vs. a sequence of equal points (e.g. 4 Ass vs. a 5-sequence, both 100) | Seat order from the forehand decides | Some rule sets rank four of a kind higher |
 | Game target | 1000 by default, adjustable | Standard varies: 1000, 1500 or 2500 |
-| Reaching the target mid-hand ("Stöck, Weis, Stich" order: whoever reaches it first wins at once) | Checked only at the end of the hand; if both teams pass it, the higher total wins | Pagat lists this as a common variant, not universal |
-| Undenufe multiplier | ×3 (settled) | Some rule sets (e.g. pagat) use ×4 for Undenufe |
-| First forehand of a match | Fixed seat (dealer 0) | Pagat: the holder of the Rosen 7 leads the first hand |
 
 When the owner answers, move the row into a "Settled" section (with the date)
 and fix both engines and their tests in the same change.

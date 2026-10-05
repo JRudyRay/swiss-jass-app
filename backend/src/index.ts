@@ -334,8 +334,8 @@ io.on('connection', (socket: any) => {
         return;
       }
       
-      // Dealer selects trump
-      engine.selectTrump(trump as any, stateBefore.dealer);
+      // The player whose turn it is (forehand, or partner after schieben) selects trump
+      engine.selectTrump(trump as any, players.indexOf(player));
       const newState = engine.getGameState();
       
       // Broadcast updated game state to all clients in the table room

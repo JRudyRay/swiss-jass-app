@@ -296,9 +296,73 @@ function testBotNamesKeptAcrossHands() {
   assert(next.players.map(p => p.name).join() === names.join(), 'Names stay the same for the next hand');
 }
 
+
+// Mid-hand target: build a hand with dealer 0 (forehand 3 leads, then 2, 1, 0), Eicheln trump.
+const C = (suit: string, rank: string) => ({ id: `${suit}_${rank}`, suit, rank }) as any;
+function midHand(opts: { hands: any[][]; start: { team1: number; team2: number }; firstTrick: boolean; target?: number }) {
+  let st = Schieber.startGameLocal(undefined, ['A (bot)', 'B (bot)', 'C (bot)'], opts.target ?? 1000, () => 0);
+  st.players.forEach((p, i) => { p.hand = opts.hands[i]; });
+  st = Schieber.setTrumpAndDetectWeis(st, 'eicheln');
+  st.scores = { ...opts.start };
+  st.handStartScores = { ...opts.start };
+  if (!opts.firstTrick) st.players[0].tricks = [C('schellen', 'K'), C('schellen', 'O'), C('schellen', '7'), C('schellen', '8')];
+  return st;
+}
+function playTrick(st: Schieber.State, cards: string[]) {
+  for (const id of cards) st = Schieber.playCardLocal(st, st.currentPlayer, id);
+  return Schieber.resolveTrick(st);
+}
+
+function testRandomFirstDealer() {
+  const seen = new Set<number>();
+  for (let k = 0; k < 4; k++) {
+    const st = Schieber.startGameLocal(undefined, undefined, 1000, () => k / 4 + 0.01);
+    assert(st.dealer === k, 'Dealer follows the random draw');
+    assert(st.forehand === (st.dealer - 1 + 4) % 4 && st.currentPlayer === st.forehand, 'Forehand is the dealer\'s right');
+    seen.add(st.dealer);
+  }
+  assert(seen.size === 4, 'Any seat can deal first');
+  const next = Schieber.startNewHand(Schieber.startGameLocal(undefined, undefined, 1500, () => 0.6));
+  assert(next.target === 1500, 'Target carries over to the next hand');
+}
+
+function testTargetReachedByTrick() {
+  const hands = [[C('eicheln', 'U'), C('rosen', '7')], [C('eicheln', '6'), C('rosen', '8')], [C('rosen', 'A'), C('rosen', '9')], [C('rosen', '6'), C('schilten', '7')]];
+  const st = playTrick(midHand({ hands, start: { team1: 990, team2: 980 }, firstTrick: false }), ['rosen_6', 'rosen_A', 'eicheln_6', 'eicheln_U']);
+  assert(st.phase === 'finished' && st.matchWinner === 1, 'Team 1 wins as soon as the trick takes it over the target');
+  assert(st.scores.team1 === 990 + 31 && st.scores.team2 === 980, `Totals stop where the target was reached (got ${st.scores.team1}/${st.scores.team2})`);
+  const go = playTrick(midHand({ hands, start: { team1: 900, team2: 980 }, firstTrick: false }), ['rosen_6', 'rosen_A', 'eicheln_6', 'eicheln_U']);
+  assert(go.phase === 'playing' && !go.matchWinner, 'Below the target the hand goes on');
+}
+
+function testStoeckCountsBeforeTrick() {
+  // Team 2 completes Stöck in a trick that team 1 takes: Stöck counts first.
+  const hands = [[C('eicheln', 'U'), C('rosen', '7')], [C('eicheln', 'O'), C('rosen', '8')], [C('rosen', 'A'), C('rosen', '9')], [C('rosen', '6'), C('schilten', '7')]];
+  let st = midHand({ hands, start: { team1: 990, team2: 985 }, firstTrick: false });
+  st.stoeckPending = { 1: { remaining: 1, awarded: false } }; // the König went in an earlier trick
+  st = playTrick(st, ['rosen_6', 'rosen_A', 'eicheln_O', 'eicheln_U']);
+  assert(st.phase === 'finished' && st.matchWinner === 2, 'Stöck takes team 2 over the target before the trick counts');
+  assert(st.scores.team2 === 1005 && st.scores.team1 === 990, `Trick points after the win don't count (got ${st.scores.team1}/${st.scores.team2})`);
+}
+
+function testWeisCountsBeforeFirstTrick() {
+  // Team 2 has a four-card sequence (50); team 1 takes the first trick.
+  const hands = [
+    [C('eicheln', 'U'), C('rosen', '7'), C('schilten', 'K')],
+    [C('eicheln', '6'), C('schellen', '6'), C('schellen', '7'), C('schellen', '8'), C('schellen', '9')],
+    [C('rosen', 'A'), C('rosen', '9'), C('schilten', '10')],
+    [C('rosen', '6'), C('schilten', '7'), C('eicheln', 'A')],
+  ];
+  const st = playTrick(midHand({ hands, start: { team1: 990, team2: 960 }, firstTrick: true }), ['rosen_6', 'rosen_A', 'eicheln_6', 'eicheln_U']);
+  assert(st.phase === 'finished' && st.matchWinner === 2, 'Weis takes team 2 over the target before the first trick counts');
+  assert(st.scores.team2 === 1010 && st.scores.team1 === 990, `Totals after Weis (got ${st.scores.team1}/${st.scores.team2})`);
+}
+
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
   tests.push(testBotNamesKeptAcrossHands);
+  // first dealer and reaching the target mid-hand (Stöck, Weis, Stich)
+  tests.push(testRandomFirstDealer, testTargetReachedByTrick, testStoeckCountsBeforeTrick, testWeisCountsBeforeFirstTrick);
   // existing extra tests
   tests.push(testObenUndenOrdering, testWeisTieGoesToForehandOrder, testWeisWinnerScoresAll, testWeisSequenceTieBreaks, testNoFourSixesSevensEights);
   // standard Schieber legal-play rules and contract points
