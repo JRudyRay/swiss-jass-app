@@ -11,7 +11,7 @@ const ch: Messages = {
     winner: (name: string) => `Bescht Wiis: ${name}. Nur sis Team zellt.`,
   },
   info: {
-    scoring: 'Chartewärt', nonTrump: 'Nöd Trumpf', trump: 'Trumpf',
+    strongest: 'Stärchsti zersch', scoring: 'Chartewärt', nonTrump: 'Nöd Trumpf', trump: 'Trumpf',
     footer: 'Letschte Stich: +5 • Total: 157 Pünkt (152 + 5)',
     music: 'Bärgmusig', prev: 'Zrugg', play: 'Spiele', pause: 'Pause', next: 'Wiiter',
   },

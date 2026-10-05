@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import YouTubePlayer from '../../YouTubePlayer';
 import { messages, type Lang } from '../../i18n';
+import CardValues from './CardValues';
 
 
 
@@ -19,16 +20,9 @@ export const InfoPanels: React.FC<{ lang: Lang }> = ({ lang }) => {
   const [musicOpen, setMusicOpen] = useState(false);
   return (
     <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, alignItems: 'start' }}>
-      <details style={panel}>
+      <details style={{ ...panel, gridColumn: '1 / -1', padding: '10px 14px' }}>
         <summary style={summary}>{t.scoring}</summary>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2px 8px', fontSize: 13, lineHeight: 1.4, marginTop: 6 }}>
-          <div style={{ fontWeight: 600, gridColumn: 'span 2' }}>{t.nonTrump}</div>
-          <div style={{ fontWeight: 600, gridColumn: 'span 2' }}>{t.trump}</div>
-          <div>A: 11</div><div>K: 4</div><div>U: 20</div><div>A: 11</div>
-          <div>10: 10</div><div>O: 3</div><div>9: 14</div><div>10: 10</div>
-          <div>U: 2</div><div>9–6: 0</div><div>K: 4</div><div>O, 8–6: 0</div>
-        </div>
-        <div style={{ marginTop: 4, fontSize: 12, color: '#6b5a3e' }}>{t.footer}</div>
+        <CardValues lang={lang} />
       </details>
       <details style={panel} onToggle={e => setMusicOpen((e.currentTarget as HTMLDetailsElement).open)}>
         <summary style={summary}>{t.music}</summary>

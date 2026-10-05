@@ -11,7 +11,7 @@ const de: Messages = {
     winner: (name: string) => `Bester Weis: ${name}. Nur dieses Team schreibt Weis.`,
   },
   info: {
-    scoring: 'Kartenwerte', nonTrump: 'Kein Trumpf', trump: 'Trumpf',
+    strongest: 'Stärkste zuerst', scoring: 'Kartenwerte', nonTrump: 'Kein Trumpf', trump: 'Trumpf',
     footer: 'Letzter Stich: +5 • Total: 157 Punkte (152 + 5)',
     music: 'Bergmusik', prev: 'Zurück', play: 'Abspielen', pause: 'Pause', next: 'Weiter',
   },

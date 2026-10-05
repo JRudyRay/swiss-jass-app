@@ -9,7 +9,7 @@ const en = {
     winner: (name: string) => `Best Weis: ${name}. Only their team scores Weis.`,
   },
   info: {
-    scoring: 'Card values', nonTrump: 'Non-trump', trump: 'Trump',
+    strongest: 'Strongest first', scoring: 'Card values', nonTrump: 'Non-trump', trump: 'Trump',
     footer: 'Last trick: +5 • Total: 157 points (152 + 5)',
     music: 'Mountain music', prev: 'Prev', play: 'Play', pause: 'Pause', next: 'Next',
   },

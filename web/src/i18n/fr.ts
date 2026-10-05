@@ -11,7 +11,7 @@ const fr: Messages = {
     winner: (name: string) => `Meilleure annonce : ${name}. Seule son équipe marque ses annonces.`,
   },
   info: {
-    scoring: 'Valeur des cartes', nonTrump: 'Hors atout', trump: 'Atout',
+    strongest: 'Du plus fort au plus faible', scoring: 'Valeur des cartes', nonTrump: 'Hors atout', trump: 'Atout',
     footer: 'Dernier pli : +5 • Total : 157 points (152 + 5)',
     music: 'Musique de montagne', prev: 'Précédent', play: 'Lecture', pause: 'Pause', next: 'Suivant',
   },

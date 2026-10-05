@@ -12,7 +12,7 @@ const rm: Messages = {
     winner: (name: string) => `Il meglier Weis: ${name}. Mo sia equipa quinta ils Weis.`,
   },
   info: {
-    scoring: 'Valur da las cartas', nonTrump: 'Betg trumf', trump: 'Trumf',
+    strongest: 'La pli ferma emprim', scoring: 'Valur da las cartas', nonTrump: 'Betg trumf', trump: 'Trumf',
     footer: 'Ultim stich: +5 • Total: 157 puncts (152 + 5)',
     music: 'Musica da muntogna', prev: 'Enavos', play: 'Sunar', pause: 'Pausa', next: 'Vinavant',
   },

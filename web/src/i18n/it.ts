@@ -11,7 +11,7 @@ const it: Messages = {
     winner: (name: string) => `Miglior annuncio: ${name}. Solo la sua squadra segna gli annunci.`,
   },
   info: {
-    scoring: 'Valore delle carte', nonTrump: 'Non briscola', trump: 'Briscola',
+    strongest: 'Dalla più forte alla più debole', scoring: 'Valore delle carte', nonTrump: 'Non briscola', trump: 'Briscola',
     footer: 'Ultima presa: +5 • Totale: 157 punti (152 + 5)',
     music: 'Musica di montagna', prev: 'Indietro', play: 'Riproduci', pause: 'Pausa', next: 'Avanti',
   },
