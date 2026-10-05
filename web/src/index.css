@@ -352,3 +352,37 @@ html {
     --trick-h: 330px;
   }
 }
+
+/* Phone portrait: fit header, score, table, trump choice and hand on one screen. */
+.trump-grid { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 600px) {
+  :root {
+    --card-w: 62px;
+    --card-h: 94px;
+    --table-h: clamp(230px, calc(100dvh - 600px), 340px);
+    --trick-w: min(210px, 62%);
+    --trick-h: 200px;
+  }
+  .app-header { position: static !important; }
+  .app-subtitle { display: none !important; }
+  .app-lang { max-width: 88px !important; font-size: 12px !important; }
+  .trump-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .trump-grid > button { min-width: 0 !important; min-height: 56px !important; }
+  .trump-hint, .trump-dealer { display: none; }
+  .app-header img { width: 32px !important; height: 32px !important; }
+  .trump-grid > button[data-trump="schieben"] { grid-column: 1 / -1; }
+}
+
+/* Phone landscape: very little height, so shrink everything. */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --card-w: 50px;
+    --card-h: 76px;
+    --table-h: 230px;
+    --trick-w: min(190px, 50%);
+    --trick-h: 150px;
+  }
+  .app-header { position: static !important; }
+  .app-subtitle { display: none !important; }
+  .trump-grid > button { min-height: 48px !important; }
+}

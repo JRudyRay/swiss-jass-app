@@ -32,13 +32,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onSignIn, current
   }
 
   return (
-    <header style={styles.header}>
+    <header className="app-header" style={styles.header}>
       <div style={styles.headerContent}>
         <button style={styles.brand} onClick={() => onViewChange('game')} aria-label="Swiss Jass">
           <img src={logo} alt="" style={styles.logo} />
           <div style={styles.brandText}>
             <span style={styles.title}>Swiss Jass</span>
-            <span style={styles.subtitle}>🇨🇭 {t.subtitle}</span>
+            <span className="app-subtitle" style={styles.subtitle}>🇨🇭 {t.subtitle}</span>
           </div>
         </button>
 
@@ -63,7 +63,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ user, onLogout, onSignIn, current
             <select
               value={lang}
               onChange={(e) => onLangChange(e.target.value as Lang)}
-              style={styles.langSelect}
+              className="app-lang" style={styles.langSelect}
               aria-label={t.language}
             >
               {LANGS.map((l) => (
@@ -128,9 +128,9 @@ const styles: Record<string, React.CSSProperties> = {
   navButtonActive: { background: 'white', color: '#DC143C' },
   actions: { display: 'flex', alignItems: 'center', gap: 8 },
   langSelector: { display: 'flex', position: 'relative' },
-  langSelect: { maxWidth: 150, padding: '7px 8px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer' },
+  langSelect: { maxWidth: 150, padding: '10px 8px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer' },
   srOnly: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' },
-  signInButton: { padding: '8px 14px', background: 'white', color: '#DC143C', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' },
+  signInButton: { padding: '11px 14px', background: 'white', color: '#DC143C', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' },
   userButton: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
   userAvatar: {
     width: 36, height: 36, borderRadius: '50%', background: 'white', color: '#DC143C', display: 'flex',

@@ -56,7 +56,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     boxShadow: '0 2px 8px rgba(26, 122, 76, 0.3)',
     transition: 'all 0.2s ease'
   },
-  message: { flex: 1, textAlign: 'center' as const, fontSize: 15, fontWeight: 600, color: '#3a2e20', padding: '12px 16px', background: 'rgba(255,255,255,0.7)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' },
+  message: { flex: 1, textAlign: 'center' as const, fontSize: 15, fontWeight: 600, color: '#3a2e20', padding: '8px 12px', background: 'rgba(255,255,255,0.7)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' },
   hand: { display: 'flex', justifyContent: 'center', padding: '22px 4px 10px', maxWidth: 940, margin: '0 auto' },
   table: { padding: 14, background: 'rgba(25, 122, 76, 0.1)', borderRadius: 10, minHeight: 140, marginBottom: 12 },
 };
@@ -1870,6 +1870,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                   }}
                   style={{
                     padding: '8px 16px',
+                    minHeight: 40,
                     borderRadius: 8,
                     border: 'none',
                     background: '#ef4444',
@@ -2196,6 +2197,33 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           </div>
         )}
 
+  {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
+  {gameState?.phase === 'trump_selection' && ((mode==='multi' ? (mySeat !== null && gameState.currentPlayer === mySeat) : gameState.currentPlayer === 0)) && (
+          <div style={{ marginTop: 12 }}>
+            <h4 style={{ margin: '0 0 4px' }}>{t.selectTrump}</h4>
+            <div className="trump-dealer" style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}>
+              {t.dealer}: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`}
+            </div>
+            <div className="trump-grid">
+              {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map(t => (
+                <button key={t} data-trump={t} onClick={() => submitTrump(t)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minWidth: 76, minHeight: 64, padding: '6px 8px', background: '#fffaf0', border: '2px solid #d9c9a8', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#3a2e20' }}>
+                  <SuitIcon trump={t} size={34} />
+                  {trumpName(t, lang)}
+                </button>
+              ))}
+              {/* Only the original chooser (forehand) may schieben; the partner can't push it back. */}
+              {isLocal && gameState.forehand === 0 && (
+                <button data-trump="schieben" style={{ ...styles.button, background: '#6b7280', minHeight: 44 }} onClick={() => submitTrump('schieben')}>
+                  ↻ {t.schieben}
+                </button>
+              )}
+            </div>
+            <div className="trump-hint" style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
+              {gameState.forehand === 0 || !isLocal ? t.trumpHintChooser : t.trumpHintPartner}
+            </div>
+          </div>
+        )}
+
         {/* Hand */}
         <div>
           {/* Fanned hand: wrappers shrink so cards overlap on narrow screens, corner index stays visible. */}
@@ -2213,40 +2241,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                     if (isLocal) playLocalCard(card.id); else playCard(card.id);
                   }}>
                     {/* Only mark playability while it's our turn, so the hand isn't dimmed while waiting. */}
-                    <SwissCard card={card} isSelected={selectedCard === card.id} isPlayable={legalCards.length ? playable : undefined} />
+                    <SwissCard card={card} isSelected={selectedCard === card.id} isPlayable={gameState?.phase === 'trump_selection' ? undefined : (legalCards.length ? playable : undefined)} />
                   </div>
                 </div>
               );
             }) : null}
           </div>
         </div>
-
-  {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
-  {gameState?.phase === 'trump_selection' && ((mode==='multi' ? (mySeat !== null && gameState.currentPlayer === mySeat) : gameState.currentPlayer === 0)) && (
-          <div style={{ marginTop: 12 }}>
-            <h4>{t.selectTrump}</h4>
-            <div style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}>
-              {t.dealer}: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`}
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map(t => (
-                <button key={t} data-trump={t} onClick={() => submitTrump(t)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minWidth: 76, padding: '8px 10px', background: '#fffaf0', border: '2px solid #d9c9a8', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#3a2e20' }}>
-                  <SuitIcon trump={t} size={34} />
-                  {trumpName(t, lang)}
-                </button>
-              ))}
-              {/* Only the original chooser (forehand) may schieben; the partner can't push it back. */}
-              {isLocal && gameState.forehand === 0 && (
-                <button data-trump="schieben" style={{ ...styles.button, background: '#6b7280' }} onClick={() => submitTrump('schieben')}>
-                  ↻ {t.schieben}
-                </button>
-              )}
-            </div>
-            <div style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
-              {gameState.forehand === 0 || !isLocal ? t.trumpHintChooser : t.trumpHintPartner}
-            </div>
-          </div>
-        )}
 
         <WeisPanel lang={lang} weis={gameState?.weis as any} players={players as any} weisWinner={weisWinner as any} />
 
