@@ -46,7 +46,7 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
   const winnerScore = winningTeam === 1 ? finalScores.team1 : finalScores.team2;
   const loserScore = winningTeam === 1 ? finalScores.team2 : finalScores.team1;
   const roundsPlayed = roundHistory.length;
-  const averagePointsPerRound = Math.round(winnerScore / roundsPlayed);
+  const averagePointsPerRound = roundsPlayed > 0 ? Math.round(winnerScore / roundsPlayed) : winnerScore;
 
   return (
     <div className="victory-overlay">

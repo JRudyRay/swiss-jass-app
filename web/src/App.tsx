@@ -2,21 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { JassGame } from './JassGame';
 import EnhancedAuthForm from './components/EnhancedAuthForm';
 import ErrorBoundary from './components/ErrorBoundary';
-import AppHeader from './components/AppHeader';
+import AppHeader, { View } from './components/AppHeader';
 import SwissDashboard from './components/SwissDashboard';
 import SwissTables from './components/SwissTables';
 import SwissFriends from './components/SwissFriends';
 import Rankings from './components/Rankings';
-import { API_URL } from './config';
+import { API_URL, ONLINE_ENABLED } from './config';
 import './GameTable.css';
 
-type View = 'dashboard' | 'game' | 'tables' | 'rankings' | 'friends';
-
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Nobody has to sign in to play: guests (user === null) get single-player.
+  // An account is only needed for online play, and only when a backend exists.
+  const [showAuth, setShowAuth] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [currentView, setCurrentView] = useState<View>('game');
   const [lang, setLang] = useState<'en' | 'ch'>('en'); // Global language state
 
   useEffect(() => {
@@ -25,10 +25,11 @@ function App() {
     const savedUser = localStorage.getItem('jassUser');
     const savedLang = localStorage.getItem('jassLang') as 'en' | 'ch' | null;
     
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
+    if (ONLINE_ENABLED && savedToken && savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+        setToken(savedToken);
+      } catch {}
     }
     
     if (savedLang) {
@@ -44,7 +45,7 @@ function App() {
   const handleLogin = (newToken: string, newUser: any) => {
     setToken(newToken);
     setUser(newUser);
-    setIsAuthenticated(true);
+    setShowAuth(false);
     
     // Save to localStorage
     localStorage.setItem('jassToken', newToken);
@@ -52,23 +53,30 @@ function App() {
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
     setUser(null);
     setToken(null);
-    setCurrentView('dashboard');
+    setCurrentView('game');
     
     // Clear localStorage
     localStorage.removeItem('jassToken');
     localStorage.removeItem('jassUser');
   };
 
-  if (!isAuthenticated) {
+  if (showAuth) {
     return (
       <ErrorBoundary>
-        <EnhancedAuthForm onLogin={handleLogin} />
+        <div style={{ position: 'relative' }}>
+          <button style={styles.backButton} onClick={() => setShowAuth(false)}>
+            ← {lang === 'ch' ? 'Zrugg zum Spiel' : 'Back to the game'}
+          </button>
+          <EnhancedAuthForm onLogin={handleLogin} />
+        </div>
       </ErrorBoundary>
     );
   }
+
+  // Online views need an account; fall back to the game otherwise.
+  const view: View = user || currentView === 'game' ? currentView : 'game';
 
   return (
     <ErrorBoundary>
@@ -76,29 +84,30 @@ function App() {
         <AppHeader 
           user={user} 
           onLogout={handleLogout}
-          currentView={currentView}
+          onSignIn={() => setShowAuth(true)}
+          currentView={view}
           onViewChange={setCurrentView}
-          unreadNotifications={0}
+          online={ONLINE_ENABLED}
           lang={lang}
           onLangChange={handleLangChange}
         />
         <main style={styles.main}>
-          {currentView === 'dashboard' && (
+          {view === 'dashboard' && (
             <SwissDashboard user={user} token={token || ''} onNavigate={setCurrentView} />
           )}
-          {currentView === 'game' && (
+          {view === 'game' && (
             <JassGame user={user} onLogout={handleLogout} lang={lang} />
           )}
-          {currentView === 'tables' && (
+          {view === 'tables' && (
             <SwissTables user={user} token={token || ''} onJoinGame={(tableId) => {
               console.log('Joined table:', tableId);
               setCurrentView('game');
             }} />
           )}
-          {currentView === 'rankings' && (
+          {view === 'rankings' && (
             <Rankings apiUrl={API_URL || ''} onBack={() => setCurrentView('dashboard')} onReset={() => {}} />
           )}
-          {currentView === 'friends' && (
+          {view === 'friends' && (
             <SwissFriends user={user} token={token || ''} />
           )}
         </main>
@@ -116,6 +125,19 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: 'calc(100vh - 80px)',
     paddingTop: '1rem',
     paddingBottom: '2rem',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    padding: '8px 14px',
+    background: 'white',
+    border: 'none',
+    borderRadius: 10,
+    fontWeight: 700,
+    cursor: 'pointer',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
   },
   placeholder: {
     maxWidth: 600,

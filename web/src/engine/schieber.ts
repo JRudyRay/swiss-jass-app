@@ -46,6 +46,8 @@ export type State = {
   trickLead?: Suit | null;
   players: Player[];
   scores: { team1: number; team2: number };
+  // cumulative scores when the current hand started; settleHand only scores the hand itself
+  handStartScores?: { team1: number; team2: number };
   // when a trick of 4 cards has been played and UI should show it before resolving
   pendingResolve?: boolean;
   // Weis declarations for each player after trump is selected
@@ -171,7 +173,8 @@ export function startNewHand(previousState: State): State {
     currentTrick: [], 
     trickLead: null, 
     players, 
-    scores: previousState.scores // Keep cumulative scores
+    scores: { ...previousState.scores }, // Keep cumulative scores
+    handStartScores: { ...previousState.scores },
   };
   return st;
 }
@@ -677,15 +680,8 @@ export function resolveTrick(state: State): State {
     team1Players.forEach(p => p.points = team1Score);
     team2Players.forEach(p => p.points = team2Score);
 
-    // Check if either team has reached the winning score (1000 points)
-    // If so, keep the game in 'finished' phase instead of starting a new hand
-    if (st.scores.team1 >= 1000 || st.scores.team2 >= 1000) {
-      // Game is complete - stay in 'finished' phase
-      st.phase = 'finished';
-    } else {
-      // Continue to next hand
-      st.phase = 'playing';
-    }
+    // The hand is over. The caller decides whether the match continues
+    // (startNewHand) or someone reached the target score.
   } else {
     st.phase = 'playing';
   }
@@ -701,8 +697,10 @@ export function settleHand(state: State): State {
   const weisScore = calculateTeamWeis(st.players);
 
   // Raw trick scores (should sum to 157 including last-trick bonus)
-  const rawTeam1 = st.scores.team1 || 0;
-  const rawTeam2 = st.scores.team2 || 0;
+  // st.scores is cumulative across hands; only this hand's points are settled.
+  const base = st.handStartScores || { team1: 0, team2: 0 };
+  const rawTeam1 = (st.scores.team1 || 0) - (base.team1 || 0);
+  const rawTeam2 = (st.scores.team2 || 0) - (base.team2 || 0);
 
   // Add Weis points to the raw totals
   let t1 = rawTeam1 + (weisScore.team1 || 0);
@@ -742,8 +740,8 @@ export function settleHand(state: State): State {
     console.log('  after match bonus: t1=', t1, 't2=', t2);
   } catch (e) {}
 
-  st.scores.team1 = t1;
-  st.scores.team2 = t2;
+  st.scores.team1 = (base.team1 || 0) + t1;
+  st.scores.team2 = (base.team2 || 0) + t2;
   return st;
 }
 

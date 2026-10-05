@@ -50,6 +50,10 @@ So every later change can be verified.
       a `VITE_API_URL` build variable instead of the hardcoded LAN IP. Until
       then the Pages build should present itself as single-player and hide
       multiplayer gracefully.
+      (2026-10-05: done for the web side. `config.ts` reads `VITE_API_URL` or
+      a `jassApiUrl` localStorage override; with no backend, login and
+      multiplayer are hidden and the app opens straight into a local match.
+      Hosting is still open.)
 
 ## M4: Product
 
