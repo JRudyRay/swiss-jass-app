@@ -52,10 +52,9 @@ its own folder.
 
 - Full check (must pass before a push):
   `(cd web && npm ci && npm run smoke && npm run build) && (cd backend && npm ci && npx prisma generate && npx tsc --noEmit)`
-- **`npm run smoke` exits 0 even when tests fail; read its output.** Known
-  failures as of 2026-10-04: `testDeclarerMultiplierEffect`,
-  `testTrumpChooserSchieben` (both stale tests, see roadmap M0) and 7
-  simulation mismatches with the same cause. Never add new failures.
+- `npm run smoke` runs the web unit tests and a 40-hand simulation; it exits
+  non-zero on any failure (all pass as of 2026-10-05). Backend engine tests:
+  `cd backend && npx ts-node src/tests/gameEngine.test.ts` (no DB).
 - `vite build` doesn't typecheck; run `cd web && npx tsc --noEmit` too when
   changing TypeScript. Both tsconfigs have `strict: false`.
 - `npm run build` rewrites the tracked `web/dist/index.html`; restore it with

@@ -8,9 +8,10 @@ owner questions to "Waiting on the owner". Status as of 2026-10-04.
 
 So every later change can be verified.
 
-- [ ] `web/scripts/unit_tests.ts` and `simulate.ts` exit non-zero on failure,
-      so `npm run smoke` and CI go red.
-- [ ] Fix the two stale tests: `testDeclarerMultiplierEffect` (code multiplies
+- [x] `web/scripts/unit_tests.ts` and `simulate.ts` exit non-zero on failure,
+      so `npm run smoke` and CI go red. (2026-10-05; the simulation now checks
+      settlement against an independent calculation and every play's legality.)
+- [x] (2026-10-05) Fix the two stale tests: `testDeclarerMultiplierEffect` (code multiplies
       both teams, matching common Schieber; test expects declarer only) and
       `testTrumpChooserSchieben` (code lets the forehand choose and lead; test
       expects the dealer). Fix `simulate.ts`'s expected settlement the same
@@ -33,7 +34,8 @@ So every later change can be verified.
 
 ## M2: One rules engine
 
-- [ ] Owner confirms the house rules in `docs/RULES.md`.
+- [x] Owner confirms the house rules in `docs/RULES.md`. (2026-10-05:
+      standard rules; both engines updated, two small open questions remain.)
 - [ ] Extract a shared, pure TypeScript engine (e.g. `shared/engine/`) used by
       both web and backend; port the best of both engines and their tests to
       Vitest. Cover scoring, Weis, Stöck, legal moves, schieben, match bonus.
@@ -66,5 +68,5 @@ So every later change can be verified.
 
 ## Waiting on the owner
 
-- Confirm the house rules (see `docs/RULES.md`, "Open questions").
+- Two small rule questions (see `docs/RULES.md`, "Open questions").
 - Where should the multiplayer backend live, if anywhere public?
