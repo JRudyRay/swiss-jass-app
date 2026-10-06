@@ -7,7 +7,7 @@
 
 .jass-screen {
   --g-card-w: 64px; /* hand card width */
-  --g-trick-w: 60px; /* trick card width */
+  --g-trick-w: 52px; /* trick card width (smaller than the hand cards) */
   --g-table-h: clamp(250px, calc(100dvh - 570px), 380px);
   --g-seat-v: 46px; /* space kept free above/below the trick for the seat chips */
   --g-seat-h: 78px; /* space kept free left/right of the trick for the side chips */
@@ -430,6 +430,8 @@
     transform 220ms var(--ease-out),
     opacity 220ms ease;
   animation: trickIn 250ms var(--ease-out) backwards;
+}
+.trick-card .swiss-card {
   --cw: var(--g-trick-w);
 }
 .trick-card--south {
@@ -1037,14 +1039,14 @@
 @media (min-width: 400px) and (max-width: 600px) {
   .jass-screen {
     --g-card-w: 66px;
-    --g-trick-w: 64px;
+    --g-trick-w: 56px;
   }
 }
 
 @media (min-width: 601px) {
   .jass-screen {
     --g-card-w: 84px;
-    --g-trick-w: 78px;
+    --g-trick-w: 68px;
     --g-table-h: clamp(300px, calc(100dvh - 470px), 520px);
     --g-seat-v: 52px;
     --g-seat-h: 96px;
@@ -1083,7 +1085,7 @@
 @media (min-width: 900px) and (min-height: 760px) {
   .jass-screen {
     --g-card-w: 94px;
-    --g-trick-w: 88px;
+    --g-trick-w: 76px;
   }
 }
 
@@ -1273,9 +1275,6 @@
   .trick-zone {
     inset: 38px var(--g-seat-h) 5px;
   }
-  .trick-card .swiss-card {
-    --cw: var(--g-trick-w);
-  }
   .trick-card--north {
     left: 42%;
     top: calc(var(--g-trick-h) / 2);
@@ -1333,7 +1332,7 @@
     gap: 0 8px;
     width: max-content;
     max-width: min(300px, calc(50% - 70px));
-    max-height: 84px;
+    max-height: 120px;
     margin: 0 8px 7px 0;
     padding: 4px 8px;
     overflow-y: auto;
@@ -1358,7 +1357,8 @@
     top: calc(var(--g-trick-h) / 2);
   }
   .jass-screen__area:has(> .weis-panel) .seat-slot--east {
-    top: 38%;
+    top: 6px;
+    transform: none;
   }
 
   /* Trump chooser floats on the felt. */
