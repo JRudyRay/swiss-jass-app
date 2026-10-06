@@ -1,6 +1,6 @@
 /**
  * Phase 1 Verification: Rankings Fix
- * 
+ *
  * Tests that:
  * 1. Offline games don't update user stats or rankings
  * 2. Multiplayer games DO update stats and rankings
@@ -28,7 +28,7 @@ async function main() {
   // Step 1: Create test users
   console.log('📝 Step 1: Creating test users...');
   const password = await bcrypt.hash('test123', 10);
-  
+
   const user1 = await prisma.user.upsert({
     where: { username: 'testuser1' },
     update: {},
@@ -113,7 +113,7 @@ async function main() {
     },
   });
 
-  const offlineStatsChanged = 
+  const offlineStatsChanged =
     statsAfterOffline!.totalGames !== initialStats[0].totalGames ||
     statsAfterOffline!.totalWins !== initialStats[0].totalWins ||
     statsAfterOffline!.trueSkillMu !== initialStats[0].trueSkillMu;
@@ -152,7 +152,7 @@ async function main() {
     },
   });
 
-  const multiplayerStatsChanged = 
+  const multiplayerStatsChanged =
     statsAfterMultiplayer!.totalGames !== initialStats[1].totalGames ||
     statsAfterMultiplayer!.totalWins !== initialStats[1].totalWins;
 
@@ -176,10 +176,12 @@ async function main() {
     select: { username: true, isBot: true },
   });
 
-  console.log(`Real players: ${realPlayers.length} (${realPlayers.map(p => p.username).join(', ')})`);
-  console.log(`Bots: ${bots.length} (${bots.map(b => b.username).join(', ')})`);
+  console.log(
+    `Real players: ${realPlayers.length} (${realPlayers.map((p) => p.username).join(', ')})`,
+  );
+  console.log(`Bots: ${bots.length} (${bots.map((b) => b.username).join(', ')})`);
 
-  const botIncludedInRankings = bots.some(b => b.username === 'testbot');
+  const botIncludedInRankings = bots.some((b) => b.username === 'testbot');
   if (botIncludedInRankings) {
     console.log('✅ Bot user exists (will be filtered in ranking queries)');
   }
@@ -201,10 +203,12 @@ async function main() {
 
   console.log('Rankings (top 10):');
   rankings.forEach((user, index) => {
-    console.log(`${index + 1}. ${user.username} - TrueSkill: ${user.trueSkillMu?.toFixed(2)}, Games: ${user.totalGames}, Wins: ${user.totalWins}`);
+    console.log(
+      `${index + 1}. ${user.username} - TrueSkill: ${user.trueSkillMu?.toFixed(2)}, Games: ${user.totalGames}, Wins: ${user.totalWins}`,
+    );
   });
 
-  const botInRankings = rankings.some(r => r.isBot);
+  const botInRankings = rankings.some((r) => r.isBot);
   if (botInRankings) {
     console.log('❌ FAIL: Bot found in rankings (should be excluded)');
   } else {
@@ -217,7 +221,7 @@ async function main() {
   console.log(`Offline game guard: ${!offlineStatsChanged ? '✅' : '❌'}`);
   console.log(`Multiplayer stats update: ${multiplayerStatsChanged ? '✅' : '❌'}`);
   console.log(`Bot exclusion: ${!botInRankings ? '✅' : '❌'}`);
-  
+
   console.log('\n✅ Phase 1 verification complete!\n');
 }
 

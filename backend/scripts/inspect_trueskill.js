@@ -7,4 +7,6 @@ console.log('module:', mod);
 try {
   const TS = mod.TrueSkill || (mod.default && mod.default.TrueSkill) || mod;
   console.log('constructed check:', typeof TS === 'function');
-} catch(e) { console.error('construct failed', e); }
+} catch (e) {
+  console.error('construct failed', e);
+}

@@ -4,9 +4,9 @@ A complete 36-card Swiss-German pack, hand-coloured lithograph printed in
 Hasle bei Burgdorf, late 19th century, held by the British Museum
 ([1896,0501.805](https://www.britishmuseum.org/collection/object/P_1896-0501-805)).
 The two scans on Wikimedia Commons are **public domain**:
-[sheet 1](https://commons.wikimedia.org/wiki/File:Print,_playing-card_(BM_1896,0501.805).jpg)
+[sheet 1](<https://commons.wikimedia.org/wiki/File:Print,_playing-card_(BM_1896,0501.805).jpg>)
 (Rosen, Schellen) and
-[sheet 2](https://commons.wikimedia.org/wiki/File:Print,_playing-card_(BM_1896,0501.805_1).jpg)
+[sheet 2](<https://commons.wikimedia.org/wiki/File:Print,_playing-card_(BM_1896,0501.805_1).jpg>)
 (Schilten, Eicheln).
 
 Regenerate with `python3 web/scripts/fetch-card-images.py` (needs Pillow and

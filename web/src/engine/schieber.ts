@@ -3,8 +3,9 @@
 // Enhanced with authentic Swiss Jass features and terminology
 
 export type Suit = 'eicheln' | 'schellen' | 'rosen' | 'schilten';
-export type Rank = '6'|'7'|'8'|'9'|'10'|'U'|'O'|'K'|'A';
-export type TrumpContract = 'eicheln' | 'schellen' | 'rosen' | 'schilten' | 'oben-abe' | 'unden-ufe';
+export type Rank = '6' | '7' | '8' | '9' | '10' | 'U' | 'O' | 'K' | 'A';
+export type TrumpContract =
+  'eicheln' | 'schellen' | 'rosen' | 'schilten' | 'oben-abe' | 'unden-ufe';
 
 export type Card = {
   id: string;
@@ -12,7 +13,15 @@ export type Card = {
   rank: Rank;
 };
 
-export type Player = { id: number; name: string; team: number; hand: Card[]; tricks: Card[]; points?: number; weis?: WeisDeclaration[] };
+export type Player = {
+  id: number;
+  name: string;
+  team: number;
+  hand: Card[];
+  tricks: Card[];
+  points?: number;
+  weis?: WeisDeclaration[];
+};
 
 export type WeisType =
   | 'sequence3'
@@ -34,7 +43,7 @@ export type WeisDeclaration = {
 };
 
 export type State = {
-  phase: 'dealing'|'trump_selection'|'playing'|'resolving'|'scoring'|'finished';
+  phase: 'dealing' | 'trump_selection' | 'playing' | 'resolving' | 'scoring' | 'finished';
   trump?: TrumpContract | null;
   currentPlayer: number; // 0..3
   dealer: number; // 0..3, rotates after each hand
@@ -68,28 +77,53 @@ export type State = {
   played?: PlayedCard[];
 };
 
-export type PlayedCard = { playerId: number; suit: Suit; rank: Rank; lead: Suit | null; trickNo: number };
+export type PlayedCard = {
+  playerId: number;
+  suit: Suit;
+  rank: Rank;
+  lead: Suit | null;
+  trickNo: number;
+};
 
-export const suits: Suit[] = ['eicheln','schellen','rosen','schilten'];
-export const ranks: Rank[] = ['6','7','8','9','10','U','O','K','A'];
+export const suits: Suit[] = ['eicheln', 'schellen', 'rosen', 'schilten'];
+export const ranks: Rank[] = ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
 
 // Point values for non-trump
 const basePoints: Record<Rank, number> = {
-  '6':0,'7':0,'8':0,'9':0,'10':10,'U':2,'O':3,'K':4,'A':11
+  '6': 0,
+  '7': 0,
+  '8': 0,
+  '9': 0,
+  '10': 10,
+  U: 2,
+  O: 3,
+  K: 4,
+  A: 11,
 };
 
 // In trump, U (Unter) = 20, 9 = 14
 const trumpOverride: Record<Rank, number> = {
-  'U':20,'9':14,'A':11,'10':10,'K':4,'O':3,'8':0,'7':0,'6':0
+  U: 20,
+  '9': 14,
+  A: 11,
+  '10': 10,
+  K: 4,
+  O: 3,
+  '8': 0,
+  '7': 0,
+  '6': 0,
 };
 
 // Comparators: higher returns positive
 // Obenabe and Undenufe: no trump, every 8 is worth 8; in Undenufe the 6 takes
 // the Ass's 11 and the Ass is worth nothing. Each contract totals 152 + 5.
 const obenPoints: Record<Rank, number> = { ...basePoints, '8': 8 };
-const undenPoints: Record<Rank, number> = { ...basePoints, '8': 8, '6': 11, 'A': 0 };
+const undenPoints: Record<Rank, number> = { ...basePoints, '8': 8, '6': 11, A: 0 };
 
-export function cardPoints(card: { suit: Suit; rank: Rank }, contract: TrumpContract | 'schieben' | null | undefined): number {
+export function cardPoints(
+  card: { suit: Suit; rank: Rank },
+  contract: TrumpContract | 'schieben' | null | undefined,
+): number {
   if (contract === 'oben-abe') return obenPoints[card.rank];
   if (contract === 'unden-ufe') return undenPoints[card.rank];
   return card.suit === contract ? trumpOverride[card.rank] : basePoints[card.rank];
@@ -99,16 +133,20 @@ export function cardPoints(card: { suit: Suit; rank: Rank }, contract: TrumpCont
 // Swiss Jass ordering adjusted so '10' does NOT beat Under/Oben/King/Ace.
 // Stronger cards appear earlier in the arrays (lower index = stronger).
 // Trump order: Under highest, then 9, Ace, King, Ober, then 10, 8,7,6
-const trumpOrder: Rank[] = ['U','9','A','K','O','10','8','7','6'];
+const trumpOrder: Rank[] = ['U', '9', 'A', 'K', 'O', '10', '8', '7', '6'];
 // Normal (non-trump) order: Ace, King, Ober, Under, then 10, 9, 8,7,6
-const normalOrder: Rank[] = ['A','K','O','U','10','9','8','7','6'];
+const normalOrder: Rank[] = ['A', 'K', 'O', 'U', '10', '9', '8', '7', '6'];
 
 // Return index in an order array for comparisons. Lower index = stronger card.
-export function rankOrderIndex(rank: Rank, contract: TrumpContract | null | undefined, isTrumpCard: boolean) {
+export function rankOrderIndex(
+  rank: Rank,
+  contract: TrumpContract | null | undefined,
+  isTrumpCard: boolean,
+) {
   // Special contracts without a suit-trump: 'oben-abe' and 'unden-ufe'
   if (contract === 'unden-ufe') {
     // In Unden-ufe the natural order is reversed: 6 highest, Ass lowest
-    const undenOrder: Rank[] = ['6','7','8','9','10','U','O','K','A'];
+    const undenOrder: Rank[] = ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
     return undenOrder.indexOf(rank);
   }
   if (contract === 'oben-abe') {
@@ -121,30 +159,87 @@ export function rankOrderIndex(rank: Rank, contract: TrumpContract | null | unde
   return normalOrder.indexOf(rank);
 }
 
-function makeId(suit: Suit, rank: Rank) { return `${suit}_${rank}_${Math.random().toString(36).slice(2,9)}`; }
+function makeId(suit: Suit, rank: Rank) {
+  return `${suit}_${rank}_${Math.random().toString(36).slice(2, 9)}`;
+}
 
 export function createDeck(): Card[] {
   const deck: Card[] = [];
-  for (const s of suits) for (const r of ranks) deck.push({ id: makeId(s,r), suit: s, rank: r });
+  for (const s of suits) for (const r of ranks) deck.push({ id: makeId(s, r), suit: s, rank: r });
   return deck;
 }
 
 export function shuffle<T>(arr: T[]) {
-  for (let i = arr.length -1; i>0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
 }
 
 // First names the bots pick from, from all four language regions.
 export const BOT_NAMES = [
-  'Anna', 'Reto', 'Fritz', 'Heidi', 'Urs', 'Beat', 'Vreni', 'Ruedi', 'Sepp', 'Margrit',
-  'Hansruedi', 'Erika', 'Kurt', 'Ursula', 'Werner', 'Barbara', 'Peter', 'Claudia', 'Toni', 'Silvia',
-  'Trudi', 'Köbi', 'Heiri', 'Bethli', 'Hanspeter', 'Doris', 'Marlies', 'Ernst', 'Lisbeth', 'Röbi',
-  'Jürg', 'Monika', 'Thomas', 'Sandra', 'Andreas', 'Esther', 'Christian', 'Regula', 'Stefan', 'Corinne',
-  'Jean', 'Sophie', 'Pierre', 'Chantal', 'Luc', 'Mireille', 'Yves', 'Nathalie',
-  'Luca', 'Chiara', 'Marco', 'Giulia', 'Matteo', 'Elena', 'Gianni', 'Franca',
-  'Gian', 'Ladina', 'Curdin', 'Mengia', 'Flurin', 'Seraina',
+  'Anna',
+  'Reto',
+  'Fritz',
+  'Heidi',
+  'Urs',
+  'Beat',
+  'Vreni',
+  'Ruedi',
+  'Sepp',
+  'Margrit',
+  'Hansruedi',
+  'Erika',
+  'Kurt',
+  'Ursula',
+  'Werner',
+  'Barbara',
+  'Peter',
+  'Claudia',
+  'Toni',
+  'Silvia',
+  'Trudi',
+  'Köbi',
+  'Heiri',
+  'Bethli',
+  'Hanspeter',
+  'Doris',
+  'Marlies',
+  'Ernst',
+  'Lisbeth',
+  'Röbi',
+  'Jürg',
+  'Monika',
+  'Thomas',
+  'Sandra',
+  'Andreas',
+  'Esther',
+  'Christian',
+  'Regula',
+  'Stefan',
+  'Corinne',
+  'Jean',
+  'Sophie',
+  'Pierre',
+  'Chantal',
+  'Luc',
+  'Mireille',
+  'Yves',
+  'Nathalie',
+  'Luca',
+  'Chiara',
+  'Marco',
+  'Giulia',
+  'Matteo',
+  'Elena',
+  'Gianni',
+  'Franca',
+  'Gian',
+  'Ladina',
+  'Curdin',
+  'Mengia',
+  'Flurin',
+  'Seraina',
 ];
 
 // Three distinct random bot names, marked as bots.
@@ -159,10 +254,18 @@ export function pickBotNames(rand: () => number = Math.random): string[] {
 export function deal(names: string[] = ['You', ...pickBotNames()]): Player[] {
   const deck = createDeck();
   shuffle(deck);
-  const players: Player[] = [0,1,2,3].map(i => ({ id: i, name: names[i] || `Player ${i+1}`, team: i%2===0?1:2, hand: [], tricks: [], points: 0, weis: [] }));
+  const players: Player[] = [0, 1, 2, 3].map((i) => ({
+    id: i,
+    name: names[i] || `Player ${i + 1}`,
+    team: i % 2 === 0 ? 1 : 2,
+    hand: [],
+    tricks: [],
+    points: 0,
+    weis: [],
+  }));
   // 36 cards, 9 each
-  for (let i=0;i<9;i++) {
-    for (let p=0;p<4;p++) {
+  for (let i = 0; i < 9; i++) {
+    for (let p = 0; p < 4; p++) {
       const card = deck.pop()!;
       players[p].hand.push(card);
     }
@@ -170,21 +273,27 @@ export function deal(names: string[] = ['You', ...pickBotNames()]): Player[] {
   return players;
 }
 
-export function startGameLocal(previousDealer?: number, botNames: string[] = pickBotNames(), target?: number, rand: () => number = Math.random): State {
+export function startGameLocal(
+  previousDealer?: number,
+  botNames: string[] = pickBotNames(),
+  target?: number,
+  rand: () => number = Math.random,
+): State {
   const players = deal(['You', ...botNames]);
   // Dealer rotates counter-clockwise in Swiss Jass (0->3->2->1->0); the first dealer is random.
-  const dealer = previousDealer !== undefined ? (previousDealer - 1 + 4) % 4 : Math.floor(rand() * 4);
+  const dealer =
+    previousDealer !== undefined ? (previousDealer - 1 + 4) % 4 : Math.floor(rand() * 4);
   const forehand = (dealer - 1 + 4) % 4;
   // Forehand (player to the right of dealer) chooses trump first
-  const st: State = { 
-    phase: 'trump_selection', 
-    trump: null, 
-    currentPlayer: forehand, 
+  const st: State = {
+    phase: 'trump_selection',
+    trump: null,
+    currentPlayer: forehand,
     dealer,
     forehand,
-    currentTrick: [], 
-    trickLead: null, 
-    players, 
+    currentTrick: [],
+    trickLead: null,
+    players,
     scores: { team1: 0, team2: 0 },
     target,
     played: [],
@@ -195,20 +304,20 @@ export function startGameLocal(previousDealer?: number, botNames: string[] = pic
 // Start a new hand with proper dealer rotation
 export function startNewHand(previousState: State): State {
   // Same players for the whole match, only the cards change.
-  const players = deal(previousState.players.map(p => p.name));
+  const players = deal(previousState.players.map((p) => p.name));
   // Dealer rotates counter-clockwise in Swiss Jass
   const dealer = (previousState.dealer - 1 + 4) % 4;
   const forehand = (dealer - 1 + 4) % 4;
   // Forehand chooses trump for the new hand
-  const st: State = { 
-    phase: 'trump_selection', 
-    trump: null, 
-    currentPlayer: forehand, 
+  const st: State = {
+    phase: 'trump_selection',
+    trump: null,
+    currentPlayer: forehand,
     dealer,
     forehand,
-    currentTrick: [], 
-    trickLead: null, 
-    players, 
+    currentTrick: [],
+    trickLead: null,
+    players,
     scores: { ...previousState.scores }, // Keep cumulative scores
     handStartScores: { ...previousState.scores },
     target: previousState.target,
@@ -219,18 +328,24 @@ export function startNewHand(previousState: State): State {
 
 // Choose a random trump suit
 export function chooseRandomTrump(): Suit {
-  return suits[Math.floor(Math.random()*suits.length)];
+  return suits[Math.floor(Math.random() * suits.length)];
 }
 
 // How good a hand is for each contract (rough expected strength, not points).
 export function contractStrength(hand: Card[], contract: TrumpContract): number {
-  const has = (s: Suit, r: Rank) => hand.some(c => c.suit === s && c.rank === r);
+  const has = (s: Suit, r: Rank) => hand.some((c) => c.suit === s && c.rank === r);
   if (contract === 'oben-abe' || contract === 'unden-ufe') {
     // Count the cards that will win their trick from the top of each suit.
-    const order: Rank[] = contract === 'oben-abe' ? ['A','K','O','U','10','9','8','7','6'] : ['6','7','8','9','10','U','O','K','A'];
+    const order: Rank[] =
+      contract === 'oben-abe'
+        ? ['A', 'K', 'O', 'U', '10', '9', '8', '7', '6']
+        : ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
     let score = 0;
     for (const s of suits) {
-      for (const r of order) { if (!has(s, r)) break; score += 3.2; }
+      for (const r of order) {
+        if (!has(s, r)) break;
+        score += 3.2;
+      }
     }
     return score;
   }
@@ -249,14 +364,24 @@ export function contractStrength(hand: Card[], contract: TrumpContract): number 
 // uses engine/bot.ts). Bot contract choice. The forehand may schieben with a weak hand; after
 // schieben the partner must choose.
 export function chooseBotTrump(state: State, playerId: number): TrumpContract | 'schieben' {
-  const player = state.players.find(p => p.id === playerId);
+  const player = state.players.find((p) => p.id === playerId);
   if (!player) return chooseRandomTrump();
-  const contracts: TrumpContract[] = ['eicheln','schellen','rosen','schilten','oben-abe','unden-ufe'];
+  const contracts: TrumpContract[] = [
+    'eicheln',
+    'schellen',
+    'rosen',
+    'schilten',
+    'oben-abe',
+    'unden-ufe',
+  ];
   let best: TrumpContract = 'eicheln';
   let bestScore = -1;
   for (const c of contracts) {
     const s = contractStrength(player.hand, c);
-    if (s > bestScore) { bestScore = s; best = c; }
+    if (s > bestScore) {
+      bestScore = s;
+      best = c;
+    }
   }
   const pushed = typeof state.forehand === 'number' && playerId !== state.forehand;
   if (!pushed && bestScore < 12) return 'schieben';
@@ -289,7 +414,7 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
   } else {
     st.forehand = (state.dealer - 1 + 4) % 4;
   }
-  
+
   // Set multiplier based on trump contract (authentic Swiss Jass rules)
   if (trump === 'schellen' || trump === 'schilten') {
     st.trumpMultiplier = 2; // Double for "Sch-" suits (black suits)
@@ -301,22 +426,24 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
     st.trumpMultiplier = 1; // Normal for Eicheln/Rosen
   }
   st.matchBonus = 100;
-  
+
   // Detect Weis for all players now that trump is known
   st.weis = {};
   for (const player of st.players) {
     // For no-trump contracts, pass null to detectWeis
-    const trumpSuit = (realTrump === 'oben-abe' || realTrump === 'unden-ufe') ? null : realTrump as any;
+    const trumpSuit =
+      realTrump === 'oben-abe' || realTrump === 'unden-ufe' ? null : (realTrump as any);
     player.weis = detectWeis(player.hand, trumpSuit);
     st.weis[player.id] = player.weis;
   }
   // Initialise pending Stöck declarations (only for suit contracts)
   st.stoeckPending = {};
-  const trumpSuit = (realTrump === 'oben-abe' || realTrump === 'unden-ufe') ? null : (realTrump as Suit);
+  const trumpSuit =
+    realTrump === 'oben-abe' || realTrump === 'unden-ufe' ? null : (realTrump as Suit);
   if (trumpSuit) {
     for (const player of st.players) {
-      const hasKing = player.hand.some(c => c.suit === trumpSuit && c.rank === 'K');
-      const hasQueen = player.hand.some(c => c.suit === trumpSuit && c.rank === 'O');
+      const hasKing = player.hand.some((c) => c.suit === trumpSuit && c.rank === 'K');
+      const hasQueen = player.hand.some((c) => c.suit === trumpSuit && c.rank === 'O');
       if (hasKing && hasQueen) {
         st.stoeckPending[player.id] = { remaining: 2, awarded: false };
       }
@@ -330,47 +457,56 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
 }
 
 export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
-  const player = state.players.find(p=>p.id===playerId)!;
+  const player = state.players.find((p) => p.id === playerId)!;
   if (!player) return [];
-  
+
   // First card of trick - any card allowed
-  if (state.currentTrick.length===0) return player.hand.slice();
-  
+  if (state.currentTrick.length === 0) return player.hand.slice();
+
   const leadSuit = state.trickLead!;
   const trumpContract = state.trump as TrumpContract | null | undefined;
 
   const hand = player.hand;
-  const sameSuit = hand.filter(c => c.suit === leadSuit);
-  const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
+  const sameSuit = hand.filter((c) => c.suit === leadSuit);
+  const suitTrump: Suit | null =
+    trumpContract && (suits as any).includes(trumpContract) ? (trumpContract as Suit) : null;
 
   // Obenabe / Undenufe: follow suit if you can, otherwise anything.
   if (!suitTrump) return sameSuit.length > 0 ? sameSuit : hand.slice();
 
   // Trump led: follow with trump, except that the Puur never has to be played.
   if (leadSuit === suitTrump) {
-    if (sameSuit.every(c => c.rank === 'U')) return hand.slice();
+    if (sameSuit.every((c) => c.rank === 'U')) return hand.slice();
     return sameSuit;
   }
 
   // Another suit led: follow suit or play trump; with no card of the lead
   // suit anything goes. Undertrumping (a trump lower than one already in the
   // trick) is only allowed when nothing but trumps is left.
-  if (hand.every(c => c.suit === suitTrump)) return hand.slice();
-  const trickTrumps = state.currentTrick.filter(c => c.suit === suitTrump);
+  if (hand.every((c) => c.suit === suitTrump)) return hand.slice();
+  const trickTrumps = state.currentTrick.filter((c) => c.suit === suitTrump);
   const bestTrump = trickTrumps.length
-    ? Math.min(...trickTrumps.map(c => rankOrderIndex(c.rank, trumpContract, true)))
+    ? Math.min(...trickTrumps.map((c) => rankOrderIndex(c.rank, trumpContract, true)))
     : Infinity;
-  const allowed = (c: Card) => c.suit !== suitTrump || rankOrderIndex(c.rank, trumpContract, true) < bestTrump;
-  const legal = sameSuit.length > 0
-    ? hand.filter(c => c.suit === leadSuit || (c.suit === suitTrump && allowed(c)))
-    : hand.filter(allowed);
+  const allowed = (c: Card) =>
+    c.suit !== suitTrump || rankOrderIndex(c.rank, trumpContract, true) < bestTrump;
+  const legal =
+    sameSuit.length > 0
+      ? hand.filter((c) => c.suit === leadSuit || (c.suit === suitTrump && allowed(c)))
+      : hand.filter(allowed);
   return legal.length > 0 ? legal : hand.slice();
 }
 
 // compare two cards with knowledge of trump and lead suit
-export function compareCards(a: Card, b: Card, trumpContract?: TrumpContract | null, leadSuit?: Suit | null) {
+export function compareCards(
+  a: Card,
+  b: Card,
+  trumpContract?: TrumpContract | null,
+  leadSuit?: Suit | null,
+) {
   // Return negative when 'a' is stronger than 'b' (consistent with isCardBetter and other helpers)
-  const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
+  const suitTrump: Suit | null =
+    trumpContract && (suits as any).includes(trumpContract) ? (trumpContract as Suit) : null;
   const aIsTrump = suitTrump ? a.suit === suitTrump : false;
   const bIsTrump = suitTrump ? b.suit === suitTrump : false;
 
@@ -380,13 +516,21 @@ export function compareCards(a: Card, b: Card, trumpContract?: TrumpContract | n
   if (!aIsTrump && bIsTrump) return -1;
 
   // same trump status: use ordering according to contract (lower index = stronger)
-  return rankOrderIndex(a.rank, trumpContract, aIsTrump) - rankOrderIndex(b.rank, trumpContract, bIsTrump);
+  return (
+    rankOrderIndex(a.rank, trumpContract, aIsTrump) -
+    rankOrderIndex(b.rank, trumpContract, bIsTrump)
+  );
 }
 
 function winnerOfTrick(cards: Card[], trump?: string | null, leadSuit?: Suit | null) {
   const winnerIndex = 0;
-  for (let i=1;i<cards.length;i++) {
-    const cmp = compareCards(cards[i], cards[winnerIndex], trump as TrumpContract | null | undefined, leadSuit);
+  for (let i = 1; i < cards.length; i++) {
+    const cmp = compareCards(
+      cards[i],
+      cards[winnerIndex],
+      trump as TrumpContract | null | undefined,
+      leadSuit,
+    );
     if (cmp < 0) {
       // lower index means higher priority? adjust: our compare returns index difference, so negative means cards[i] higher? Wait
     }
@@ -394,23 +538,34 @@ function winnerOfTrick(cards: Card[], trump?: string | null, leadSuit?: Suit | n
   // simpler: find highest by using sort key
   let bestIdx = 0;
   let best = cards[0];
-  for (let i=1;i<cards.length;i++) {
-  const a = cards[i];
-  const b = best;
-  const aTrump = (trump as TrumpContract | null | undefined) ? a.suit === (trump as any) : false;
-  const bTrump = (trump as TrumpContract | null | undefined) ? b.suit === (trump as any) : false;
-    if (aTrump && !bTrump) { best = a; bestIdx = i; continue; }
+  for (let i = 1; i < cards.length; i++) {
+    const a = cards[i];
+    const b = best;
+    const aTrump = (trump as TrumpContract | null | undefined) ? a.suit === (trump as any) : false;
+    const bTrump = (trump as TrumpContract | null | undefined) ? b.suit === (trump as any) : false;
+    if (aTrump && !bTrump) {
+      best = a;
+      bestIdx = i;
+      continue;
+    }
     if (!aTrump && bTrump) continue;
     // both same trump status; if both are lead suit prefer lead suit
     if (leadSuit) {
       const aLead = a.suit === leadSuit;
       const bLead = b.suit === leadSuit;
-      if (aLead && !bLead) { best = a; bestIdx = i; continue; }
+      if (aLead && !bLead) {
+        best = a;
+        bestIdx = i;
+        continue;
+      }
       if (!aLead && bLead) continue;
     }
-  const ai = rankOrderIndex(a.rank, trump as TrumpContract | null | undefined, aTrump);
-  const bi = rankOrderIndex(b.rank, trump as TrumpContract | null | undefined, bTrump);
-    if (ai < bi) { best = a; bestIdx = i; }
+    const ai = rankOrderIndex(a.rank, trump as TrumpContract | null | undefined, aTrump);
+    const bi = rankOrderIndex(b.rank, trump as TrumpContract | null | undefined, bTrump);
+    if (ai < bi) {
+      best = a;
+      bestIdx = i;
+    }
   }
   return bestIdx;
 }
@@ -428,20 +583,26 @@ export function peekTrickWinner(state: State): number | null {
 
 export function playCardLocal(state: State, playerId: number, cardId: string): State {
   const st = JSON.parse(JSON.stringify(state)) as State; // naive clone
-  const player = st.players.find(p=>p.id===playerId)!;
-  const idx = player.hand.findIndex(c=>c.id===cardId);
+  const player = st.players.find((p) => p.id === playerId)!;
+  const idx = player.hand.findIndex((c) => c.id === cardId);
   if (idx === -1) return st; // illegal
-  const card = player.hand.splice(idx,1)[0];
-  if (st.currentTrick.length===0) st.trickLead = card.suit;
+  const card = player.hand.splice(idx, 1)[0];
+  if (st.currentTrick.length === 0) st.trickLead = card.suit;
   // Handle Stöck declarations: award 20 points when both trump king and queen are played
-  const suitTrump: Suit | null = (st.trump && (suits as any).includes(st.trump)) ? st.trump as Suit : null;
-  if (suitTrump && card.suit === suitTrump && (card.rank === 'K' || card.rank === 'O') && st.stoeckPending) {
+  const suitTrump: Suit | null =
+    st.trump && (suits as any).includes(st.trump) ? (st.trump as Suit) : null;
+  if (
+    suitTrump &&
+    card.suit === suitTrump &&
+    (card.rank === 'K' || card.rank === 'O') &&
+    st.stoeckPending
+  ) {
     const pending = st.stoeckPending[playerId];
     if (pending && !pending.awarded) {
       pending.remaining = Math.max(0, pending.remaining - 1);
       if (pending.remaining === 0) {
         pending.awarded = true;
-        const team = st.players.find(p => p.id === playerId)?.team;
+        const team = st.players.find((p) => p.id === playerId)?.team;
         if (team === 1) st.scores.team1 += 20;
         else if (team === 2) st.scores.team2 += 20;
       }
@@ -452,14 +613,23 @@ export function playCardLocal(state: State, playerId: number, cardId: string): S
   st.currentTrick.push({ ...card, playerId });
   // card memory for bots (single-player only; the backend has its own engine)
   const playedSoFar = st.played || [];
-  st.played = [...playedSoFar, { playerId, suit: card.suit, rank: card.rank, lead: st.trickLead ?? null, trickNo: Math.floor(playedSoFar.length / 4) }];
+  st.played = [
+    ...playedSoFar,
+    {
+      playerId,
+      suit: card.suit,
+      rank: card.rank,
+      lead: st.trickLead ?? null,
+      trickNo: Math.floor(playedSoFar.length / 4),
+    },
+  ];
 
   // if trick complete
-  if (st.currentTrick.length===4) {
-  // Instead of resolving immediately, mark pendingResolve so UI can show the last card for a short pause
-  st.pendingResolve = true;
-  st.phase = 'resolving';
-  // do not clear currentTrick here
+  if (st.currentTrick.length === 4) {
+    // Instead of resolving immediately, mark pendingResolve so UI can show the last card for a short pause
+    st.pendingResolve = true;
+    st.phase = 'resolving';
+    // do not clear currentTrick here
   } else {
     // Move to next player counter-clockwise
     st.currentPlayer = (st.currentPlayer - 1 + 4) % 4;
@@ -478,19 +648,19 @@ function rankToNumber(rank: Rank): number {
 // Detect all possible Weis for a hand
 export function detectWeis(hand: Card[], trump?: string | null): WeisDeclaration[] {
   const weis: WeisDeclaration[] = [];
-  
+
   // Group cards by suit for sequence detection
   const bySuit: { [suit: string]: Card[] } = {};
   for (const card of hand) {
     if (!bySuit[card.suit]) bySuit[card.suit] = [];
     bySuit[card.suit].push(card);
   }
-  
+
   // Sort each suit by rank
   for (const suit in bySuit) {
     bySuit[suit].sort((a, b) => rankToNumber(a.rank) - rankToNumber(b.rank));
   }
-  
+
   // Check for sequences in each suit
   for (const suit in bySuit) {
     const cards = bySuit[suit];
@@ -499,53 +669,68 @@ export function detectWeis(hand: Card[], trump?: string | null): WeisDeclaration
       for (const seq of sequences) {
         const length = seq.length;
         if (length >= 3) {
-          const points = length === 3 ? 20
-            : length === 4 ? 50
-            : length === 5 ? 100
-            : length === 6 ? 150
-            : length === 7 ? 200
-            : length === 8 ? 250
-            : 300; // length 9
-          const type: WeisType = length >= 5 ? 'sequence5plus' : (length === 4 ? 'sequence4' : 'sequence3');
+          const points =
+            length === 3
+              ? 20
+              : length === 4
+                ? 50
+                : length === 5
+                  ? 100
+                  : length === 6
+                    ? 150
+                    : length === 7
+                      ? 200
+                      : length === 8
+                        ? 250
+                        : 300; // length 9
+          const type: WeisType =
+            length >= 5 ? 'sequence5plus' : length === 4 ? 'sequence4' : 'sequence3';
           weis.push({
             type,
             cards: seq,
             points,
-            description: `Sequenz ${length} (${seq[0].rank}-${seq[length-1].rank} ${suit})`
+            description: `Sequenz ${length} (${seq[0].rank}-${seq[length - 1].rank} ${suit})`,
           });
         }
       }
     }
   }
-  
+
   // Group cards by rank for four-of-a-kind detection
   const byRank: { [rank: string]: Card[] } = {};
   for (const card of hand) {
     if (!byRank[card.rank]) byRank[card.rank] = [];
     byRank[card.rank].push(card);
   }
-  
+
   // Check for four of a kind
   for (const rank in byRank) {
     if (byRank[rank].length === 4) {
       const cards = byRank[rank];
-      const base = rank === 'U' ? { type: 'four_jacks' as WeisType, points: 200, label: 'Vier Buben' }
-        : rank === '9' ? { type: 'four_nines' as WeisType, points: 150, label: 'Vier Neuner' }
-        : rank === 'A' ? { type: 'four_aces' as WeisType, points: 100, label: 'Vier Asse' }
-        : rank === 'K' ? { type: 'four_kings' as WeisType, points: 100, label: 'Vier Könige' }
-        : rank === 'O' ? { type: 'four_queens' as WeisType, points: 100, label: 'Vier Damen' }
-        : rank === '10' ? { type: 'four_tens' as WeisType, points: 100, label: 'Vier Zehner' }
-        : null; // four 6s, 7s or 8s don't count
+      const base =
+        rank === 'U'
+          ? { type: 'four_jacks' as WeisType, points: 200, label: 'Vier Buben' }
+          : rank === '9'
+            ? { type: 'four_nines' as WeisType, points: 150, label: 'Vier Neuner' }
+            : rank === 'A'
+              ? { type: 'four_aces' as WeisType, points: 100, label: 'Vier Asse' }
+              : rank === 'K'
+                ? { type: 'four_kings' as WeisType, points: 100, label: 'Vier Könige' }
+                : rank === 'O'
+                  ? { type: 'four_queens' as WeisType, points: 100, label: 'Vier Damen' }
+                  : rank === '10'
+                    ? { type: 'four_tens' as WeisType, points: 100, label: 'Vier Zehner' }
+                    : null; // four 6s, 7s or 8s don't count
       if (!base) continue;
       weis.push({
         type: base.type,
         cards,
         points: base.points,
-        description: base.label
+        description: base.label,
       });
     }
   }
-  
+
   return weis;
 }
 
@@ -553,11 +738,11 @@ export function detectWeis(hand: Card[], trump?: string | null): WeisDeclaration
 function findSequences(sortedCards: Card[]): Card[][] {
   const sequences: Card[][] = [];
   let currentSeq: Card[] = [sortedCards[0]];
-  
+
   for (let i = 1; i < sortedCards.length; i++) {
-    const prev = rankToNumber(sortedCards[i-1].rank);
+    const prev = rankToNumber(sortedCards[i - 1].rank);
     const curr = rankToNumber(sortedCards[i].rank);
-    
+
     if (curr === prev + 1) {
       // Consecutive
       currentSeq.push(sortedCards[i]);
@@ -569,25 +754,33 @@ function findSequences(sortedCards: Card[]): Card[][] {
       currentSeq = [sortedCards[i]];
     }
   }
-  
+
   // Don't forget the last sequence
   if (currentSeq.length >= 3) {
     sequences.push(currentSeq);
   }
-  
+
   return sequences;
 }
 
 // The player holding the single best Weis, or null when nobody has any.
 // Complete ties go to the player who comes first in play order from the forehand.
-export function bestWeis(players: { id: number; team: number; weis?: WeisDeclaration[] }[], trump?: TrumpContract | null, forehand?: number | null): { playerId: number; teamId: number } | null {
+export function bestWeis(
+  players: { id: number; team: number; weis?: WeisDeclaration[] }[],
+  trump?: TrumpContract | null,
+  forehand?: number | null,
+): { playerId: number; teamId: number } | null {
   const start = typeof forehand === 'number' ? forehand : 0;
-  let best: { weis: WeisDeclaration; playerId: number; teamId: number; order: number } | null = null;
+  let best: { weis: WeisDeclaration; playerId: number; teamId: number; order: number } | null =
+    null;
   for (const player of players) {
     const order = (player.id - start + 4) % 4;
     for (const weis of player.weis || []) {
-      if (!best || isWeisBetter(weis, best.weis, trump)
-          || (!isWeisBetter(best.weis, weis, trump) && order < best.order)) {
+      if (
+        !best ||
+        isWeisBetter(weis, best.weis, trump) ||
+        (!isWeisBetter(best.weis, weis, trump) && order < best.order)
+      ) {
         best = { weis, playerId: player.id, teamId: player.team, order };
       }
     }
@@ -597,12 +790,18 @@ export function bestWeis(players: { id: number; team: number; weis?: WeisDeclara
 
 // Weis scoring: the team holding the best Weis scores all of its Weis;
 // the other team scores none.
-export function calculateTeamWeis(players: Player[], trump?: TrumpContract | null, forehand?: number | null): { team1: number, team2: number, details: { [playerId: number]: WeisDeclaration[] } } {
+export function calculateTeamWeis(
+  players: Player[],
+  trump?: TrumpContract | null,
+  forehand?: number | null,
+): { team1: number; team2: number; details: { [playerId: number]: WeisDeclaration[] } } {
   const details: { [playerId: number]: WeisDeclaration[] } = {};
   for (const player of players) details[player.id] = player.weis || [];
   const winner = bestWeis(players, trump, forehand);
-  const teamTotal = (team: number) => players.filter(p => p.team === team)
-    .reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
+  const teamTotal = (team: number) =>
+    players
+      .filter((p) => p.team === team)
+      .reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
   return {
     team1: winner?.teamId === 1 ? teamTotal(1) : 0,
     team2: winner?.teamId === 2 ? teamTotal(2) : 0,
@@ -612,12 +811,16 @@ export function calculateTeamWeis(players: Player[], trump?: TrumpContract | nul
 
 // Is Weis a strictly better than b? Higher points; between sequences of equal
 // points the longer, then the higher (lower in Undenufe), then the trump one.
-export function isWeisBetter(a: WeisDeclaration, b: WeisDeclaration, trump?: TrumpContract | null): boolean {
+export function isWeisBetter(
+  a: WeisDeclaration,
+  b: WeisDeclaration,
+  trump?: TrumpContract | null,
+): boolean {
   if (a.points !== b.points) return a.points > b.points;
   if (a.type.startsWith('sequence') && b.type.startsWith('sequence')) {
     if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
-    const top = (w: WeisDeclaration) => Math.max(...w.cards.map(c => rankToNumber(c.rank)));
-    const low = (w: WeisDeclaration) => Math.min(...w.cards.map(c => rankToNumber(c.rank)));
+    const top = (w: WeisDeclaration) => Math.max(...w.cards.map((c) => rankToNumber(c.rank)));
+    const low = (w: WeisDeclaration) => Math.min(...w.cards.map((c) => rankToNumber(c.rank)));
     if (trump === 'unden-ufe') {
       if (low(a) !== low(b)) return low(a) < low(b);
     } else if (top(a) !== top(b)) {
@@ -633,26 +836,31 @@ export function isWeisBetter(a: WeisDeclaration, b: WeisDeclaration, trump?: Tru
 export function resolveTrick(state: State): State {
   const st = JSON.parse(JSON.stringify(state)) as State;
   if (!st.pendingResolve) return st;
-  if (!st.currentTrick || st.currentTrick.length !== 4) { st.pendingResolve = false; return st; }
+  if (!st.currentTrick || st.currentTrick.length !== 4) {
+    st.pendingResolve = false;
+    return st;
+  }
   const lead = st.trickLead!;
   const winnerIdx = winnerOfTrick(st.currentTrick as any, st.trump || undefined, lead);
   const winnerCard = st.currentTrick[winnerIdx];
   const winnerPlayer = winnerCard.playerId;
   const wonCards = st.currentTrick.slice();
-  const isFirstTrick = st.players.every(p => (p.tricks?.length || 0) === 0);
+  const isFirstTrick = st.players.every((p) => (p.tricks?.length || 0) === 0);
   // store lastTrick for UI to display briefly
   st.lastTrick = wonCards.slice();
-  st.players.find(p=>p.id===winnerPlayer)!.tricks.push(...wonCards.map(c => ({ id: c.id, suit: c.suit, rank: c.rank })) as any);
+  st.players
+    .find((p) => p.id === winnerPlayer)!
+    .tricks.push(...(wonCards.map((c) => ({ id: c.id, suit: c.suit, rank: c.rank })) as any));
   // compute trick points and add to winner team
   let trickPoints = 0;
   for (const c of wonCards) trickPoints += cardPoints(c, st.trump);
-  
+
   // Add 5 points bonus for winning the last trick (when all hands are empty)
-  const isLastTrick = st.players.every(p => p.hand.length === 0);
+  const isLastTrick = st.players.every((p) => p.hand.length === 0);
   if (isLastTrick) {
     trickPoints += 5;
   }
-  const winnerTeam = st.players.find(p=>p.id===winnerPlayer)!.team;
+  const winnerTeam = st.players.find((p) => p.id === winnerPlayer)!.team;
 
   st.currentTrick = [];
   st.trickLead = null;
@@ -667,15 +875,19 @@ export function resolveTrick(state: State): State {
     if (reachedBy || !st.target) return;
     const totals = runningTotals(st, withWeis);
     const team = teamAtTarget(totals, st.target);
-    if (team) { reachedBy = team; reachedTotals = totals; }
+    if (team) {
+      reachedBy = team;
+      reachedTotals = totals;
+    }
   };
   check(!isFirstTrick);
   if (isFirstTrick) check(true);
 
-  if (winnerTeam === 1) st.scores.team1 += trickPoints; else st.scores.team2 += trickPoints;
+  if (winnerTeam === 1) st.scores.team1 += trickPoints;
+  else st.scores.team2 += trickPoints;
 
   // if all hands empty, finish: perform final settlement (Weis, multiplier, match bonus) and distribute scores
-  if (!reachedBy && st.players.every(p => p.hand.length === 0)) {
+  if (!reachedBy && st.players.every((p) => p.hand.length === 0)) {
     const settled = settleHand(st);
     st.scores = settled.scores;
     st.trumpMultiplier = settled.trumpMultiplier;
@@ -684,12 +896,12 @@ export function resolveTrick(state: State): State {
     if (st.target) st.matchWinner = teamAtTarget(st.scores, st.target);
 
     // Distribute team scores to individual players for rankings
-    const team1Players = st.players.filter(p => p.team === 1);
-    const team2Players = st.players.filter(p => p.team === 2);
+    const team1Players = st.players.filter((p) => p.team === 1);
+    const team2Players = st.players.filter((p) => p.team === 2);
     const team1Score = st.scores.team1;
     const team2Score = st.scores.team2;
-    team1Players.forEach(p => p.points = team1Score);
-    team2Players.forEach(p => p.points = team2Score);
+    team1Players.forEach((p) => (p.points = team1Score));
+    team2Players.forEach((p) => (p.points = team2Score));
 
     // The hand is over. The caller decides whether the match continues
     // (startNewHand) or someone reached the target score.
@@ -699,7 +911,7 @@ export function resolveTrick(state: State): State {
       st.scores = reachedTotals!;
       st.phase = 'finished';
       st.matchWinner = reachedBy;
-      st.players.forEach(p => p.points = p.team === 1 ? st.scores.team1 : st.scores.team2);
+      st.players.forEach((p) => (p.points = p.team === 1 ? st.scores.team1 : st.scores.team2));
     } else {
       st.phase = 'playing';
     }
@@ -711,16 +923,22 @@ export function resolveTrick(state: State): State {
 export function runningTotals(state: State, withWeis: boolean): { team1: number; team2: number } {
   const mult = state.trumpMultiplier || 1;
   const base = state.handStartScores || { team1: 0, team2: 0 };
-  const weis = withWeis ? calculateTeamWeis(state.players, state.trump as TrumpContract | null, state.forehand) : { team1: 0, team2: 0 };
+  const weis = withWeis
+    ? calculateTeamWeis(state.players, state.trump as TrumpContract | null, state.forehand)
+    : { team1: 0, team2: 0 };
   return {
-    team1: base.team1 + mult * ((state.scores.team1 - base.team1) + (weis.team1 || 0)),
-    team2: base.team2 + mult * ((state.scores.team2 - base.team2) + (weis.team2 || 0)),
+    team1: base.team1 + mult * (state.scores.team1 - base.team1 + (weis.team1 || 0)),
+    team2: base.team2 + mult * (state.scores.team2 - base.team2 + (weis.team2 || 0)),
   };
 }
 
 // The team at or over the target (the higher total if both are).
-export function teamAtTarget(scores: { team1: number; team2: number }, target: number): 1 | 2 | null {
-  const a = scores.team1 >= target, b = scores.team2 >= target;
+export function teamAtTarget(
+  scores: { team1: number; team2: number },
+  target: number,
+): 1 | 2 | null {
+  const a = scores.team1 >= target,
+    b = scores.team2 >= target;
   if (a && b) return scores.team2 > scores.team1 ? 2 : 1;
   return a ? 1 : b ? 2 : null;
 }
@@ -743,16 +961,18 @@ export function settleHand(state: State): State {
   let t1 = rawTeam1 + (weisScore.team1 || 0);
   let t2 = rawTeam2 + (weisScore.team2 || 0);
 
-
   // The contract multiplier applies to both teams (standard Schieber)
   t1 = t1 * multiplier;
   t2 = t2 * multiplier;
 
-
   // Check for match-all (one team captured all tricks) and award match bonus (multiplied)
   try {
-    const team1Cards = st.players.filter(p=>p.team===1).reduce((s,p)=>s + (p.tricks?.length||0), 0);
-    const team2Cards = st.players.filter(p=>p.team===2).reduce((s,p)=>s + (p.tricks?.length||0), 0);
+    const team1Cards = st.players
+      .filter((p) => p.team === 1)
+      .reduce((s, p) => s + (p.tricks?.length || 0), 0);
+    const team2Cards = st.players
+      .filter((p) => p.team === 2)
+      .reduce((s, p) => s + (p.tricks?.length || 0), 0);
     const matchBonus = st.matchBonus || 100;
     if (team1Cards === 36) {
       t1 += matchBonus * multiplier;
@@ -762,7 +982,6 @@ export function settleHand(state: State): State {
   } catch (e) {
     // ignore
   }
-
 
   st.scores.team1 = (base.team1 || 0) + t1;
   st.scores.team2 = (base.team2 || 0) + t2;
@@ -775,12 +994,13 @@ export function settleHand(state: State): State {
 // win tricks as cheaply as possible, otherwise give away the cheapest card.
 export function chooseBotCard(state: State, botId: number): string | null {
   const legal = getLegalCardsForPlayer(state, botId);
-  const bot = state.players.find(p => p.id === botId);
+  const bot = state.players.find((p) => p.id === botId);
   if (legal.length === 0) return bot?.hand?.[0]?.id ?? null;
   if (legal.length === 1) return legal[0].id;
 
   const contract = state.trump as TrumpContract | null;
-  const trumpSuit: Suit | null = contract && (suits as string[]).includes(contract) ? contract as Suit : null;
+  const trumpSuit: Suit | null =
+    contract && (suits as string[]).includes(contract) ? (contract as Suit) : null;
   const trick = state.currentTrick;
   const lead = state.trickLead;
   const isTrump = (c: Card) => c.suit === trumpSuit;
@@ -788,48 +1008,57 @@ export function chooseBotCard(state: State, botId: number): string | null {
   const strength = (c: Card) => rankOrderIndex(c.rank, contract, isTrump(c)); // lower = stronger
   // Cheapest card to give away: keep trumps, keep points, keep strong cards.
   const byCheapest = (a: Card, b: Card) =>
-    (Number(isTrump(a)) - Number(isTrump(b))) || (pts(a) - pts(b)) || (strength(b) - strength(a));
+    Number(isTrump(a)) - Number(isTrump(b)) || pts(a) - pts(b) || strength(b) - strength(a);
   const cheapest = () => legal.slice().sort(byCheapest)[0];
 
   // Cards already out of play (won tricks plus the current trick).
   const played = new Set<string>();
   for (const p of state.players) for (const c of p.tricks || []) played.add(`${c.suit}${c.rank}`);
   for (const c of trick) played.add(`${c.suit}${c.rank}`);
-  const isBoss = (c: Card) => !ranks.some(r =>
-    r !== c.rank && rankOrderIndex(r, contract, isTrump(c)) < strength(c)
-    && !played.has(`${c.suit}${r}`) && !bot!.hand.some(h => h.suit === c.suit && h.rank === r));
+  const isBoss = (c: Card) =>
+    !ranks.some(
+      (r) =>
+        r !== c.rank &&
+        rankOrderIndex(r, contract, isTrump(c)) < strength(c) &&
+        !played.has(`${c.suit}${r}`) &&
+        !bot!.hand.some((h) => h.suit === c.suit && h.rank === r),
+    );
 
   if (trick.length === 0) {
     const trumps = legal.filter(isTrump);
-    const ourContract = typeof state.declarer === 'number'
-      && state.players.find(p => p.id === state.declarer)?.team === bot!.team;
-    const trumpsOut = trumpSuit ? ranks.filter(r => !played.has(`${trumpSuit}${r}`)).length - trumps.length : 0;
+    const ourContract =
+      typeof state.declarer === 'number' &&
+      state.players.find((p) => p.id === state.declarer)?.team === bot!.team;
+    const trumpsOut = trumpSuit
+      ? ranks.filter((r) => !played.has(`${trumpSuit}${r}`)).length - trumps.length
+      : 0;
     // Pull the opponents' trumps with a boss trump when it's our contract.
     if (ourContract && trumpsOut > 0) {
       const bossTrump = trumps.find(isBoss);
       if (bossTrump) return bossTrump.id;
     }
-    const sideBoss = legal.filter(c => !isTrump(c) && isBoss(c)).sort((a, b) => pts(b) - pts(a));
+    const sideBoss = legal.filter((c) => !isTrump(c) && isBoss(c)).sort((a, b) => pts(b) - pts(a));
     if (sideBoss.length) return sideBoss[0].id;
     // Otherwise a low card from the longest side suit.
-    const side = legal.filter(c => !isTrump(c));
+    const side = legal.filter((c) => !isTrump(c));
     if (side.length) {
-      const count = (s: Suit) => side.filter(c => c.suit === s).length;
-      return side.sort((a, b) => (count(b.suit) - count(a.suit)) || byCheapest(a, b))[0].id;
+      const count = (s: Suit) => side.filter((c) => c.suit === s).length;
+      return side.sort((a, b) => count(b.suit) - count(a.suit) || byCheapest(a, b))[0].id;
     }
     return cheapest().id;
   }
 
   const winning = getCurrentTrickWinner(trick, contract, lead)!;
-  const partnerWinning = state.players.find(p => p.id === winning.playerId)?.team === bot!.team;
+  const partnerWinning = state.players.find((p) => p.id === winning.playerId)?.team === bot!.team;
   const last = trick.length === 3;
 
   if (partnerWinning) {
     // Partner's card can't be beaten (last to play, or it's the boss): add points to it.
     const safe = last || (isBoss(winning) && (isTrump(winning) || !trumpSuit));
     if (safe) {
-      const smear = legal.filter(c => !isTrump(c) && !(isBoss(c) && !last && pts(c) === 0))
-        .sort((a, b) => (pts(b) - pts(a)) || (strength(b) - strength(a)))[0];
+      const smear = legal
+        .filter((c) => !isTrump(c) && !(isBoss(c) && !last && pts(c) === 0))
+        .sort((a, b) => pts(b) - pts(a) || strength(b) - strength(a))[0];
       if (smear && pts(smear) > 0) return smear.id;
     }
     return cheapest().id;
@@ -840,9 +1069,15 @@ export function chooseBotCard(state: State, botId: number): string | null {
     const trickPts = trick.reduce((s, c) => s + pts(c), 0);
     // Last to play: take it with the card that is cheapest to spend.
     // Earlier: take it with a boss card when possible so it holds.
-    const pick = winners.slice().sort((a, b) => last
-      ? (Number(isTrump(a)) - Number(isTrump(b))) || (strength(b) - strength(a))
-      : (Number(isBoss(b)) - Number(isBoss(a))) || (Number(isTrump(a)) - Number(isTrump(b))) || (strength(b) - strength(a)))[0];
+    const pick = winners
+      .slice()
+      .sort((a, b) =>
+        last
+          ? Number(isTrump(a)) - Number(isTrump(b)) || strength(b) - strength(a)
+          : Number(isBoss(b)) - Number(isBoss(a)) ||
+            Number(isTrump(a)) - Number(isTrump(b)) ||
+            strength(b) - strength(a),
+      )[0];
     // Don't spend the Puur or the Nell on a trick with hardly any points.
     const precious = isTrump(pick) && (pick.rank === 'U' || pick.rank === '9');
     if (!(precious && trickPts < 10 && !last)) return pick.id;
@@ -851,9 +1086,14 @@ export function chooseBotCard(state: State, botId: number): string | null {
 }
 
 // Helper: Check which cards can win the current trick
-function canBotWinTrick(legal: Card[], trick: (Card & { playerId: number })[], trumpContract: TrumpContract | 'schieben' | null | undefined, leadSuit: Suit | null | undefined): Card[] {
+function canBotWinTrick(
+  legal: Card[],
+  trick: (Card & { playerId: number })[],
+  trumpContract: TrumpContract | 'schieben' | null | undefined,
+  leadSuit: Suit | null | undefined,
+): Card[] {
   if (trick.length === 0) return legal; // First card always "wins" initially
-  
+
   let currentBest = trick[0];
   for (let i = 1; i < trick.length; i++) {
     if (isCardBetter(trick[i], currentBest, trumpContract, leadSuit)) {
@@ -861,16 +1101,20 @@ function canBotWinTrick(legal: Card[], trick: (Card & { playerId: number })[], t
     }
   }
 
-  return legal.filter(card => isCardBetter(card, currentBest, trumpContract, leadSuit));
+  return legal.filter((card) => isCardBetter(card, currentBest, trumpContract, leadSuit));
 }
 
 // Helper: Get current trick winner
-export function getCurrentTrickWinner(trick: (Card & { playerId: number })[], trumpContract: TrumpContract | 'schieben' | null | undefined, leadSuit: Suit | null | undefined): (Card & { playerId: number }) | null {
+export function getCurrentTrickWinner(
+  trick: (Card & { playerId: number })[],
+  trumpContract: TrumpContract | 'schieben' | null | undefined,
+  leadSuit: Suit | null | undefined,
+): (Card & { playerId: number }) | null {
   if (trick.length === 0) return null;
-  
+
   let winner = trick[0];
   for (let i = 1; i < trick.length; i++) {
-  if (isCardBetter(trick[i], winner, trumpContract, leadSuit)) {
+    if (isCardBetter(trick[i], winner, trumpContract, leadSuit)) {
       winner = trick[i];
     }
   }
@@ -878,8 +1122,14 @@ export function getCurrentTrickWinner(trick: (Card & { playerId: number })[], tr
 }
 
 // Helper: Compare card values for sorting (low to high)
-function compareCardValue(a: Card, b: Card, trumpContract: TrumpContract | 'schieben' | null | undefined, leadSuit: Suit | null | undefined): number {
-  const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
+function compareCardValue(
+  a: Card,
+  b: Card,
+  trumpContract: TrumpContract | 'schieben' | null | undefined,
+  leadSuit: Suit | null | undefined,
+): number {
+  const suitTrump: Suit | null =
+    trumpContract && (suits as any).includes(trumpContract) ? (trumpContract as Suit) : null;
   const aIsTrump = suitTrump ? a.suit === suitTrump : false;
   const bIsTrump = suitTrump ? b.suit === suitTrump : false;
 
@@ -895,8 +1145,14 @@ function compareCardValue(a: Card, b: Card, trumpContract: TrumpContract | 'schi
 }
 
 // Helper: Check if card A beats card B in the current context
-export function isCardBetter(a: Card, b: Card, trumpContract: TrumpContract | 'schieben' | null | undefined, leadSuit: Suit | null | undefined): boolean {
-  const suitTrump: Suit | null = (trumpContract && (suits as any).includes(trumpContract)) ? trumpContract as Suit : null;
+export function isCardBetter(
+  a: Card,
+  b: Card,
+  trumpContract: TrumpContract | 'schieben' | null | undefined,
+  leadSuit: Suit | null | undefined,
+): boolean {
+  const suitTrump: Suit | null =
+    trumpContract && (suits as any).includes(trumpContract) ? (trumpContract as Suit) : null;
   const aIsTrump = suitTrump ? a.suit === suitTrump : false;
   const bIsTrump = suitTrump ? b.suit === suitTrump : false;
 

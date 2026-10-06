@@ -17,7 +17,7 @@ class ErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
@@ -29,7 +29,7 @@ class ErrorBoundary extends Component<Props, State> {
     console.error('🚨 Error Boundary Caught:', error, errorInfo);
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
 
     // TODO: Send to error tracking service (Sentry, LogRocket, etc.)
@@ -40,7 +40,7 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     });
     // Optionally reload the page
     // window.location.reload();
@@ -60,7 +60,7 @@ class ErrorBoundary extends Component<Props, State> {
             <p style={styles.message}>
               We're sorry for the inconvenience. The game encountered an unexpected error.
             </p>
-            
+
             {this.state.error && (
               <details style={styles.details}>
                 <summary style={styles.summary}>Technical Details</summary>
@@ -72,14 +72,11 @@ class ErrorBoundary extends Component<Props, State> {
             )}
 
             <div style={styles.actions}>
-              <button 
-                onClick={this.handleReset}
-                style={styles.button}
-              >
+              <button onClick={this.handleReset} style={styles.button}>
                 🔄 Try Again
               </button>
-              <button 
-                onClick={() => window.location.href = '/'}
+              <button
+                onClick={() => (window.location.href = '/')}
                 style={{ ...styles.button, ...styles.buttonSecondary }}
               >
                 🏠 Go Home
@@ -173,7 +170,7 @@ const styles: Record<string, React.CSSProperties> = {
   buttonSecondary: {
     background: '#6b7280',
     boxShadow: '0 2px 8px rgba(107, 114, 128, 0.3)',
-  }
+  },
 };
 
 export default ErrorBoundary;

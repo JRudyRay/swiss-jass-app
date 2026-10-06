@@ -23,16 +23,12 @@ export interface LoginData {
 }
 
 export class AuthService {
-  
   static async register(userData: RegisterData) {
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: userData.email },
-          { username: userData.username }
-        ]
-      }
+        OR: [{ email: userData.email }, { username: userData.username }],
+      },
     });
 
     if (existingUser) {
@@ -63,19 +59,19 @@ export class AuthService {
         avatarShape: userData.avatarShape || 'circle',
         avatarColor: userData.avatarColor || '#3B82F6',
         country: userData.country || 'CH',
-        city: userData.city
-      }
+        city: userData.city,
+      },
     });
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
+      {
+        userId: user.id,
         username: user.username,
-        email: user.email 
+        email: user.email,
       },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     // Remove password from response
@@ -83,7 +79,7 @@ export class AuthService {
 
     return {
       user: userWithoutPassword,
-      token
+      token,
     };
   }
 
@@ -93,9 +89,9 @@ export class AuthService {
       where: {
         OR: [
           { email: loginData.emailOrUsername.toLowerCase() },
-          { username: loginData.emailOrUsername }
-        ]
-      }
+          { username: loginData.emailOrUsername },
+        ],
+      },
     });
 
     if (!user) {
@@ -111,18 +107,18 @@ export class AuthService {
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLogin: new Date() }
+      data: { lastLogin: new Date() },
     });
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
+      {
+        userId: user.id,
         username: user.username,
-        email: user.email 
+        email: user.email,
       },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     // Remove password from response
@@ -130,7 +126,7 @@ export class AuthService {
 
     return {
       user: userWithoutPassword,
-      token
+      token,
     };
   }
 
@@ -155,14 +151,14 @@ export class AuthService {
         avatarColor: true,
         country: true,
         city: true,
-  totalGames: true,
-  totalWins: true,
-  totalPoints: true,
-  trueSkillMu: true,
-  trueSkillSigma: true,
+        totalGames: true,
+        totalWins: true,
+        totalPoints: true,
+        trueSkillMu: true,
+        trueSkillSigma: true,
         createdAt: true,
-        lastLogin: true
-      }
+        lastLogin: true,
+      },
     });
 
     if (!user) {
@@ -180,7 +176,7 @@ export class AuthService {
         lastName: updateData.lastName,
         avatarShape: updateData.avatarShape,
         avatarColor: updateData.avatarColor,
-        city: updateData.city
+        city: updateData.city,
       },
       select: {
         id: true,
@@ -192,12 +188,12 @@ export class AuthService {
         avatarColor: true,
         country: true,
         city: true,
-  totalGames: true,
-  totalWins: true,
-  totalPoints: true,
-  trueSkillMu: true,
-  trueSkillSigma: true
-      }
+        totalGames: true,
+        totalWins: true,
+        totalPoints: true,
+        trueSkillMu: true,
+        trueSkillSigma: true,
+      },
     });
 
     return user;
@@ -211,7 +207,7 @@ export class AuthService {
         { id: 'triangle', name: 'Triangle', emoji: '🔺' },
         { id: 'diamond', name: 'Diamond', emoji: '🔶' },
         { id: 'star', name: 'Star', emoji: '⭐' },
-        { id: 'heart', name: 'Heart', emoji: '❤️' }
+        { id: 'heart', name: 'Heart', emoji: '❤️' },
       ],
       colors: [
         '#3B82F6', // Blue
@@ -223,8 +219,8 @@ export class AuthService {
         '#06B6D4', // Cyan
         '#84CC16', // Lime
         '#EC4899', // Pink
-        '#6B7280'  // Gray
-      ]
+        '#6B7280', // Gray
+      ],
     };
   }
 }

@@ -8,11 +8,11 @@ const authenticateToken = async (req: any, res: any, next: any) => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-    
+
     if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Access token required' 
+      return res.status(401).json({
+        success: false,
+        message: 'Access token required',
       });
     }
 
@@ -20,9 +20,9 @@ const authenticateToken = async (req: any, res: any, next: any) => {
     req.user = decoded;
     next();
   } catch (error: any) {
-    return res.status(403).json({ 
-      success: false, 
-      message: 'Invalid or expired token' 
+    return res.status(403).json({
+      success: false,
+      message: 'Invalid or expired token',
     });
   }
 };
@@ -34,12 +34,12 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Account created successfully! Welcome to Swiss Jass!',
-      ...result
+      ...result,
     });
   } catch (error: any) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -51,12 +51,12 @@ router.post('/login', async (req, res) => {
     res.json({
       success: true,
       message: 'Login successful! Welcome back!',
-      ...result
+      ...result,
     });
   } catch (error: any) {
     res.status(401).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -67,12 +67,12 @@ router.get('/profile', authenticateToken, async (req: any, res) => {
     const user = await AuthService.getUserProfile(req.user.userId);
     res.json({
       success: true,
-      user
+      user,
     });
   } catch (error: any) {
     res.status(404).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -84,12 +84,12 @@ router.put('/profile', authenticateToken, async (req: any, res) => {
     res.json({
       success: true,
       message: 'Profile updated successfully!',
-      user
+      user,
     });
   } catch (error: any) {
     res.status(400).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -100,12 +100,12 @@ router.get('/avatars', (req, res) => {
     const avatars = AuthService.getAvailableAvatars();
     res.json({
       success: true,
-      avatars
+      avatars,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -116,17 +116,17 @@ router.post('/verify', async (req, res) => {
     const { token } = req.body;
     const decoded = AuthService.verifyToken(token);
     const user = await AuthService.getUserProfile(decoded.userId);
-    
+
     res.json({
       success: true,
       valid: true,
-      user
+      user,
     });
   } catch (error: any) {
     res.status(401).json({
       success: false,
       valid: false,
-      message: error.message
+      message: error.message,
     });
   }
 });

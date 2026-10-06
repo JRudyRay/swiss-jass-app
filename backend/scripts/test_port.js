@@ -10,4 +10,7 @@ const server = http.createServer((req, res) => {
   }
 });
 server.listen(PORT, () => console.log(`test server listening on port ${PORT}`));
-server.on('error', (err) => { console.error('test server error', err); process.exit(1); });
+server.on('error', (err) => {
+  console.error('test server error', err);
+  process.exit(1);
+});

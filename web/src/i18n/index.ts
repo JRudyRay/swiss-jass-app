@@ -31,12 +31,18 @@ export function isLang(v: unknown): v is Lang {
 // First visit: pick from the browser. Swiss German has no reliable browser
 // code (gsw is rare), so de-CH and gsw map to Swiss German, other German to de.
 export function detectLang(): Lang {
-  const prefs = typeof navigator !== 'undefined' ? (navigator.languages?.length ? navigator.languages : [navigator.language]) : [];
+  const prefs =
+    typeof navigator !== 'undefined'
+      ? navigator.languages?.length
+        ? navigator.languages
+        : [navigator.language]
+      : [];
   for (const raw of prefs) {
     const tag = (raw || '').toLowerCase();
     if (tag.startsWith('gsw') || tag === 'de-ch') return 'ch';
     const base = tag.split('-')[0];
-    if (base === 'de' || base === 'fr' || base === 'it' || base === 'rm' || base === 'en') return base;
+    if (base === 'de' || base === 'fr' || base === 'it' || base === 'rm' || base === 'en')
+      return base;
   }
   return 'en';
 }

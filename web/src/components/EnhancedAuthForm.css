@@ -6,7 +6,7 @@
   padding: 2rem;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #FF0000 0%, #DC143C 100%);
+  background: linear-gradient(135deg, #ff0000 0%, #dc143c 100%);
 }
 
 .auth-background {
@@ -28,15 +28,34 @@
   transform: translate(-50%, -50%);
   width: 200px;
   height: 200px;
-  background: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.08) 45%, transparent 45%, transparent 55%, rgba(255, 255, 255, 0.08) 55%),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 45%, transparent 45%, transparent 55%, rgba(255, 255, 255, 0.08) 55%);
+  background:
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.08) 45%,
+      transparent 45%,
+      transparent 55%,
+      rgba(255, 255, 255, 0.08) 55%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.08) 45%,
+      transparent 45%,
+      transparent 55%,
+      rgba(255, 255, 255, 0.08) 55%
+    );
   animation: swissCrossFloat 15s infinite ease-in-out;
 }
 
 @keyframes swissCrossFloat {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
-  50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.5; }
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0.5;
+  }
 }
 
 .auth-shape {
@@ -71,7 +90,8 @@
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
   50% {
@@ -88,7 +108,9 @@
   padding: 3rem;
   max-width: 480px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
   animation: slideUp 0.6s ease-out;
 }
 
@@ -112,7 +134,7 @@
   font-size: 2.5rem;
   font-weight: 800;
   margin: 0;
-  background: linear-gradient(135deg, #FF0000, #DC143C);
+  background: linear-gradient(135deg, #ff0000, #dc143c);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -128,9 +150,16 @@
 }
 
 @keyframes wave {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-10deg); }
-  75% { transform: rotate(10deg); }
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
 }
 
 .auth-subtitle {
@@ -336,23 +365,23 @@
   user-select: none;
 }
 
-.auth-checkbox-label input[type="checkbox"] {
+.auth-checkbox-label input[type='checkbox'] {
   width: 1.125rem;
   height: 1.125rem;
   cursor: pointer;
-  accent-color: #DC143C;
+  accent-color: #dc143c;
 }
 
 .auth-forgot-link {
   font-size: 0.9rem;
-  color: #DC143C;
+  color: #dc143c;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;
 }
 
 .auth-forgot-link:hover {
-  color: #FF0000;
+  color: #ff0000;
 }
 
 .auth-avatar-section {
@@ -384,7 +413,7 @@
 }
 
 .auth-avatar-shape.selected {
-  border-color: #DC143C;
+  border-color: #dc143c;
   background: #fff0f0;
   transform: scale(1.05);
 }
@@ -418,7 +447,7 @@
 .auth-submit {
   width: 100%;
   padding: 1rem;
-  background: linear-gradient(135deg, #FF0000, #DC143C);
+  background: linear-gradient(135deg, #ff0000, #dc143c);
   color: white;
   border: none;
   border-radius: 10px;
@@ -461,7 +490,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .auth-footer {
@@ -478,7 +509,7 @@
 }
 
 .auth-link {
-  color: #DC143C;
+  color: #dc143c;
   background: none;
   border: none;
   font-weight: 600;
@@ -489,7 +520,7 @@
 }
 
 .auth-link:hover {
-  color: #FF0000;
+  color: #ff0000;
   text-decoration: underline;
 }
 

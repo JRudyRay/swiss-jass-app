@@ -10,12 +10,15 @@ interface GameInstance {
 class GameHub {
   private games = new Map<GameId, GameInstance>();
   // Map a tableId to its active game (for late join / reconnect)
-  private tableGameMap = new Map<string, { gameId: GameId; engine: SwissJassEngine; tableConfig?: any }>();
+  private tableGameMap = new Map<
+    string,
+    { gameId: GameId; engine: SwissJassEngine; tableConfig?: any }
+  >();
 
   create(playerNames?: string[], gameType?: string): { id: GameId; engine: SwissJassEngine } {
     const id = this.generateGameId();
-    const engine = new SwissJassEngine(gameType as any || 'schieber');
-    
+    const engine = new SwissJassEngine((gameType as any) || 'schieber');
+
     // Set player display names and link userIds if provided
     if (playerNames) {
       const players = engine.getPlayers();
@@ -28,10 +31,10 @@ class GameHub {
         }
       });
     }
-    
+
     // Set up event listeners
     this.setupEngineEvents(id, engine);
-    
+
     this.games.set(id, { engine });
     return { id, engine };
   }
@@ -42,7 +45,9 @@ class GameHub {
     this.tableGameMap.set(tableId, { gameId, engine, tableConfig });
   }
 
-  getByTableId(tableId: string): { gameId: string; engine: SwissJassEngine; tableConfig?: any } | null {
+  getByTableId(
+    tableId: string,
+  ): { gameId: string; engine: SwissJassEngine; tableConfig?: any } | null {
     return this.tableGameMap.get(tableId) || null;
   }
 
@@ -67,7 +72,7 @@ class GameHub {
     // Listen for phase changes
     engine.on('phaseChange', (phase: string) => {
       console.log(`[${gameId}] Phase changed to: ${phase}`);
-      
+
       // Handle bot actions for trump selection
       if (phase === 'trump_selection') {
         this.handleBotTrumpSelection(gameId);
@@ -87,7 +92,7 @@ class GameHub {
     // Listen for card played events
     engine.on('cardPlayed', (data: any) => {
       console.log(`[${gameId}] Card played:`, data);
-      
+
       // Trigger next bot action after a human plays
       const state = engine.getGameState();
       if (state.phase === 'playing') {
@@ -100,7 +105,7 @@ class GameHub {
     // Listen for trick completion
     engine.on('trickCompleted', (data: any) => {
       console.log(`[${gameId}] Trick completed:`, data);
-      
+
       // Continue bot play after trick
       setTimeout(() => {
         const state = engine.getGameState();
@@ -117,7 +122,7 @@ class GameHub {
       console.log(`[${gameId}] Game finished:`, data);
       try {
         // ✅ Get table config to determine if multiplayer
-        const tableEntry = Array.from(this.tableGameMap.values()).find(e => e.gameId === gameId);
+        const tableEntry = Array.from(this.tableGameMap.values()).find((e) => e.gameId === gameId);
         const isMultiplayer = tableEntry?.tableConfig?.gameMode === 'MULTIPLAYER';
 
         if (!isMultiplayer) {
@@ -128,15 +133,15 @@ class GameHub {
         // Import updateStatsForMatch dynamically to avoid circular
         const { updateStatsForMatch } = require('./services/gameService');
         const players = engine.getPlayers();
-        
+
         // ✅ Filter to only human players (exclude bots)
         const teamA = players
-          .filter(p => p.team === 1 && p.userId && !p.isBot)
-          .map(p => p.userId!);
+          .filter((p) => p.team === 1 && p.userId && !p.isBot)
+          .map((p) => p.userId!);
         const teamB = players
-          .filter(p => p.team === 2 && p.userId && !p.isBot)
-          .map(p => p.userId!);
-        
+          .filter((p) => p.team === 2 && p.userId && !p.isBot)
+          .map((p) => p.userId!);
+
         if (teamA.length === 0 && teamB.length === 0) {
           console.log(`[${gameId}] All bots - skipping stats update`);
           return;
@@ -144,7 +149,7 @@ class GameHub {
 
         const scoreA = data.finalScores.team1;
         const scoreB = data.finalScores.team2;
-        
+
         // ✅ Pass isMultiplayer=true
         await updateStatsForMatch(teamA, teamB, scoreA, scoreB, data.rounds || 0, true);
         console.log(`[${gameId}] Stats updated for teams`, teamA, teamB);
@@ -157,18 +162,25 @@ class GameHub {
   private handleBotTrumpSelection(gameId: string): void {
     const engine = this.get(gameId);
     const state = engine.getGameState();
-    
+
     // If it's a bot's turn to select trump
-  const players = engine.getPlayers();
-  const cur = players[state.currentPlayer];
-  if (cur && cur.isBot) {
+    const players = engine.getPlayers();
+    const cur = players[state.currentPlayer];
+    if (cur && cur.isBot) {
       setTimeout(() => {
-        const trumpOptions: TrumpContract[] = ['eicheln', 'schellen', 'rosen', 'schilten', 'obenabe', 'undenufe'];
+        const trumpOptions: TrumpContract[] = [
+          'eicheln',
+          'schellen',
+          'rosen',
+          'schilten',
+          'obenabe',
+          'undenufe',
+        ];
         const selectedTrump = trumpOptions[Math.floor(Math.random() * trumpOptions.length)];
-        
+
         console.log(`[${gameId}] Bot ${state.currentPlayer} selecting trump: ${selectedTrump}`);
         engine.selectTrump(selectedTrump, state.currentPlayer);
-        
+
         // Start bot play if needed
         const newState = engine.getGameState();
         if (newState.phase === 'playing' && newState.currentPlayer !== 0) {
@@ -181,7 +193,7 @@ class GameHub {
   startBotPlay(gameId: string): void {
     const engine = this.get(gameId);
     const state = engine.getGameState();
-    
+
     // If it's a bot's turn, trigger their action
     if (state.phase === 'playing') {
       const players = engine.getPlayers();
@@ -194,17 +206,17 @@ class GameHub {
     try {
       const engine = this.get(gameId);
       const state = engine.getGameState();
-      
+
       // Only perform bot action if game is in playing phase
       if (state.phase !== 'playing') return;
-      
+
       const currentPlayerId = state.currentPlayer;
 
       const players = engine.getPlayers();
       const currentPlayer = players[currentPlayerId];
-      
+
       if (!currentPlayer || !currentPlayer.isBot) return;
-      
+
       // Get legal cards for the bot
       let legalCards = engine.getLegalCards(currentPlayerId);
       if (!legalCards || legalCards.length === 0) {
@@ -212,18 +224,18 @@ class GameHub {
         legalCards = engine.getPlayer(currentPlayerId)?.hand.slice() || [];
         console.warn(`[${gameId}] Bot fallback using full hand (no legal cards computed)`);
       }
-      
+
       if (legalCards.length === 0) {
         console.log(`[${gameId}] Bot ${currentPlayerId} has no legal cards`);
         return;
       }
-      
+
       // Try legal cards until one succeeds (defensive against transient mismatches)
       // Prefer a simple strategy but fall back to trying all legal cards.
       let played = false;
       // pick preferred card first
       const preferred = this.selectBotCard(legalCards, state);
-      const tryOrder = [preferred, ...legalCards.filter(c => c.id !== preferred.id)];
+      const tryOrder = [preferred, ...legalCards.filter((c) => c.id !== preferred.id)];
 
       for (const cardToPlay of tryOrder) {
         try {
@@ -237,12 +249,17 @@ class GameHub {
             console.warn(`[${gameId}] Bot ${currentPlayerId} failed to play ${cardToPlay.id}`);
           }
         } catch (err) {
-          console.error(`[${gameId}] Error while bot ${currentPlayerId} tried to play ${cardToPlay.id}:`, err);
+          console.error(
+            `[${gameId}] Error while bot ${currentPlayerId} tried to play ${cardToPlay.id}:`,
+            err,
+          );
         }
       }
 
       if (!played) {
-        console.warn(`[${gameId}] Bot ${currentPlayerId} could not play any legal cards (count=${legalCards.length}). CurrentPlayer: ${state.currentPlayer}`);
+        console.warn(
+          `[${gameId}] Bot ${currentPlayerId} could not play any legal cards (count=${legalCards.length}). CurrentPlayer: ${state.currentPlayer}`,
+        );
         return;
       }
 
@@ -261,13 +278,13 @@ class GameHub {
     // - If leading, play a medium-value card
     // - If following, try to win if partner isn't winning
     // - Otherwise play lowest card
-    
+
     if (state.currentTrick.length === 0) {
       // Leading - play a medium card
       const sorted = [...legalCards].sort((a, b) => a.points - b.points);
       return sorted[Math.floor(sorted.length / 2)];
     }
-    
+
     // Following - for now just play a random legal card
     // TODO: Implement smarter bot strategy
     return legalCards[Math.floor(Math.random() * legalCards.length)];

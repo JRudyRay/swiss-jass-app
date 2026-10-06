@@ -16,7 +16,7 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
     requests: any[];
   }>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(true);
-  
+
   const socketRef = useRef<Socket | null>(null);
   const authToken = useRef(token);
 
@@ -30,7 +30,7 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
 
     const s = io(API_URL, {
       auth: { token: authToken.current },
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
     });
 
     s.on('connect', () => {
@@ -54,13 +54,13 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
     setFriendsLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/friends`, {
-        headers: { Authorization: `Bearer ${authToken.current}` }
+        headers: { Authorization: `Bearer ${authToken.current}` },
       });
       const data = await res.json();
       if (data.success) {
         setFriendsTabData({
           friends: data.friends || [],
-          requests: data.requests || []
+          requests: data.requests || [],
         });
       }
     } catch (err) {
@@ -77,9 +77,9 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken.current}`
+          Authorization: `Bearer ${authToken.current}`,
         },
-        body: JSON.stringify({ username })
+        body: JSON.stringify({ username }),
       });
       const data = await res.json();
       if (data.success) {
@@ -98,9 +98,9 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken.current}`
+          Authorization: `Bearer ${authToken.current}`,
         },
-        body: JSON.stringify({ requestId, accept })
+        body: JSON.stringify({ requestId, accept }),
       });
       const data = await res.json();
       if (data.success) {
@@ -118,7 +118,11 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
     }
   };
 
-  if (friendsLoading && friendsTabData.friends.length === 0 && friendsTabData.requests.length === 0) {
+  if (
+    friendsLoading &&
+    friendsTabData.friends.length === 0 &&
+    friendsTabData.requests.length === 0
+  ) {
     return <Loading message="Lade Fründ..." />;
   }
 
@@ -137,7 +141,7 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
       <form onSubmit={handleSubmit} className="friend-request-form">
         <input
           value={friendInput}
-          onChange={e => setFriendInput(e.target.value)}
+          onChange={(e) => setFriendInput(e.target.value)}
           placeholder="Fründ Username"
           className="form-input"
         />
@@ -154,12 +158,19 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
           <span className="title-icon">✨</span>
           Fründ ({friendsTabData.friends.length})
         </h2>
-        
+
         {friendsTabData.friends.length > 0 ? (
           <div className="friends-grid">
-            {friendsTabData.friends.map(f => (
+            {friendsTabData.friends.map((f) => (
               <div key={f.id} className="friend-card">
-                <div className="friend-avatar" style={{ background: f.online ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #94a3b8, #64748b)' }}>
+                <div
+                  className="friend-avatar"
+                  style={{
+                    background: f.online
+                      ? 'linear-gradient(135deg, #10b981, #059669)'
+                      : 'linear-gradient(135deg, #94a3b8, #64748b)',
+                  }}
+                >
                   {f.username.charAt(0).toUpperCase()}
                 </div>
                 <div className="friend-info">
@@ -186,10 +197,10 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
           <span className="title-icon">📨</span>
           Afrage ({friendsTabData.requests.length})
         </h2>
-        
+
         {friendsTabData.requests.length > 0 ? (
           <div className="requests-list">
-            {friendsTabData.requests.map(r => (
+            {friendsTabData.requests.map((r) => (
               <div key={r.id} className="request-card">
                 <div className="request-info">
                   <div className="request-text">
@@ -206,16 +217,17 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
                     )}
                   </div>
                   <span className={`request-status status-${r.status.toLowerCase()}`}>
-                    {r.status === 'PENDING' ? 'Pendent' : r.status === 'ACCEPTED' ? 'Akzeptiert' : 'Abglehnt'}
+                    {r.status === 'PENDING'
+                      ? 'Pendent'
+                      : r.status === 'ACCEPTED'
+                        ? 'Akzeptiert'
+                        : 'Abglehnt'}
                   </span>
                 </div>
-                
+
                 {r.status === 'PENDING' && r.receiverId === user?.id && (
                   <div className="request-actions">
-                    <button
-                      className="btn-accept"
-                      onClick={() => respondFriendRequest(r.id, true)}
-                    >
+                    <button className="btn-accept" onClick={() => respondFriendRequest(r.id, true)}>
                       ✓ Akzeptiere
                     </button>
                     <button

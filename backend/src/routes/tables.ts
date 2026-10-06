@@ -60,7 +60,14 @@ router.get('/:id/state', authenticate, async (req: any, res) => {
       return res.status(404).json({ success: false, message: 'No active game for table' });
     }
     const { engine, gameId, tableConfig } = entry as any;
-    return res.json({ success: true, tableId: id, gameId, state: engine.getGameState(), players: engine.getPlayers(), tableConfig });
+    return res.json({
+      success: true,
+      tableId: id,
+      gameId,
+      state: engine.getGameState(),
+      players: engine.getPlayers(),
+      tableConfig,
+    });
   } catch (e: any) {
     res.status(500).json({ success: false, message: e.message });
   }
@@ -84,7 +91,7 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     // Start table in DB (status update, seat assignment, bot fill)
     const table = await TableService.startTable(req.params.id, req.user.userId);
     const io = req.app.get('io');
-    
+
     // Re-fetch table with user details for names/bot detection
     const fullTable = await TableService.getTable(table.id);
 
@@ -98,11 +105,17 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
     const { id: gameId, engine } = gameHub.create(userIds, (table as any).gameType);
 
     // Set target points from table configuration
-    try { (engine as any).gameState.pointsToWin = (fullTable as any)?.targetPoints || (table as any)?.targetPoints || 1000; } catch {}
+    try {
+      (engine as any).gameState.pointsToWin =
+        (fullTable as any)?.targetPoints || (table as any)?.targetPoints || 1000;
+    } catch {}
 
     // Set player display names and bot flags based on usernames
     try {
-      const playersWithUsers = ordered.map((p: any) => ({ userId: p.userId, username: p.user?.username || p.userId }));
+      const playersWithUsers = ordered.map((p: any) => ({
+        userId: p.userId,
+        username: p.user?.username || p.userId,
+      }));
       const engPlayers = engine.getPlayers();
       playersWithUsers.forEach((pu, idx) => {
         if (!engPlayers[idx]) return;
@@ -124,34 +137,45 @@ router.post('/:id/start', authenticate, async (req: any, res: any) => {
 
     // Prepare room and broadcast initial state + players consistently
     const room = `table:${table.id}`;
-    const tableConfig = { team1Name: (fullTable as any)?.team1Name || (table as any)?.team1Name, team2Name: (fullTable as any)?.team2Name || (table as any)?.team2Name, targetPoints: (fullTable as any)?.targetPoints || (table as any)?.targetPoints };
+    const tableConfig = {
+      team1Name: (fullTable as any)?.team1Name || (table as any)?.team1Name,
+      team2Name: (fullTable as any)?.team2Name || (table as any)?.team2Name,
+      targetPoints: (fullTable as any)?.targetPoints || (table as any)?.targetPoints,
+    };
 
     // Register mapping for late joiners
     gameHub.registerTableGame(table.id, gameId, engine, tableConfig);
-    
+
     // CRITICAL FIX: Emit to ALL connected clients first, then to room
     // This ensures joined players who might not be in the room yet still get notified
     io?.emit('table:starting', { tableId: table.id, table, gameId });
     io?.emit('tables:updated');
-    
+
     // Then emit initial game state to the room
     io?.to(room).emit('game:state', {
       tableId: table.id,
       state: engine.getGameState(),
       players: engine.getPlayers(),
       gameId,
-      tableConfig
+      tableConfig,
     });
 
     // Broadcast state updates on engine events (always include players)
-    ['phaseChange', 'cardPlayed', 'trickCompleted', 'gameFinished', 'trumpSelected', 'roundCompleted'].forEach(evt => {
+    [
+      'phaseChange',
+      'cardPlayed',
+      'trickCompleted',
+      'gameFinished',
+      'trumpSelected',
+      'roundCompleted',
+    ].forEach((evt) => {
       engine.on(evt, () => {
         io?.to(room).emit('game:state', {
           tableId: table.id,
           state: engine.getGameState(),
           players: engine.getPlayers(),
           gameId,
-          tableConfig
+          tableConfig,
         });
       });
     });

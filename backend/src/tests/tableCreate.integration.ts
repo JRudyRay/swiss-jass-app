@@ -27,7 +27,7 @@ async function ensureApp() {
   const registerRes = await request(app)
     .post('/api/auth/register')
     .send({ email, username, password: 'secret123' });
-  if (![200,201].includes(registerRes.status)) {
+  if (![200, 201].includes(registerRes.status)) {
     console.error('Register failed', registerRes.status, registerRes.body);
     process.exit(1);
   }
@@ -45,7 +45,11 @@ async function ensureApp() {
     console.error('Table creation failed', tableRes.status, tableRes.body);
     process.exit(1);
   }
-  if (!tableRes.body.table || !tableRes.body.table.players || tableRes.body.table.players.length !== 1) {
+  if (
+    !tableRes.body.table ||
+    !tableRes.body.table.players ||
+    tableRes.body.table.players.length !== 1
+  ) {
     console.error('Unexpected table payload', tableRes.body);
     process.exit(1);
   }

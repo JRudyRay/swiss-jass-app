@@ -30,7 +30,17 @@ const requireUser: RequestHandler = (req, res, next) => {
 // GET /api/admin/users - list users and their totalPoints
 router.get('/users', async (req, res) => {
   try {
-    const users = await prisma.user.findMany({ select: { id: true, username: true, firstName: true, lastName: true, totalPoints: true, totalWins: true, totalGames: true } });
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        totalPoints: true,
+        totalWins: true,
+        totalGames: true,
+      },
+    });
     res.json({ success: true, users });
   } catch (e: any) {
     res.status(500).json({ success: false, message: e.message });
@@ -46,15 +56,15 @@ router.get('/leaderboard', async (req, res) => {
         username: true,
         totalWins: true,
         totalGames: true,
-        totalPoints: true
-      }
+        totalPoints: true,
+      },
     });
     const ranked = users
-      .map(u => ({
+      .map((u) => ({
         ...u,
-        winRate: u.totalGames > 0 ? (u.totalWins / u.totalGames) : 0
+        winRate: u.totalGames > 0 ? u.totalWins / u.totalGames : 0,
       }))
-      .sort((a,b) => {
+      .sort((a, b) => {
         if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
         if (b.totalGames !== a.totalGames) return b.totalGames - a.totalGames;
         return (b.totalPoints || 0) - (a.totalPoints || 0);
@@ -82,7 +92,8 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
 router.post('/totals/sync', requireUser, async (req, res) => {
   try {
     const { totals } = req.body || {};
-    if (!totals || typeof totals !== 'object') return res.status(400).json({ success: false, message: 'Invalid totals payload' });
+    if (!totals || typeof totals !== 'object')
+      return res.status(400).json({ success: false, message: 'Invalid totals payload' });
 
     const results: any[] = [];
 
@@ -96,7 +107,15 @@ router.post('/totals/sync', requireUser, async (req, res) => {
         const newPoints = (user.totalPoints || 0) + Number(pts || 0);
         await prisma.user.update({ where: { id: user.id }, data: { totalPoints: newPoints } });
         // Optionally record a GameSession entry
-        await prisma.gameSession.create({ data: { userId: user.id, gameType: 'schieber', result: 'played', points: Number(pts || 0), duration: 0 } });
+        await prisma.gameSession.create({
+          data: {
+            userId: user.id,
+            gameType: 'schieber',
+            result: 'played',
+            points: Number(pts || 0),
+            duration: 0,
+          },
+        });
         results.push({ username, updated: true, newPoints });
       } catch (inner) {
         results.push({ username, updated: false, reason: (inner as any).message });

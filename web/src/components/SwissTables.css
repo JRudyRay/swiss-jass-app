@@ -5,7 +5,7 @@
 }
 
 .swiss-tables-header {
-  background: linear-gradient(135deg, #FF0000 0%, #DC143C 100%);
+  background: linear-gradient(135deg, #ff0000 0%, #dc143c 100%);
   color: white;
   padding: 2.5rem 2rem;
   border-radius: 20px;
@@ -23,9 +23,21 @@
   transform: translateY(-50%);
   width: 150px;
   height: 150px;
-  background: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.1) 40%, transparent 40%, transparent 60%, rgba(255, 255, 255, 0.1) 60%),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 40%, transparent 40%, transparent 60%, rgba(255, 255, 255, 0.1) 60%);
+  background:
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.1) 40%,
+      transparent 40%,
+      transparent 60%,
+      rgba(255, 255, 255, 0.1) 60%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.1) 40%,
+      transparent 40%,
+      transparent 60%,
+      rgba(255, 255, 255, 0.1) 60%
+    );
   opacity: 0.4;
 }
 
@@ -97,7 +109,7 @@
 .form-input:focus,
 .form-select:focus {
   outline: none;
-  border-color: #DC143C;
+  border-color: #dc143c;
   box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.1);
 }
 
@@ -121,7 +133,7 @@
 }
 
 .btn-create {
-  background: linear-gradient(135deg, #FF0000, #DC143C);
+  background: linear-gradient(135deg, #ff0000, #dc143c);
   color: white;
   box-shadow: 0 4px 12px rgba(220, 20, 60, 0.3);
 }
@@ -170,7 +182,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -199,7 +212,7 @@
 .table-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-  border-color: #DC143C;
+  border-color: #dc143c;
 }
 
 .table-card-header {
@@ -260,9 +273,9 @@
 }
 
 .player-badge.host {
-  border-color: #DC143C;
+  border-color: #dc143c;
   background: rgba(220, 20, 60, 0.1);
-  color: #DC143C;
+  color: #dc143c;
 }
 
 .table-actions {
@@ -288,7 +301,7 @@
 }
 
 .btn-join {
-  background: linear-gradient(135deg, #FF0000, #DC143C);
+  background: linear-gradient(135deg, #ff0000, #dc143c);
   color: white;
   box-shadow: 0 4px 12px rgba(220, 20, 60, 0.25);
 }
@@ -317,7 +330,7 @@
 
 .btn-create-first {
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #FF0000, #DC143C);
+  background: linear-gradient(135deg, #ff0000, #dc143c);
   color: white;
   border: none;
   border-radius: 12px;

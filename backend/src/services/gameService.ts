@@ -5,23 +5,24 @@ import { PrismaClient } from '@prisma/client';
 const trueskillAny: any = require('ts-trueskill');
 // Normalize possible export shapes: ts-trueskill exports { TrueSkill, Rating }
 const TrueSkillClass = trueskillAny.TrueSkill || trueskillAny.default?.TrueSkill || trueskillAny;
-const RatingClass = trueskillAny.Rating || trueskillAny.default?.Rating || TrueSkillClass?.Rating || trueskillAny;
+const RatingClass =
+  trueskillAny.Rating || trueskillAny.default?.Rating || TrueSkillClass?.Rating || trueskillAny;
 
 const prisma = new PrismaClient();
 
 // ✅ Helper: Filter out bot players from team arrays
 async function filterRealPlayers(userIds: string[]): Promise<string[]> {
   if (userIds.length === 0) return [];
-  
+
   const realUsers = await prisma.user.findMany({
     where: {
       id: { in: userIds },
-      isBot: false  // Only real players
+      isBot: false, // Only real players
     },
-    select: { id: true }
+    select: { id: true },
   });
-  
-  return realUsers.map(u => u.id);
+
+  return realUsers.map((u) => u.id);
 }
 
 export class GameService {
@@ -34,7 +35,7 @@ export class GameService {
           totalGames: { increment: 1 },
           totalWins: won ? { increment: 1 } : undefined,
           totalPoints: { increment: points },
-        }
+        },
       });
     } catch (error) {
       console.error('Error updating user stats:', error);
@@ -42,7 +43,12 @@ export class GameService {
   }
 
   // Simple game session logging
-  static async logGameSession(userId: string, result: string, points: number, isMultiplayer: boolean = false) {
+  static async logGameSession(
+    userId: string,
+    result: string,
+    points: number,
+    isMultiplayer: boolean = false,
+  ) {
     try {
       await prisma.gameSession.create({
         data: {
@@ -51,8 +57,8 @@ export class GameService {
           result,
           points,
           duration: 30, // default duration
-          isMultiplayer  // NEW: Track game mode
-        }
+          isMultiplayer, // NEW: Track game mode
+        },
       });
     } catch (error) {
       console.error('Error logging game session:', error);
@@ -63,12 +69,12 @@ export class GameService {
 // ✅ Update stats for a match between two teams
 // Only updates stats if isMultiplayer=true and excludes bot players
 export async function updateStatsForMatch(
-  teamA: string[], 
-  teamB: string[], 
-  scoreA: number, 
-  scoreB: number, 
+  teamA: string[],
+  teamB: string[],
+  scoreA: number,
+  scoreB: number,
   rounds = 0,
-  isMultiplayer: boolean = false  // NEW PARAMETER
+  isMultiplayer: boolean = false, // NEW PARAMETER
 ) {
   try {
     // ✅ GUARD #1: Skip offline games entirely
@@ -94,30 +100,30 @@ export async function updateStatsForMatch(
 
     // Fetch current ratings (only for real players)
     const allPlayerIds = [...realTeamA, ...realTeamB];
-    const users = await prisma.user.findMany({ 
-      where: { 
+    const users = await prisma.user.findMany({
+      where: {
         id: { in: allPlayerIds },
-        isBot: false  // Double-check filter
-      } 
+        isBot: false, // Double-check filter
+      },
     });
     const usersById: Record<string, any> = {};
     for (const u of users) usersById[u.id] = u;
 
     // Build TrueSkill ratings
-  const env = new TrueSkillClass();
+    const env = new TrueSkillClass();
     // Prepare teams as arrays of rating objects
-    const teamARatings = realTeamA.map(id => {
+    const teamARatings = realTeamA.map((id) => {
       const u = usersById[id];
       const mu = typeof u?.trueSkillMu === 'number' ? u.trueSkillMu : 25.0;
       const sigma = typeof u?.trueSkillSigma === 'number' ? u.trueSkillSigma : 8.333;
-  // construct via normalized RatingClass
-  return new RatingClass(mu, sigma);
+      // construct via normalized RatingClass
+      return new RatingClass(mu, sigma);
     });
-    const teamBRatings = realTeamB.map(id => {
+    const teamBRatings = realTeamB.map((id) => {
       const u = usersById[id];
       const mu = typeof u?.trueSkillMu === 'number' ? u.trueSkillMu : 25.0;
       const sigma = typeof u?.trueSkillSigma === 'number' ? u.trueSkillSigma : 8.333;
-  return new RatingClass(mu, sigma);
+      return new RatingClass(mu, sigma);
     });
 
     // Determine ranks: 0 = winner, 1 = loser
@@ -135,14 +141,30 @@ export async function updateStatsForMatch(
         const id = realTeamA[i];
         const newRating = newTeamA[i];
         const won = teamARank === 0;
-        updates.push(prismaTx.user.update({ where: { id }, data: ({
-          totalGames: { increment: 1 },
-          totalWins: won ? { increment: 1 } : undefined,
-          totalPoints: { increment: Math.round((won ? 3 : 0)) },
-          trueSkillMu: newRating.mu,
-          trueSkillSigma: newRating.sigma
-        } as any) }));
-        updates.push(prismaTx.gameSession.create({ data: { userId: id, gameType: 'schieber', result: won ? 'win' : 'loss', points: Math.round((won ? 3 : 0)), duration: rounds * 2, isMultiplayer: true } }));
+        updates.push(
+          prismaTx.user.update({
+            where: { id },
+            data: {
+              totalGames: { increment: 1 },
+              totalWins: won ? { increment: 1 } : undefined,
+              totalPoints: { increment: Math.round(won ? 3 : 0) },
+              trueSkillMu: newRating.mu,
+              trueSkillSigma: newRating.sigma,
+            } as any,
+          }),
+        );
+        updates.push(
+          prismaTx.gameSession.create({
+            data: {
+              userId: id,
+              gameType: 'schieber',
+              result: won ? 'win' : 'loss',
+              points: Math.round(won ? 3 : 0),
+              duration: rounds * 2,
+              isMultiplayer: true,
+            },
+          }),
+        );
       }
 
       // Team B updates (only real players)
@@ -150,20 +172,38 @@ export async function updateStatsForMatch(
         const id = realTeamB[i];
         const newRating = newTeamB[i];
         const won = teamBRank === 0;
-        updates.push(prismaTx.user.update({ where: { id }, data: ({
-          totalGames: { increment: 1 },
-          totalWins: won ? { increment: 1 } : undefined,
-          totalPoints: { increment: Math.round((won ? 3 : 0)) },
-          trueSkillMu: newRating.mu,
-          trueSkillSigma: newRating.sigma
-        } as any) }));
-        updates.push(prismaTx.gameSession.create({ data: { userId: id, gameType: 'schieber', result: won ? 'win' : 'loss', points: Math.round((won ? 3 : 0)), duration: rounds * 2, isMultiplayer: true } }));
+        updates.push(
+          prismaTx.user.update({
+            where: { id },
+            data: {
+              totalGames: { increment: 1 },
+              totalWins: won ? { increment: 1 } : undefined,
+              totalPoints: { increment: Math.round(won ? 3 : 0) },
+              trueSkillMu: newRating.mu,
+              trueSkillSigma: newRating.sigma,
+            } as any,
+          }),
+        );
+        updates.push(
+          prismaTx.gameSession.create({
+            data: {
+              userId: id,
+              gameType: 'schieber',
+              result: won ? 'win' : 'loss',
+              points: Math.round(won ? 3 : 0),
+              duration: rounds * 2,
+              isMultiplayer: true,
+            },
+          }),
+        );
       }
 
       await Promise.all(updates);
     });
 
-    console.log(`✅ Updated stats for ${realTeamA.length + realTeamB.length} players (multiplayer game)`);
+    console.log(
+      `✅ Updated stats for ${realTeamA.length + realTeamB.length} players (multiplayer game)`,
+    );
     return true;
   } catch (error) {
     console.error('Error updating match stats:', error);
@@ -173,14 +213,14 @@ export async function updateStatsForMatch(
 
 // Backwards-compatible function used by routes expecting single-user update
 export async function updateUserStats(
-  userId: string, 
+  userId: string,
   stats: {
     gamesPlayed: number;
     gamesWon: number;
     totalPoints: number;
     totalRounds: number;
   },
-  isMultiplayer: boolean = false  // NEW PARAMETER
+  isMultiplayer: boolean = false, // NEW PARAMETER
 ) {
   try {
     // ✅ GUARD: Skip offline games
@@ -202,7 +242,7 @@ export async function updateUserStats(
         totalGames: { increment: stats.gamesPlayed },
         totalWins: { increment: stats.gamesWon },
         totalPoints: { increment: stats.totalPoints },
-      }
+      },
     });
 
     await prisma.gameSession.create({
@@ -212,8 +252,8 @@ export async function updateUserStats(
         result: stats.gamesWon > 0 ? 'win' : 'loss',
         points: stats.totalPoints,
         duration: stats.totalRounds * 2,
-        isMultiplayer: true  // ✅ Mark as multiplayer
-      }
+        isMultiplayer: true, // ✅ Mark as multiplayer
+      },
     });
 
     console.log(`✅ Updated stats for user ${userId} (multiplayer game)`);

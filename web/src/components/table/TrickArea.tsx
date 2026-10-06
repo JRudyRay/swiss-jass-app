@@ -25,7 +25,11 @@ type Props = {
 };
 
 const reducedMotion = () => {
-  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
 };
 
 // The cards in the middle of the felt. While `collect` is set, the winning card lifts and glows,
@@ -46,7 +50,9 @@ export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
   useLayoutEffect(() => {
     if (!sliding || !collect) return;
     const table = boxRef.current?.closest('[data-jass-table]');
-    const target = table?.querySelector(`[data-seat="${collect.winnerSeat}"]`)?.getBoundingClientRect();
+    const target = table
+      ?.querySelector(`[data-seat="${collect.winnerSeat}"]`)
+      ?.getBoundingClientRect();
     const winEl = cardRefs.current[collect.winningCardId];
     if (!target || !winEl) return;
     const center = (r: DOMRect) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
@@ -57,13 +63,16 @@ export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
     Object.entries(cardRefs.current).forEach(([id, el], i) => {
       if (!el || typeof el.animate !== 'function') return;
       if (still) {
-        anims.push(el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }));
+        anims.push(
+          el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }),
+        );
         return;
       }
       const c = center(el.getBoundingClientRect());
-      const g = { x: w.x - c.x, y: w.y - c.y };     // gather point
-      const e = { x: t.x - c.x, y: t.y - c.y };     // end point
-      const dx = e.x - g.x, dy = e.y - g.y;
+      const g = { x: w.x - c.x, y: w.y - c.y }; // gather point
+      const e = { x: t.x - c.x, y: t.y - c.y }; // end point
+      const dx = e.x - g.x,
+        dy = e.y - g.y;
       const len = Math.hypot(dx, dy) || 1;
       // Bow the path sideways so it reads as a swoop, not a straight slide.
       const bow = Math.min(60, len * 0.28);
@@ -73,18 +82,44 @@ export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
       const tr = (p: { x: number; y: number }, r: number, s: number) =>
         `translate(calc(-50% + ${p.x}px), calc(-50% + ${p.y}px)) rotate(${r}deg) scale(${s})`;
       const fan = (i - 1.5) * 2;
-      anims.push(el.animate([
-        { offset: 0, transform: tr({ x: 0, y: 0 }, id === collect.winningCardId ? 0 : rot, id === collect.winningCardId ? 1.08 : 1), opacity: 1, easing: 'cubic-bezier(0.3, 0, 0.2, 1)' },
-        { offset: 0.28, transform: tr(g, fan, 1.04), opacity: 1, easing: 'cubic-bezier(0.5, 0, 0.6, 1)' },
-        { offset: 0.68, transform: tr(mid, tilt, 0.72), opacity: 1, easing: 'cubic-bezier(0.3, 0, 0.4, 1)' },
-        { offset: 1, transform: tr(e, tilt * 1.4, 0.32), opacity: 0 },
-      ], { duration: SLIDE_MS, fill: 'forwards' }));
+      anims.push(
+        el.animate(
+          [
+            {
+              offset: 0,
+              transform: tr(
+                { x: 0, y: 0 },
+                id === collect.winningCardId ? 0 : rot,
+                id === collect.winningCardId ? 1.08 : 1,
+              ),
+              opacity: 1,
+              easing: 'cubic-bezier(0.3, 0, 0.2, 1)',
+            },
+            {
+              offset: 0.28,
+              transform: tr(g, fan, 1.04),
+              opacity: 1,
+              easing: 'cubic-bezier(0.5, 0, 0.6, 1)',
+            },
+            {
+              offset: 0.68,
+              transform: tr(mid, tilt, 0.72),
+              opacity: 1,
+              easing: 'cubic-bezier(0.3, 0, 0.4, 1)',
+            },
+            { offset: 1, transform: tr(e, tilt * 1.4, 0.32), opacity: 0 },
+          ],
+          { duration: SLIDE_MS, fill: 'forwards' },
+        ),
+      );
     });
-    return () => anims.forEach(a => a.cancel());
+    return () => anims.forEach((a) => a.cancel());
   }, [sliding]);
 
   const seatOf: Record<string, string> = {};
-  cards.forEach(({ card, seat }, i) => { seatOf[String(card.id ?? i)] = seat; });
+  cards.forEach(({ card, seat }, i) => {
+    seatOf[String(card.id ?? i)] = seat;
+  });
 
   return (
     <div ref={boxRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -94,24 +129,46 @@ export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
         const isWinner = !!collect && collect.winningCardId === id;
         const transform = `translate(-50%,-50%) rotate(${isWinner ? 0 : pos.rot}deg) scale(${isWinner ? 1.08 : 1})`;
         return (
-          <div key={id} ref={el => { cardRefs.current[id] = el; }} style={{
-            position: 'absolute', left: pos.left, top: pos.top, transform,
-            zIndex: isWinner ? 20 : i + 1,
-            transition: 'transform 220ms ease, filter 220ms ease',
-            filter: collect && !isWinner && !sliding ? 'brightness(0.82)' : 'none',
-          }}>
-            <div style={{
-              borderRadius: 8,
-              boxShadow: isWinner ? '0 0 0 3px #fbbf24, 0 6px 18px rgba(0,0,0,0.45)' : 'none',
-              transition: 'box-shadow 220ms ease',
-            }}>
+          <div
+            key={id}
+            ref={(el) => {
+              cardRefs.current[id] = el;
+            }}
+            style={{
+              position: 'absolute',
+              left: pos.left,
+              top: pos.top,
+              transform,
+              zIndex: isWinner ? 20 : i + 1,
+              transition: 'transform 220ms ease, filter 220ms ease',
+              filter: collect && !isWinner && !sliding ? 'brightness(0.82)' : 'none',
+            }}
+          >
+            <div
+              style={{
+                borderRadius: 8,
+                boxShadow: isWinner ? '0 0 0 3px #fbbf24, 0 6px 18px rgba(0,0,0,0.45)' : 'none',
+                transition: 'box-shadow 220ms ease',
+              }}
+            >
               <SwissCard card={card} />
             </div>
           </div>
         );
       })}
       {cards.length === 0 && emptyLabel && (
-        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', color: 'rgba(255,250,240,0.65)', fontWeight: 500, fontSize: 13, whiteSpace: 'nowrap' }}>
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%,-50%)',
+            color: 'rgba(255,250,240,0.65)',
+            fontWeight: 500,
+            fontSize: 13,
+            whiteSpace: 'nowrap',
+          }}
+        >
           {emptyLabel}
         </div>
       )}

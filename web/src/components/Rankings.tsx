@@ -19,7 +19,9 @@ interface RankingsProps {
 
 const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [metric, setMetric] = useState<'totalWins' | 'totalGames' | 'totalPoints' | 'winRate'>('totalWins');
+  const [metric, setMetric] = useState<'totalWins' | 'totalGames' | 'totalPoints' | 'winRate'>(
+    'totalWins',
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -47,7 +49,7 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
     totalWins: 'Siege',
     totalGames: 'Spiel',
     totalPoints: 'Punkte',
-    winRate: 'Siegquote'
+    winRate: 'Siegquote',
   };
 
   const formatValue = (entry: LeaderboardEntry, metric: string) => {
@@ -78,7 +80,7 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
           <label className="sort-label">Sortiere nach:</label>
           <select
             value={metric}
-            onChange={e => setMetric(e.target.value as any)}
+            onChange={(e) => setMetric(e.target.value as any)}
             className="sort-select"
           >
             <option value="totalWins">🏅 Siege</option>
@@ -130,7 +132,7 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
               <span className="list-title">Alli Rangierige</span>
               <span className="list-count">{sorted.length} Spieler</span>
             </div>
-            
+
             {sorted.map((entry, idx) => (
               <div key={entry.id} className={`ranking-item ${idx < 3 ? 'top-three' : ''}`}>
                 <div className="ranking-position">
@@ -139,7 +141,7 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
                   {idx === 1 && <span className="position-icon">🥈</span>}
                   {idx === 2 && <span className="position-icon">🥉</span>}
                 </div>
-                
+
                 <div className="ranking-info">
                   <div className="ranking-username">{entry.username}</div>
                   <div className="ranking-stats">

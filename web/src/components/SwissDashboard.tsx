@@ -36,10 +36,10 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
     try {
       const response = await fetch(`${API_URL}/api/user/${user.id}/stats`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.stats) {
@@ -67,29 +67,29 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
   };
 
   const quickActions = [
-    { 
-      label: 'Start Game', 
-      icon: '🎴', 
-      onClick: () => onNavigate('game'), 
-      description: 'Play Swiss Jass now'
+    {
+      label: 'Start Game',
+      icon: '🎴',
+      onClick: () => onNavigate('game'),
+      description: 'Play Swiss Jass now',
     },
-    { 
-      label: 'Join Table', 
-      icon: '🪑', 
-      onClick: () => onNavigate('tables'), 
-      description: 'Find a table to join'
+    {
+      label: 'Join Table',
+      icon: '🪑',
+      onClick: () => onNavigate('tables'),
+      description: 'Find a table to join',
     },
-    { 
-      label: 'Rankings', 
-      icon: '🏔️', 
-      onClick: () => onNavigate('rankings'), 
-      description: 'View player rankings'
+    {
+      label: 'Rankings',
+      icon: '🏔️',
+      onClick: () => onNavigate('rankings'),
+      description: 'View player rankings',
     },
-    { 
-      label: 'Friends', 
-      icon: '🤝', 
-      onClick: () => onNavigate('friends'), 
-      description: 'Manage your friends'
+    {
+      label: 'Friends',
+      icon: '🤝',
+      onClick: () => onNavigate('friends'),
+      description: 'Manage your friends',
     },
   ];
 
@@ -110,9 +110,7 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
             <h1 className="welcome-title">
               {getGreeting()}, {user?.firstName || user?.username}! 🇨🇭
             </h1>
-            <p className="welcome-subtitle">
-              Ready for a game of Swiss Jass?
-            </p>
+            <p className="welcome-subtitle">Ready for a game of Swiss Jass?</p>
           </div>
         </div>
         <button className="play-now-btn" onClick={() => onNavigate('game')}>
@@ -144,9 +142,8 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
             <div className="stat-icon swiss-green">📊</div>
             <div className="stat-content">
               <div className="stat-value">
-                {stats.gamesPlayed > 0 
-                  ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) 
-                  : 0}%
+                {stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0}
+                %
               </div>
               <div className="stat-label">Win Rate</div>
             </div>
@@ -155,9 +152,7 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
           <div className="stat-card">
             <div className="stat-icon swiss-blue">⭐</div>
             <div className="stat-content">
-              <div className="stat-value">
-                {Math.round(stats.trueskillMu || 25)}
-              </div>
+              <div className="stat-value">{Math.round(stats.trueskillMu || 25)}</div>
               <div className="stat-label">Skill Rating</div>
             </div>
           </div>
@@ -169,9 +164,7 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
         <div className="no-stats-card">
           <div className="no-stats-icon">🎴</div>
           <h3 className="no-stats-title">Welcome to Swiss Jass!</h3>
-          <p className="no-stats-text">
-            Start your first game to see your statistics here.
-          </p>
+          <p className="no-stats-text">Start your first game to see your statistics here.</p>
           <button className="start-first-game-btn" onClick={() => onNavigate('game')}>
             Start Your First Game
           </button>
@@ -183,11 +176,7 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
         <h2 className="section-title">Quick Actions</h2>
         <div className="actions-grid">
           {quickActions.map((action, index) => (
-            <button
-              key={index}
-              className="action-card"
-              onClick={action.onClick}
-            >
+            <button key={index} className="action-card" onClick={action.onClick}>
               <div className="action-icon">{action.icon}</div>
               <div className="action-content">
                 <div className="action-label">{action.label}</div>
@@ -205,8 +194,8 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
         <div className="swiss-tip-content">
           <h4 className="swiss-tip-title">Did you know?</h4>
           <p className="swiss-tip-text">
-            Jass is the most popular card game in Switzerland, with regional variations 
-            played across all cantons. Schieber is the most common variant!
+            Jass is the most popular card game in Switzerland, with regional variations played
+            across all cantons. Schieber is the most common variant!
           </p>
         </div>
       </div>

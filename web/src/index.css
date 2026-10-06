@@ -10,13 +10,13 @@
   --trick-w: min(260px, 58%);
   --trick-h: 270px;
   /* Swiss-themed Color Palette */
-  --color-swiss-red: #DC291E;
-  --color-swiss-white: #FFFFFF;
-  --color-alpine-green: #1A7A4C;
-  --color-alpine-dark: #0F5233;
-  --color-snow: #F8FAFB;
-  --color-glacier: #E8F4F8;
-  
+  --color-swiss-red: #dc291e;
+  --color-swiss-white: #ffffff;
+  --color-alpine-green: #1a7a4c;
+  --color-alpine-dark: #0f5233;
+  --color-snow: #f8fafb;
+  --color-glacier: #e8f4f8;
+
   /* Modern UI Colors */
   --color-primary: #667eea;
   --color-primary-dark: #5568d3;
@@ -25,7 +25,7 @@
   --color-success: #10b981;
   --color-error: #ef4444;
   --color-warning: #f59e0b;
-  
+
   /* Neutrals */
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
@@ -37,17 +37,19 @@
   --color-gray-700: #374151;
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
-  
+
   /* Game Table Colors */
-  --color-table-felt: #1A5C3C;
-  --color-table-felt-light: #2A7C5C;
+  --color-table-felt: #1a5c3c;
+  --color-table-felt-light: #2a7c5c;
   --color-card-back: #1f2937;
   --color-card-shadow: rgba(0, 0, 0, 0.3);
-  
+
   /* Typography */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+    'Helvetica Neue', sans-serif;
   --font-display: 'Georgia', 'Times New Roman', serif;
-  
+
   /* Spacing Scale */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -59,7 +61,7 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -68,7 +70,7 @@
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.15);
   --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.25);
-  
+
   /* Border Radius */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
@@ -76,7 +78,7 @@
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
   --radius-full: 9999px;
-  
+
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -149,7 +151,8 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -160,7 +163,8 @@ body {
 }
 
 @keyframes bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -169,7 +173,8 @@ body {
 }
 
 @keyframes wave {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(0deg);
   }
   25% {
@@ -234,11 +239,17 @@ body {
 }
 
 @keyframes glow {
-  0%, 100% {
-    box-shadow: 0 0 5px var(--color-accent), 0 0 10px var(--color-accent);
+  0%,
+  100% {
+    box-shadow:
+      0 0 5px var(--color-accent),
+      0 0 10px var(--color-accent);
   }
   50% {
-    box-shadow: 0 0 20px var(--color-accent), 0 0 30px var(--color-accent), 0 0 40px var(--color-accent);
+    box-shadow:
+      0 0 20px var(--color-accent),
+      0 0 30px var(--color-accent),
+      0 0 40px var(--color-accent);
   }
 }
 
@@ -354,7 +365,12 @@ html {
 }
 
 /* Phone portrait: fit header, score, table, trump choice and hand on one screen. */
-.trump-grid { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.trump-grid {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 @media (max-width: 600px) {
   :root {
     --card-w: 62px;
@@ -363,16 +379,39 @@ html {
     --trick-w: min(190px, 54%);
     --trick-h: 200px;
   }
-  .app-header { position: static !important; }
-  .app-subtitle { display: none !important; }
-  .app-lang { max-width: 88px !important; font-size: 12px !important; }
-  .trump-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
-  .trump-grid > button { min-width: 0 !important; min-height: 56px !important; }
-  .trump-hint, .trump-dealer { display: none; }
+  .app-header {
+    position: static !important;
+  }
+  .app-subtitle {
+    display: none !important;
+  }
+  .app-lang {
+    max-width: 88px !important;
+    font-size: 12px !important;
+  }
+  .trump-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .trump-grid > button {
+    min-width: 0 !important;
+    min-height: 56px !important;
+  }
+  .trump-hint,
+  .trump-dealer {
+    display: none;
+  }
   /* North/south plates shrink to a name so the trick cards have room between them. */
-  .seat-stats { display: none !important; }
-  .app-header img { width: 32px !important; height: 32px !important; }
-  .trump-grid > button[data-trump="schieben"] { grid-column: 1 / -1; }
+  .seat-stats {
+    display: none !important;
+  }
+  .app-header img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .trump-grid > button[data-trump='schieben'] {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Phone landscape: very little height, so shrink everything. */
@@ -384,8 +423,17 @@ html {
     --trick-w: min(190px, 50%);
     --trick-h: 150px;
   }
-  .app-header { display: none !important; }
-  .trump-grid { grid-template-columns: repeat(6, 1fr); }
-  .trump-grid > button { min-height: 48px !important; min-width: 0 !important; }
-  .trump-grid > button[data-trump="schieben"] { grid-column: auto; }
+  .app-header {
+    display: none !important;
+  }
+  .trump-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .trump-grid > button {
+    min-height: 48px !important;
+    min-width: 0 !important;
+  }
+  .trump-grid > button[data-trump='schieben'] {
+    grid-column: auto;
+  }
 }

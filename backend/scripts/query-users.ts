@@ -9,16 +9,16 @@ async function main() {
       username: true,
       isBot: true,
       totalGames: true,
-      totalWins: true
-    }
+      totalWins: true,
+    },
   });
-  
+
   console.log(JSON.stringify(users, null, 2));
 }
 
 main()
   .then(() => prisma.$disconnect())
-  .catch(e => {
+  .catch((e) => {
     console.error(e);
     prisma.$disconnect();
   });

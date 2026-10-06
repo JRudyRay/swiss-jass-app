@@ -5,25 +5,106 @@
  */
 
 const swissMaleNames = [
-  'Hans', 'Peter', 'Fritz', 'Kurt', 'Werner', 'Walter', 'Ernst', 'Karl',
-  'Otto', 'Heinrich', 'Rudolf', 'Alfred', 'Emil', 'Hermann', 'Gustav',
-  'Bruno', 'Oskar', 'Felix', 'Markus', 'Stefan', 'Thomas', 'Andreas',
-  'Urs', 'Beat', 'Reto', 'Marco', 'Daniel', 'Lukas', 'Martin', 'Adrian'
+  'Hans',
+  'Peter',
+  'Fritz',
+  'Kurt',
+  'Werner',
+  'Walter',
+  'Ernst',
+  'Karl',
+  'Otto',
+  'Heinrich',
+  'Rudolf',
+  'Alfred',
+  'Emil',
+  'Hermann',
+  'Gustav',
+  'Bruno',
+  'Oskar',
+  'Felix',
+  'Markus',
+  'Stefan',
+  'Thomas',
+  'Andreas',
+  'Urs',
+  'Beat',
+  'Reto',
+  'Marco',
+  'Daniel',
+  'Lukas',
+  'Martin',
+  'Adrian',
 ];
 
 const swissFemaleNames = [
-  'Heidi', 'Anna', 'Maria', 'Rosa', 'Emma', 'Sophie', 'Klara', 'Greta',
-  'Martha', 'Frieda', 'Elsa', 'Lina', 'Bertha', 'Ida', 'Helene',
-  'Vreni', 'Trudi', 'Ursula', 'Brigitte', 'Silvia', 'Monika', 'Petra',
-  'Sandra', 'Nicole', 'Sabine', 'Andrea', 'Barbara', 'Christina', 'Daniela'
+  'Heidi',
+  'Anna',
+  'Maria',
+  'Rosa',
+  'Emma',
+  'Sophie',
+  'Klara',
+  'Greta',
+  'Martha',
+  'Frieda',
+  'Elsa',
+  'Lina',
+  'Bertha',
+  'Ida',
+  'Helene',
+  'Vreni',
+  'Trudi',
+  'Ursula',
+  'Brigitte',
+  'Silvia',
+  'Monika',
+  'Petra',
+  'Sandra',
+  'Nicole',
+  'Sabine',
+  'Andrea',
+  'Barbara',
+  'Christina',
+  'Daniela',
 ];
 
 const swissLastNames = [
-  'Müller', 'Meier', 'Schmid', 'Keller', 'Weber', 'Huber', 'Schneider',
-  'Meyer', 'Steiner', 'Fischer', 'Gerber', 'Brunner', 'Baumann', 'Frei',
-  'Zimmermann', 'Moser', 'Wyss', 'Roth', 'Kaufmann', 'Lehmann', 'Berger',
-  'Koch', 'Hofmann', 'Suter', 'Graf', 'Hofer', 'Bieri', 'Kuster',
-  'Jäggi', 'Fuchs', 'Zbinden', 'Burri', 'Lüthi', 'Aebischer', 'Aebi'
+  'Müller',
+  'Meier',
+  'Schmid',
+  'Keller',
+  'Weber',
+  'Huber',
+  'Schneider',
+  'Meyer',
+  'Steiner',
+  'Fischer',
+  'Gerber',
+  'Brunner',
+  'Baumann',
+  'Frei',
+  'Zimmermann',
+  'Moser',
+  'Wyss',
+  'Roth',
+  'Kaufmann',
+  'Lehmann',
+  'Berger',
+  'Koch',
+  'Hofmann',
+  'Suter',
+  'Graf',
+  'Hofer',
+  'Bieri',
+  'Kuster',
+  'Jäggi',
+  'Fuchs',
+  'Zbinden',
+  'Burri',
+  'Lüthi',
+  'Aebischer',
+  'Aebi',
 ];
 
 const usedNames: Set<string> = new Set();
@@ -39,14 +120,12 @@ export function generateSwissBotName(gender: 'male' | 'female' | 'random' = 'ran
   const maxAttempts = 100;
 
   while (attempts < maxAttempts) {
-    const selectedGender = gender === 'random' 
-      ? (Math.random() < 0.5 ? 'male' : 'female')
-      : gender;
+    const selectedGender = gender === 'random' ? (Math.random() < 0.5 ? 'male' : 'female') : gender;
 
     const firstNames = selectedGender === 'male' ? swissMaleNames : swissFemaleNames;
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = swissLastNames[Math.floor(Math.random() * swissLastNames.length)];
-    
+
     const fullName = `${firstName} ${lastName} (bot)`;
 
     if (!usedNames.has(fullName)) {
@@ -109,5 +188,5 @@ export default {
   generateMultipleSwissBotNames,
   isBot,
   getDisplayName,
-  resetBotNames
+  resetBotNames,
 };

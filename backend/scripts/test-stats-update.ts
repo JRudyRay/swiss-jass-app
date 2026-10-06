@@ -18,7 +18,7 @@ async function main() {
   console.log('📊 Initial stats:');
   const before = await prisma.user.findMany({
     where: { id: { in: [alice, bob, testbot] } },
-    select: { username: true, totalGames: true, totalWins: true, isBot: true }
+    select: { username: true, totalGames: true, totalWins: true, isBot: true },
   });
   console.log(JSON.stringify(before, null, 2));
 
@@ -29,7 +29,7 @@ async function main() {
 
   const after1 = await prisma.user.findUnique({
     where: { id: alice },
-    select: { username: true, totalGames: true }
+    select: { username: true, totalGames: true },
   });
   console.log(`Alice stats: ${JSON.stringify(after1)}`);
 
@@ -40,7 +40,7 @@ async function main() {
 
   const after2 = await prisma.user.findMany({
     where: { id: { in: [alice, bob] } },
-    select: { username: true, totalGames: true, totalWins: true }
+    select: { username: true, totalGames: true, totalWins: true },
   });
   console.log(`Stats after multiplayer: ${JSON.stringify(after2, null, 2)}`);
 
@@ -51,7 +51,7 @@ async function main() {
 
   const after3 = await prisma.user.findUnique({
     where: { id: testbot },
-    select: { username: true, totalGames: true, isBot: true }
+    select: { username: true, totalGames: true, isBot: true },
   });
   console.log(`Bot stats: ${JSON.stringify(after3)}`);
 
@@ -59,8 +59,7 @@ async function main() {
   await prisma.$disconnect();
 }
 
-main()
-  .catch((e) => {
-    console.error('❌ Error:', e);
-    prisma.$disconnect();
-  });
+main().catch((e) => {
+  console.error('❌ Error:', e);
+  prisma.$disconnect();
+});

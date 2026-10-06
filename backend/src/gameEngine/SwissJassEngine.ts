@@ -1,8 +1,9 @@
 // Complete Swiss Jass Game Engine with Authentic Rules
 export type SwissSuit = 'eicheln' | 'schellen' | 'rosen' | 'schilten';
 export type SwissRank = '6' | '7' | '8' | '9' | '10' | 'U' | 'O' | 'K' | 'A';
-export type TrumpContract = SwissSuit | 'obenabe' | 'undenufe' | 'slalom' | 'schieben';  // ✅ Added schieben
-export type GamePhase = 'waiting' | 'dealing' | 'examining' | 'trump_selection' | 'playing' | 'scoring' | 'finished';
+export type TrumpContract = SwissSuit | 'obenabe' | 'undenufe' | 'slalom' | 'schieben'; // ✅ Added schieben
+export type GamePhase =
+  'waiting' | 'dealing' | 'examining' | 'trump_selection' | 'playing' | 'scoring' | 'finished';
 
 export interface SwissCard {
   id: string;
@@ -47,7 +48,7 @@ export interface GameState {
   // who declared the contract (player id)
   declarer?: number | null;
   // ✅ Schieben tracking
-  schiebenPending?: boolean;  // true when waiting for partner's choice after schieben
+  schiebenPending?: boolean; // true when waiting for partner's choice after schieben
   // ✅ Trump multiplier for scoring (1x, 2x, 3x, 4x)
   trumpMultiplier?: number;
 }
@@ -62,10 +63,25 @@ export type WeisDeclaration = {
 
 // Swiss Jass Constants with Authentic Values
 export const SWISS_SUITS_INFO = {
-  eicheln: { name: 'Eicheln', symbol: 'acorns', color: '#8B4513', cultural: 'Strength & endurance' },
-  schellen: { name: 'Schellen', symbol: 'bells', color: '#FFD700', cultural: 'Community & tradition' },
+  eicheln: {
+    name: 'Eicheln',
+    symbol: 'acorns',
+    color: '#8B4513',
+    cultural: 'Strength & endurance',
+  },
+  schellen: {
+    name: 'Schellen',
+    symbol: 'bells',
+    color: '#FFD700',
+    cultural: 'Community & tradition',
+  },
   rosen: { name: 'Rosen', symbol: 'roses', color: '#DC143C', cultural: 'Love & passion' },
-  schilten: { name: 'Schilten', symbol: 'shields', color: '#2F4F4F', cultural: 'Protection & military' }
+  schilten: {
+    name: 'Schilten',
+    symbol: 'shields',
+    color: '#2F4F4F',
+    cultural: 'Protection & military',
+  },
 };
 
 export const SWISS_RANKS_INFO = {
@@ -74,18 +90,18 @@ export const SWISS_RANKS_INFO = {
   '8': { name: 'Achti', order: 2 },
   '9': { name: 'Nüni', order: 3 },
   '10': { name: 'Zähni', order: 4 },
-  'U': { name: 'Under', order: 5 },
-  'O': { name: 'Ober', order: 6 },
-  'K': { name: 'König', order: 7 },
-  'A': { name: 'Ass', order: 8 }
+  U: { name: 'Under', order: 5 },
+  O: { name: 'Ober', order: 6 },
+  K: { name: 'König', order: 7 },
+  A: { name: 'Ass', order: 8 },
 };
 
 // Authentic Swiss Jass Point System
 export const JASS_POINTS = {
-  trump: { 'U': 20, '9': 14, 'A': 11, 'K': 4, 'O': 3, '10': 10, '8': 0, '7': 0, '6': 0 },
-  normal: { 'A': 11, '10': 10, 'K': 4, 'O': 3, 'U': 2, '9': 0, '8': 0, '7': 0, '6': 0 },
-  obenabe: { 'A': 11, 'K': 4, 'O': 3, 'U': 2, '10': 10, '9': 0, '8': 8, '7': 0, '6': 0 },
-  undenufe: { '6': 11, '7': 0, '8': 8, '9': 0, '10': 10, 'U': 2, 'O': 3, 'K': 4, 'A': 0 }
+  trump: { U: 20, '9': 14, A: 11, K: 4, O: 3, '10': 10, '8': 0, '7': 0, '6': 0 },
+  normal: { A: 11, '10': 10, K: 4, O: 3, U: 2, '9': 0, '8': 0, '7': 0, '6': 0 },
+  obenabe: { A: 11, K: 4, O: 3, U: 2, '10': 10, '9': 0, '8': 8, '7': 0, '6': 0 },
+  undenufe: { '6': 11, '7': 0, '8': 8, '9': 0, '10': 10, U: 2, O: 3, K: 4, A: 0 },
 };
 
 // Card hierarchy for trick-taking
@@ -130,7 +146,7 @@ export class SwissJassEngine {
       pointsToWin: 1000,
       lastTrickWinner: null,
       gameStartTime: new Date(),
-      gameType: gameType as any
+      gameType: gameType as any,
     };
   }
 
@@ -138,24 +154,32 @@ export class SwissJassEngine {
     return [
       { id: 0, name: 'You', hand: [], team: 1, position: 'south', isBot: false, connected: true },
       { id: 1, name: 'Anna', hand: [], team: 2, position: 'west', isBot: true, connected: true },
-      { id: 2, name: 'Partner', hand: [], team: 1, position: 'north', isBot: true, connected: true },
-      { id: 3, name: 'Fritz', hand: [], team: 2, position: 'east', isBot: true, connected: true }
+      {
+        id: 2,
+        name: 'Partner',
+        hand: [],
+        team: 1,
+        position: 'north',
+        isBot: true,
+        connected: true,
+      },
+      { id: 3, name: 'Fritz', hand: [], team: 2, position: 'east', isBot: true, connected: true },
     ];
   }
 
   // Create authentic 36-card Swiss deck
   private createDeck(): SwissCard[] {
     const deck: SwissCard[] = [];
-    
-    (Object.keys(SWISS_SUITS_INFO) as SwissSuit[]).forEach(suit => {
-      (Object.keys(SWISS_RANKS_INFO) as SwissRank[]).forEach(rank => {
+
+    (Object.keys(SWISS_SUITS_INFO) as SwissSuit[]).forEach((suit) => {
+      (Object.keys(SWISS_RANKS_INFO) as SwissRank[]).forEach((rank) => {
         deck.push({
           id: `${suit}-${rank}`,
           suit,
           rank,
           points: 0,
           isTrump: false,
-          displayName: `${SWISS_RANKS_INFO[rank].name} ${SWISS_SUITS_INFO[suit].name}`
+          displayName: `${SWISS_RANKS_INFO[rank].name} ${SWISS_SUITS_INFO[suit].name}`,
         });
       });
     });
@@ -166,7 +190,7 @@ export class SwissJassEngine {
   // Traditional Swiss shuffling technique
   private shuffleDeck(deck: SwissCard[]): SwissCard[] {
     const shuffled = [...deck];
-    
+
     // Multiple shuffle passes for authenticity
     for (let pass = 0; pass < 3; pass++) {
       for (let i = shuffled.length - 1; i > 0; i--) {
@@ -174,7 +198,7 @@ export class SwissJassEngine {
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
     }
-    
+
     return shuffled;
   }
 
@@ -187,7 +211,7 @@ export class SwissJassEngine {
     const dealingPattern = [3, 2, 4]; // Traditional Swiss pattern
     let cardIndex = 0;
 
-    dealingPattern.forEach(cardCount => {
+    dealingPattern.forEach((cardCount) => {
       for (let round = 0; round < cardCount; round++) {
         for (let playerOffset = 0; playerOffset < 4; playerOffset++) {
           const playerId = (this.gameState.forehand + playerOffset) % 4;
@@ -200,14 +224,14 @@ export class SwissJassEngine {
     });
 
     // Sort hands by suit and rank
-    this.players.forEach(player => {
+    this.players.forEach((player) => {
       player.hand = this.sortHand(player.hand);
     });
 
     setTimeout(() => {
       this.gameState.phase = 'examining';
       this.emit('phaseChange', 'examining');
-      
+
       setTimeout(() => {
         this.gameState.phase = 'trump_selection';
         // The forehand chooses trump (or schiebt to their partner).
@@ -222,7 +246,7 @@ export class SwissJassEngine {
       const suitOrder: SwissSuit[] = ['eicheln', 'schellen', 'rosen', 'schilten'];
       const suitDiff = suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);
       if (suitDiff !== 0) return suitDiff;
-      
+
       return SWISS_RANKS_INFO[a.rank].order - SWISS_RANKS_INFO[b.rank].order;
     });
   }
@@ -244,13 +268,13 @@ export class SwissJassEngine {
       const partnerIndex = (playerId + 2) % 4;
       this.gameState.currentPlayer = partnerIndex;
       this.gameState.schiebenPending = true;
-      
-      this.emit('schiebenPassed', { 
-        fromPlayer: playerId, 
+
+      this.emit('schiebenPassed', {
+        fromPlayer: playerId,
         toPlayer: partnerIndex,
-        message: `Player ${playerId} passed trump decision to partner (player ${partnerIndex})`
+        message: `Player ${playerId} passed trump decision to partner (player ${partnerIndex})`,
       });
-      
+
       // Stay in trump_selection phase, wait for partner's choice
       return true;
     }
@@ -260,7 +284,7 @@ export class SwissJassEngine {
     this.gameState.contract = trump;
     // record who declared the contract
     this.gameState.declarer = playerId;
-    this.gameState.schiebenPending = false;  // Reset flag
+    this.gameState.schiebenPending = false; // Reset flag
 
     // set multiplier based on contract
     if (trump === 'schellen' || trump === 'schilten') {
@@ -276,7 +300,8 @@ export class SwissJassEngine {
 
     // detect weis for all players now that trump is known
     try {
-      const realTrumpSuit = (trump === 'obenabe' || trump === 'undenufe') ? null : trump as SwissSuit;
+      const realTrumpSuit =
+        trump === 'obenabe' || trump === 'undenufe' ? null : (trump as SwissSuit);
       this.gameState.weis = {};
       for (const p of this.players) {
         // compute weis using a simple detection function (ported from client engine)
@@ -294,8 +319,11 @@ export class SwissJassEngine {
     (this.gameState as any).stoeckCounted = false;
     (this.gameState as any).weisCounted = false;
     if (trump !== 'obenabe' && trump !== 'undenufe') {
-      const holder = this.players.find(p => p.hand.some(c => c.suit === trump && c.rank === 'K')
-        && p.hand.some(c => c.suit === trump && c.rank === 'O'));
+      const holder = this.players.find(
+        (p) =>
+          p.hand.some((c) => c.suit === trump && c.rank === 'K') &&
+          p.hand.some((c) => c.suit === trump && c.rank === 'O'),
+      );
       if (holder) {
         (this.gameState as any).stoeckTeam = holder.team;
         (this.gameState as any).stoeckHolder = holder.id;
@@ -314,9 +342,9 @@ export class SwissJassEngine {
 
   private updateCardValues(): void {
     const trump = this.gameState.trumpSuit;
-    
-    this.players.forEach(player => {
-      player.hand.forEach(card => {
+
+    this.players.forEach((player) => {
+      player.hand.forEach((card) => {
         card.isTrump = this.isCardTrump(card, trump);
         card.points = this.calculateCardPoints(card, trump);
       });
@@ -330,49 +358,53 @@ export class SwissJassEngine {
 
   private calculateCardPoints(card: SwissCard, trump: TrumpContract | null): number {
     if (!trump) return 0;
-    
+
     if (trump === 'obenabe') {
       return JASS_POINTS.obenabe[card.rank] || 0;
     }
-    
+
     if (trump === 'undenufe') {
       return JASS_POINTS.undenufe[card.rank] || 0;
     }
-    
+
     if (card.suit === trump) {
       return JASS_POINTS.trump[card.rank] || 0;
     }
-    
+
     return JASS_POINTS.normal[card.rank] || 0;
   }
 
   public playCard(cardId: string, playerId: number): boolean {
     if (this.gameState.phase !== 'playing' || playerId !== this.gameState.currentPlayer) {
-  console.warn(`playCard rejected: wrong phase or not player's turn (phase=${this.gameState.phase} playerId=${playerId} currentPlayer=${this.gameState.currentPlayer})`);
+      console.warn(
+        `playCard rejected: wrong phase or not player's turn (phase=${this.gameState.phase} playerId=${playerId} currentPlayer=${this.gameState.currentPlayer})`,
+      );
       return false;
     }
 
     const player = this.players[playerId];
-    const cardIndex = player.hand.findIndex(card => card.id === cardId);
-    
+    const cardIndex = player.hand.findIndex((card) => card.id === cardId);
+
     if (cardIndex === -1) return false;
 
     const card = player.hand[cardIndex];
-    
+
     // Validate legal play according to Swiss Jass rules
     if (!this.isLegalPlay(card, playerId)) {
-      console.warn(`Illegal play attempt by player ${playerId} for card ${card.id}; hand contains ${player.hand.length} cards; currentTrick length ${this.gameState.currentTrick.length}`);
+      console.warn(
+        `Illegal play attempt by player ${playerId} for card ${card.id}; hand contains ${player.hand.length} cards; currentTrick length ${this.gameState.currentTrick.length}`,
+      );
       return false;
     }
 
     // Play the card
     player.hand.splice(cardIndex, 1);
     this.gameState.currentTrick.push({ ...card, playerId });
-    
+
     this.emit('cardPlayed', { card, playerId });
 
-  // Move to next player counter-clockwise (decrement mod 4)
-  this.gameState.currentPlayer = (this.gameState.currentPlayer + 3) % 4;
+    // Move to next player counter-clockwise (decrement mod 4)
+    this.gameState.currentPlayer = (this.gameState.currentPlayer + 3) % 4;
 
     // Check if trick is complete
     if (this.gameState.currentTrick.length === 4) {
@@ -383,15 +415,15 @@ export class SwissJassEngine {
   }
 
   private isLegalPlay(card: SwissCard, playerId: number): boolean {
-    return this.getLegalCards(playerId).some(c => c.id === card.id);
+    return this.getLegalCards(playerId).some((c) => c.id === card.id);
   }
 
   private completeTrick(): void {
     const trickWinner = this.determineTrickWinner();
     const trickPoints = this.calculateTrickPoints();
-    
+
     // Add last trick bonus if this is the final trick
-    const isLastTrick = this.players.every(p => p.hand.length === 0);
+    const isLastTrick = this.players.every((p) => p.hand.length === 0);
     const finalBonus = isLastTrick ? 5 : 0;
     const totalTrickPoints = trickPoints + finalBonus;
 
@@ -408,8 +440,11 @@ export class SwissJassEngine {
     const gs = this.gameState as any;
     const holder = gs.stoeckHolder;
     if (gs.stoeckTeam && !gs.stoeckCounted && holder !== null && holder !== undefined) {
-      const played = this.gameState.playedTricks.flat().filter(c => c.playerId === holder && c.suit === this.gameState.trumpSuit);
-      if (played.some(c => c.rank === 'K') && played.some(c => c.rank === 'O')) gs.stoeckCounted = true;
+      const played = this.gameState.playedTricks
+        .flat()
+        .filter((c) => c.playerId === holder && c.suit === this.gameState.trumpSuit);
+      if (played.some((c) => c.rank === 'K') && played.some((c) => c.rank === 'O'))
+        gs.stoeckCounted = true;
     }
     let reached = this.teamAtTarget(this.runningTotals(false));
     if (!gs.weisCounted) {
@@ -433,7 +468,7 @@ export class SwissJassEngine {
     this.emit('trickCompleted', {
       winner: trickWinner,
       points: totalTrickPoints,
-      isLastTrick
+      isLastTrick,
     });
 
     // Check if round is complete
@@ -446,7 +481,7 @@ export class SwissJassEngine {
     const trick = this.gameState.currentTrick;
     const leadSuit = trick[0].suit;
     const trump = this.gameState.trumpSuit;
-    
+
     let winner = 0;
 
     for (let i = 1; i < trick.length; i++) {
@@ -458,7 +493,12 @@ export class SwissJassEngine {
     return trick[winner].playerId;
   }
 
-  private cardBeats(challenger: SwissCard, current: SwissCard, leadSuit: SwissSuit, trump: TrumpContract | null): boolean {
+  private cardBeats(
+    challenger: SwissCard,
+    current: SwissCard,
+    leadSuit: SwissSuit,
+    trump: TrumpContract | null,
+  ): boolean {
     // Handle special contracts
     if (trump === 'obenabe') {
       if (challenger.suit === leadSuit && current.suit !== leadSuit) return true;
@@ -473,7 +513,9 @@ export class SwissJassEngine {
       if (challenger.suit === leadSuit && current.suit !== leadSuit) return true;
       if (challenger.suit !== leadSuit && current.suit === leadSuit) return false;
       if (challenger.suit === leadSuit && current.suit === leadSuit) {
-        return UNDENUFE_HIERARCHY.indexOf(challenger.rank) < UNDENUFE_HIERARCHY.indexOf(current.rank);
+        return (
+          UNDENUFE_HIERARCHY.indexOf(challenger.rank) < UNDENUFE_HIERARCHY.indexOf(current.rank)
+        );
       }
       return false;
     }
@@ -515,9 +557,16 @@ export class SwissJassEngine {
       if (gs.stoeckCounted && gs.stoeckTeam === team) pts += 20;
       return pts * mult;
     };
-    const totals = { team1: this.gameState.scores.team1 + hand(1), team2: this.gameState.scores.team2 + hand(2) };
+    const totals = {
+      team1: this.gameState.scores.team1 + hand(1),
+      team2: this.gameState.scores.team2 + hand(2),
+    };
     if (withMatchBonus) {
-      const cards = (team: number) => this.gameState.playedTricks.reduce((n, t) => n + t.filter(c => this.players[c.playerId].team === team).length, 0);
+      const cards = (team: number) =>
+        this.gameState.playedTricks.reduce(
+          (n, t) => n + t.filter((c) => this.players[c.playerId].team === team).length,
+          0,
+        );
       if (cards(1) === 36) totals.team1 += 100 * mult;
       else if (cards(2) === 36) totals.team2 += 100 * mult;
     }
@@ -527,7 +576,8 @@ export class SwissJassEngine {
   // The team at or over the target (the higher total if both are).
   private teamAtTarget(t: { team1: number; team2: number }): 1 | 2 | null {
     const goal = this.gameState.pointsToWin;
-    const a = t.team1 >= goal, b = t.team2 >= goal;
+    const a = t.team1 >= goal,
+      b = t.team2 >= goal;
     if (a && b) return t.team2 > t.team1 ? 2 : 1;
     return a ? 1 : b ? 2 : null;
   }
@@ -535,8 +585,11 @@ export class SwissJassEngine {
   // A team reached the target mid-hand: the match ends now with the totals counted so far.
   private finishAtTarget(winner: 1 | 2): void {
     const gs = this.gameState as any;
-    const totals = this.runningTotals(this.players.every(p => p.hand.length === 0));
-    const roundScores = { team1: totals.team1 - this.gameState.scores.team1, team2: totals.team2 - this.gameState.scores.team2 };
+    const totals = this.runningTotals(this.players.every((p) => p.hand.length === 0));
+    const roundScores = {
+      team1: totals.team1 - this.gameState.scores.team1,
+      team2: totals.team2 - this.gameState.scores.team2,
+    };
     const weisScores = gs.weisCounted ? this.calculateTeamWeis() : { team1: 0, team2: 0 };
     this.gameState.scores = totals;
     this.gameState.phase = 'finished';
@@ -546,10 +599,10 @@ export class SwissJassEngine {
 
   private completeRound(): void {
     this.gameState.phase = 'scoring';
-    
+
     // Calculate and award Weis points
     const weisScores = this.calculateTeamWeis();
-    
+
     // Get raw round scores (base trick points + weis)
     let team1Score = this.gameState.roundScores.team1 + weisScores.team1;
     let team2Score = this.gameState.roundScores.team2 + weisScores.team2;
@@ -564,10 +617,10 @@ export class SwissJassEngine {
 
     // Check for match bonus: team takes all 9 tricks (36 cards total)
     const team1Cards = this.gameState.playedTricks.reduce((total, trick) => {
-      return total + trick.filter(card => this.players[card.playerId].team === 1).length;
+      return total + trick.filter((card) => this.players[card.playerId].team === 1).length;
     }, 0);
     const team2Cards = this.gameState.playedTricks.reduce((total, trick) => {
-      return total + trick.filter(card => this.players[card.playerId].team === 2).length;
+      return total + trick.filter((card) => this.players[card.playerId].team === 2).length;
     }, 0);
 
     const MATCH_BONUS = 100;
@@ -584,16 +637,18 @@ export class SwissJassEngine {
     this.emit('roundCompleted', {
       roundScores: { team1: team1Score, team2: team2Score }, // Emit final scores with multipliers
       totalScores: this.gameState.scores,
-      weisScores: weisScores // Include Weis breakdown
+      weisScores: weisScores, // Include Weis breakdown
     });
 
     // Check for game end
-    if (this.gameState.scores.team1 >= this.gameState.pointsToWin || 
-        this.gameState.scores.team2 >= this.gameState.pointsToWin) {
+    if (
+      this.gameState.scores.team1 >= this.gameState.pointsToWin ||
+      this.gameState.scores.team2 >= this.gameState.pointsToWin
+    ) {
       this.gameState.phase = 'finished';
       this.emit('gameFinished', {
         winner: this.gameState.scores.team1 > this.gameState.scores.team2 ? 1 : 2,
-        finalScores: this.gameState.scores
+        finalScores: this.gameState.scores,
       });
     } else {
       setTimeout(() => this.prepareNextRound(), 3000);
@@ -605,7 +660,7 @@ export class SwissJassEngine {
     this.gameState.dealer = (this.gameState.dealer + 3) % 4;
     // The forehand sits to the dealer's right (next in counter-clockwise play)
     this.gameState.forehand = (this.gameState.dealer + 3) % 4;
-    
+
     // Reset round state
     this.gameState.roundScores = { team1: 0, team2: 0 };
     this.gameState.playedTricks = [];
@@ -614,7 +669,7 @@ export class SwissJassEngine {
     this.gameState.gameNumber++;
 
     // Clear hands
-    this.players.forEach(player => player.hand = []);
+    this.players.forEach((player) => (player.hand = []));
 
     setTimeout(() => this.dealCards(), 1000);
   }
@@ -629,7 +684,7 @@ export class SwissJassEngine {
 
   private emit(event: string, data?: any): void {
     if (this.eventCallbacks[event]) {
-      this.eventCallbacks[event].forEach(callback => callback(data));
+      this.eventCallbacks[event].forEach((callback) => callback(data));
     }
   }
 
@@ -651,67 +706,79 @@ export class SwissJassEngine {
       scores: this.gameState.scores,
       roundScores: this.gameState.roundScores,
       dealer: this.gameState.dealer,
-  weis: this.gameState.weis,
-  declarer: this.gameState.declarer,
-      gameType: this.gameState.gameType
+      weis: this.gameState.weis,
+      declarer: this.gameState.declarer,
+      gameType: this.gameState.gameType,
     };
   }
 
   public getPlayerHand(playerId: number): SwissCard[] {
-    const player = this.players.find(p => p.id === playerId);
+    const player = this.players.find((p) => p.id === playerId);
     return player ? player.hand : [];
   }
 
-// === WEIS DETECTION (backend helper, simplified port of client logic) ===
-private rankIndex(rank: SwissRank) {
-  const order: SwissRank[] = ['6','7','8','9','10','U','O','K','A'];
-  return order.indexOf(rank);
-}
-
-private findSequencesInSuit(cards: SwissCard[]) : SwissCard[][] {
-  if (!cards || cards.length === 0) return [];
-  const sorted = cards.slice().sort((a,b) => this.rankIndex(a.rank) - this.rankIndex(b.rank));
-  const sequences: SwissCard[][] = [];
-  let cur: SwissCard[] = [sorted[0]];
-  for (let i=1;i<sorted.length;i++) {
-    if (this.rankIndex(sorted[i].rank) === this.rankIndex(sorted[i-1].rank) + 1) {
-      cur.push(sorted[i]);
-    } else {
-      if (cur.length >= 3) sequences.push(cur);
-      cur = [sorted[i]];
-    }
-  }
-  if (cur.length >= 3) sequences.push(cur);
-  return sequences;
-}
-
-private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDeclaration[] {
-  const res: WeisDeclaration[] = [];
-  const bySuit: Record<string, SwissCard[]> = {};
-  hand.forEach(c => { (bySuit[c.suit] = bySuit[c.suit] || []).push(c); });
-  for (const s in bySuit) {
-    const seqs = this.findSequencesInSuit(bySuit[s]);
-    for (const seq of seqs) {
-      if (seq.length >= 5) res.push({ type: 'sequence5plus', cards: seq, points: 100 + 50 * (seq.length - 5), description: `Sequenz ${seq.length} (${s})` });
-      else if (seq.length === 4) res.push({ type: 'sequence4', cards: seq, points: 50, description: `Sequenz 4 (${s})` });
-      else if (seq.length === 3) res.push({ type: 'sequence3', cards: seq, points: 20, description: `Sequenz 3 (${s})` });
-    }
+  // === WEIS DETECTION (backend helper, simplified port of client logic) ===
+  private rankIndex(rank: SwissRank) {
+    const order: SwissRank[] = ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
+    return order.indexOf(rank);
   }
 
-  // four-of-a-kind detection
-  const byRank: Record<string, SwissCard[]> = {};
-  hand.forEach(c => { (byRank[c.rank] = byRank[c.rank] || []).push(c); });
-  for (const r in byRank) {
-    if (byRank[r].length === 4) {
-      if (r === '6' || r === '7' || r === '8') continue; // four 6s, 7s or 8s don't count
-      const pts = r === 'U' ? 200 : r === '9' ? 150 : 100;
-      res.push({ type: `four_${r}`, cards: byRank[r], points: pts, description: `Vier ${r}` });
+  private findSequencesInSuit(cards: SwissCard[]): SwissCard[][] {
+    if (!cards || cards.length === 0) return [];
+    const sorted = cards.slice().sort((a, b) => this.rankIndex(a.rank) - this.rankIndex(b.rank));
+    const sequences: SwissCard[][] = [];
+    let cur: SwissCard[] = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+      if (this.rankIndex(sorted[i].rank) === this.rankIndex(sorted[i - 1].rank) + 1) {
+        cur.push(sorted[i]);
+      } else {
+        if (cur.length >= 3) sequences.push(cur);
+        cur = [sorted[i]];
+      }
     }
+    if (cur.length >= 3) sequences.push(cur);
+    return sequences;
   }
 
-  // Stöck is not a Weis; it is scored separately in completeRound.
-  return res;
-}
+  private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDeclaration[] {
+    const res: WeisDeclaration[] = [];
+    const bySuit: Record<string, SwissCard[]> = {};
+    hand.forEach((c) => {
+      (bySuit[c.suit] = bySuit[c.suit] || []).push(c);
+    });
+    for (const s in bySuit) {
+      const seqs = this.findSequencesInSuit(bySuit[s]);
+      for (const seq of seqs) {
+        if (seq.length >= 5)
+          res.push({
+            type: 'sequence5plus',
+            cards: seq,
+            points: 100 + 50 * (seq.length - 5),
+            description: `Sequenz ${seq.length} (${s})`,
+          });
+        else if (seq.length === 4)
+          res.push({ type: 'sequence4', cards: seq, points: 50, description: `Sequenz 4 (${s})` });
+        else if (seq.length === 3)
+          res.push({ type: 'sequence3', cards: seq, points: 20, description: `Sequenz 3 (${s})` });
+      }
+    }
+
+    // four-of-a-kind detection
+    const byRank: Record<string, SwissCard[]> = {};
+    hand.forEach((c) => {
+      (byRank[c.rank] = byRank[c.rank] || []).push(c);
+    });
+    for (const r in byRank) {
+      if (byRank[r].length === 4) {
+        if (r === '6' || r === '7' || r === '8') continue; // four 6s, 7s or 8s don't count
+        const pts = r === 'U' ? 200 : r === '9' ? 150 : 100;
+        res.push({ type: `four_${r}`, cards: byRank[r], points: pts, description: `Vier ${r}` });
+      }
+    }
+
+    // Stöck is not a Weis; it is scored separately in completeRound.
+    return res;
+  }
 
   /**
    * Weis scoring: the team holding the single best Weis scores all of its Weis;
@@ -724,14 +791,19 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
     for (const player of this.players) {
       const order = (forehand - player.id + 4) % 4;
       for (const weis of player.weis || []) {
-        if (!best || this.isWeisBetter(weis, best.weis)
-            || (!this.isWeisBetter(best.weis, weis) && order < best.order)) {
+        if (
+          !best ||
+          this.isWeisBetter(weis, best.weis) ||
+          (!this.isWeisBetter(best.weis, weis) && order < best.order)
+        ) {
           best = { weis, team: player.team, order };
         }
       }
     }
-    const teamTotal = (team: number) => this.players.filter(p => p.team === team)
-      .reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
+    const teamTotal = (team: number) =>
+      this.players
+        .filter((p) => p.team === team)
+        .reduce((sum, p) => sum + (p.weis?.reduce((s, w) => s + w.points, 0) || 0), 0);
     return {
       team1: best?.team === 1 ? teamTotal(1) : 0,
       team2: best?.team === 2 ? teamTotal(2) : 0,
@@ -747,12 +819,14 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
     if (a.type.startsWith('sequence') && b.type.startsWith('sequence')) {
       if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
       const trump = this.gameState.trumpSuit;
-      const ranks = (w: WeisDeclaration) => w.cards.map(c => this.rankIndex(c.rank));
+      const ranks = (w: WeisDeclaration) => w.cards.map((c) => this.rankIndex(c.rank));
       if (trump === 'undenufe') {
-        const aLow = Math.min(...ranks(a)), bLow = Math.min(...ranks(b));
+        const aLow = Math.min(...ranks(a)),
+          bLow = Math.min(...ranks(b));
         if (aLow !== bLow) return aLow < bLow;
       } else {
-        const aTop = Math.max(...ranks(a)), bTop = Math.max(...ranks(b));
+        const aTop = Math.max(...ranks(a)),
+          bTop = Math.max(...ranks(b));
         if (aTop !== bTop) return aTop > bTop;
       }
       return a.cards[0]?.suit === trump && b.cards[0]?.suit !== trump;
@@ -761,7 +835,7 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
   }
 
   public getPlayer(playerId: number): Readonly<JassPlayer> | null {
-    return this.players.find(p => p.id === playerId) || null;
+    return this.players.find((p) => p.id === playerId) || null;
   }
 
   // Standard Schieber: follow suit or trump (trumping is never forced), no
@@ -773,19 +847,24 @@ private detectWeisForHand(hand: SwissCard[], trump?: SwissSuit | null): WeisDecl
     if (trick.length === 0) return hand.slice();
     const leadSuit = trick[0].suit;
     const trump = this.gameState.trumpSuit;
-    const isSuitTrump = !!trump && ['eicheln', 'schellen', 'rosen', 'schilten'].includes(trump as string);
-    const sameSuit = hand.filter(c => c.suit === leadSuit);
+    const isSuitTrump =
+      !!trump && ['eicheln', 'schellen', 'rosen', 'schilten'].includes(trump as string);
+    const sameSuit = hand.filter((c) => c.suit === leadSuit);
     if (!isSuitTrump) return sameSuit.length ? sameSuit : hand.slice();
     if (leadSuit === trump) {
       const onlyPuur = sameSuit.length === 1 && sameSuit[0].rank === 'U';
       return sameSuit.length && !onlyPuur ? sameSuit : hand.slice();
     }
-    if (hand.every(c => c.suit === trump)) return hand.slice();
-    const trumpsInTrick = trick.filter(c => c.suit === trump);
-    const bestTrump = trumpsInTrick.reduce((best, c) => Math.min(best, TRUMP_HIERARCHY.indexOf(c.rank)), 99);
-    const allowed = (c: SwissCard) => c.suit !== trump || TRUMP_HIERARCHY.indexOf(c.rank) < bestTrump;
+    if (hand.every((c) => c.suit === trump)) return hand.slice();
+    const trumpsInTrick = trick.filter((c) => c.suit === trump);
+    const bestTrump = trumpsInTrick.reduce(
+      (best, c) => Math.min(best, TRUMP_HIERARCHY.indexOf(c.rank)),
+      99,
+    );
+    const allowed = (c: SwissCard) =>
+      c.suit !== trump || TRUMP_HIERARCHY.indexOf(c.rank) < bestTrump;
     const legal = sameSuit.length
-      ? hand.filter(c => c.suit === leadSuit || (c.suit === trump && allowed(c)))
+      ? hand.filter((c) => c.suit === leadSuit || (c.suit === trump && allowed(c)))
       : hand.filter(allowed);
     return legal.length ? legal : hand.slice();
   }

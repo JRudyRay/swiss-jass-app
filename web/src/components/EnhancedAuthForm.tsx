@@ -30,7 +30,11 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({ score: 0, label: '', color: '' });
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
+    score: 0,
+    label: '',
+    color: '',
+  });
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   const avatarShapes = [
@@ -39,12 +43,20 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
     { id: 'triangle', name: 'Triangle', emoji: '🔺' },
     { id: 'diamond', name: 'Diamond', emoji: '🔶' },
     { id: 'star', name: 'Star', emoji: '⭐' },
-    { id: 'heart', name: 'Heart', emoji: '❤️' }
+    { id: 'heart', name: 'Heart', emoji: '❤️' },
   ];
 
   const avatarColors = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-    '#F97316', '#06B6D4', '#84CC16', '#EC4899', '#6B7280'
+    '#3B82F6',
+    '#EF4444',
+    '#10B981',
+    '#F59E0B',
+    '#8B5CF6',
+    '#F97316',
+    '#06B6D4',
+    '#84CC16',
+    '#EC4899',
+    '#6B7280',
   ];
 
   // Calculate password strength
@@ -52,11 +64,11 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
     if (!password) return { score: 0, label: '', color: '' };
 
     let score = 0;
-    
+
     // Length
     if (password.length >= 8) score++;
     if (password.length >= 12) score++;
-    
+
     // Character types
     if (/[a-z]/.test(password)) score++;
     if (/[A-Z]/.test(password)) score++;
@@ -150,15 +162,15 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
         });
 
         const data = await res.json();
-        
+
         if (data.success) {
           setSuccess('Login successful! Redirecting...');
-          
+
           // Save token if remember me is checked
           if (formData.rememberMe) {
             localStorage.setItem('authToken', data.token);
           }
-          
+
           setTimeout(() => {
             onLogin(data.token, data.user);
           }, 1000);
@@ -188,7 +200,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
         });
 
         const data = await res.json();
-        
+
         if (data.success) {
           setSuccess('Registration successful! Redirecting...');
           setTimeout(() => {
@@ -326,7 +338,9 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                   />
                   <span>Remember me</span>
                 </label>
-                <a href="#" className="auth-forgot-link">Forgot password?</a>
+                <a href="#" className="auth-forgot-link">
+                  Forgot password?
+                </a>
               </div>
             </>
           ) : (
@@ -398,9 +412,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                     autoComplete="email"
                   />
                 </div>
-                {fieldErrors.email && (
-                  <span className="auth-field-error">{fieldErrors.email}</span>
-                )}
+                {fieldErrors.email && <span className="auth-field-error">{fieldErrors.email}</span>}
               </div>
 
               <div className="auth-input-group">
@@ -439,7 +451,10 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                         }}
                       ></div>
                     </div>
-                    <span className="password-strength-label" style={{ color: passwordStrength.color }}>
+                    <span
+                      className="password-strength-label"
+                      style={{ color: passwordStrength.color }}
+                    >
                       {passwordStrength.label}
                     </span>
                   </div>
@@ -517,8 +532,10 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                 <span className="auth-spinner"></span>
                 {isLogin ? 'Logging in...' : 'Creating account...'}
               </>
+            ) : isLogin ? (
+              'Login'
             ) : (
-              isLogin ? 'Login' : 'Create Account'
+              'Create Account'
             )}
           </button>
         </form>

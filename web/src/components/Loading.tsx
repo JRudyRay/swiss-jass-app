@@ -5,14 +5,14 @@ interface SpinnerProps {
   color?: string;
 }
 
-export const Spinner: React.FC<SpinnerProps> = ({ 
+export const Spinner: React.FC<SpinnerProps> = ({
   size = 'md',
-  color = 'var(--color-swiss-green, #1A7A4C)'
+  color = 'var(--color-swiss-green, #1A7A4C)',
 }) => {
   const sizeMap = {
     sm: '16px',
     md: '32px',
-    lg: '48px'
+    lg: '48px',
   };
 
   const spinnerSize = sizeMap[size];
@@ -37,42 +37,43 @@ interface LoadingProps {
   fullScreen?: boolean;
 }
 
-export const Loading: React.FC<LoadingProps> = ({ 
-  message = 'Loading...',
-  fullScreen = false 
-}) => {
-  const containerStyle: React.CSSProperties = fullScreen ? {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'rgba(245, 242, 232, 0.95)',
-    backdropFilter: 'blur(4px)',
-    zIndex: 9999,
-  } : {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '3rem',
-    minHeight: '200px',
-  };
+export const Loading: React.FC<LoadingProps> = ({ message = 'Loading...', fullScreen = false }) => {
+  const containerStyle: React.CSSProperties = fullScreen
+    ? {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(245, 242, 232, 0.95)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 9999,
+      }
+    : {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '3rem',
+        minHeight: '200px',
+      };
 
   return (
     <div style={containerStyle}>
       <Spinner size="lg" />
-      <p style={{
-        marginTop: '1rem',
-        fontSize: '1.1rem',
-        fontWeight: 600,
-        color: '#374151',
-        animation: 'pulse 2s ease-in-out infinite',
-      }}>
+      <p
+        style={{
+          marginTop: '1rem',
+          fontSize: '1.1rem',
+          fontWeight: 600,
+          color: '#374151',
+          animation: 'pulse 2s ease-in-out infinite',
+        }}
+      >
         {message}
       </p>
     </div>
@@ -90,7 +91,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   width = '100%',
   height = '20px',
   borderRadius = '4px',
-  style = {}
+  style = {},
 }) => {
   return (
     <div
@@ -102,7 +103,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
         backgroundSize: '200% 100%',
         animation: 'shimmer 1.5s ease-in-out infinite',
-        ...style
+        ...style,
       }}
     />
   );
@@ -110,12 +111,14 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
 export const SkeletonCard: React.FC = () => {
   return (
-    <div style={{
-      background: 'white',
-      borderRadius: '12px',
-      padding: '1.5rem',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    }}>
+    <div
+      style={{
+        background: 'white',
+        borderRadius: '12px',
+        padding: '1.5rem',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+      }}
+    >
       <Skeleton height="24px" width="60%" style={{ marginBottom: '1rem' }} />
       <Skeleton height="16px" width="80%" style={{ marginBottom: '0.5rem' }} />
       <Skeleton height="16px" width="70%" style={{ marginBottom: '1rem' }} />
@@ -140,45 +143,49 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   action,
-  style = {}
+  style = {},
 }) => {
   return (
-    <div style={{
-      textAlign: 'center',
-      padding: '4rem 2rem',
-      ...style
-    }}>
-      <div style={{
-        fontSize: '4rem',
-        marginBottom: '1rem',
-        opacity: 0.5,
-      }}>
+    <div
+      style={{
+        textAlign: 'center',
+        padding: '4rem 2rem',
+        ...style,
+      }}
+    >
+      <div
+        style={{
+          fontSize: '4rem',
+          marginBottom: '1rem',
+          opacity: 0.5,
+        }}
+      >
         {icon}
       </div>
-      <h3 style={{
-        fontSize: '1.5rem',
-        fontWeight: 700,
-        color: '#1f2937',
-        marginBottom: '0.5rem',
-      }}>
+      <h3
+        style={{
+          fontSize: '1.5rem',
+          fontWeight: 700,
+          color: '#1f2937',
+          marginBottom: '0.5rem',
+        }}
+      >
         {title}
       </h3>
       {description && (
-        <p style={{
-          fontSize: '1rem',
-          color: '#6b7280',
-          marginBottom: '2rem',
-          maxWidth: '400px',
-          margin: '0.5rem auto 2rem',
-        }}>
+        <p
+          style={{
+            fontSize: '1rem',
+            color: '#6b7280',
+            marginBottom: '2rem',
+            maxWidth: '400px',
+            margin: '0.5rem auto 2rem',
+          }}
+        >
           {description}
         </p>
       )}
-      {action && (
-        <div style={{ marginTop: '2rem' }}>
-          {action}
-        </div>
-      )}
+      {action && <div style={{ marginTop: '2rem' }}>{action}</div>}
     </div>
   );
 };

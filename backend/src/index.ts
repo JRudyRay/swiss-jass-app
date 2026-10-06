@@ -20,9 +20,9 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"]
-  }
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  },
 });
 
 const PORT = process.env.PORT || 3000;
@@ -30,20 +30,21 @@ const PORT = process.env.PORT || 3000;
 // Middleware - CORS handled by nginx reverse proxy in production
 // Only enable CORS for local development
 if (process.env.NODE_ENV !== 'production') {
-  app.use(cors({
-    origin: [
-      'http://localhost:3000', 
-      'http://localhost:5173'
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+  app.use(
+    cors({
+      origin: ['http://localhost:3000', 'http://localhost:5173'],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    }),
+  );
 }
 
 // Debug middleware to log requests
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} from ${req.get('Origin') || 'direct'}`);
+  console.log(
+    `${new Date().toISOString()} - ${req.method} ${req.path} from ${req.get('Origin') || 'direct'}`,
+  );
   next();
 });
 
@@ -61,8 +62,8 @@ app.get('/health', async (req, res) => {
   try {
     // Test database connection
     await prisma.user.count();
-    
-    res.json({ 
+
+    res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       version: '2.0.0',
@@ -74,14 +75,14 @@ app.get('/health', async (req, res) => {
         'database-storage',
         'avatar-system',
         'game-engine',
-        'real-time-multiplayer'
-      ]
+        'real-time-multiplayer',
+      ],
     });
   } catch (error) {
     res.status(500).json({
       status: 'unhealthy',
       database: 'disconnected',
-      error: 'Database connection failed'
+      error: 'Database connection failed',
     });
   }
 });
@@ -105,23 +106,23 @@ app.get('/', (req, res) => {
         profile: 'GET /api/auth/profile',
         updateProfile: 'PUT /api/auth/profile',
         avatars: 'GET /api/auth/avatars',
-        verify: 'POST /api/auth/verify'
+        verify: 'POST /api/auth/verify',
       },
       games: {
         create: 'POST /api/games/create',
         join: 'POST /api/games/:id/join',
-        state: 'GET /api/games/:id'
-      }
+        state: 'GET /api/games/:id',
+      },
     },
     features: [
       '✅ User Registration & Login',
       '✅ Secure Password Hashing',
-      '✅ JWT Token Authentication', 
+      '✅ JWT Token Authentication',
       '✅ Database Storage (SQLite)',
       '✅ Avatar System (Shapes & Colors)',
       '✅ Profile Management',
-      '✅ Swiss Jass Ready'
-    ]
+      '✅ Swiss Jass Ready',
+    ],
   });
 });
 
@@ -130,7 +131,7 @@ app.get('/api/user/:userId/avatar', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.params.userId },
-      select: { avatarShape: true, avatarColor: true, username: true }
+      select: { avatarShape: true, avatarColor: true, username: true },
     });
 
     if (!user) {
@@ -150,7 +151,7 @@ app.get('/api/user/:userId/avatar', async (req, res) => {
         <text x="30" y="35" class="avatar-text">${user.username.charAt(0).toUpperCase()}</text>
       </svg>
     `;
-    
+
     res.setHeader('Content-Type', 'image/svg+xml');
     res.send(avatarSvg);
   } catch (error) {
@@ -163,27 +164,27 @@ function getShapeSvg(shape: string, x: number, y: number, size: number): string 
     case 'circle':
       return `<circle cx="${x}" cy="${y}" r="${size}" class="avatar-shape"/>`;
     case 'square':
-      return `<rect x="${x-size}" y="${y-size}" width="${size*2}" height="${size*2}" class="avatar-shape"/>`;
+      return `<rect x="${x - size}" y="${y - size}" width="${size * 2}" height="${size * 2}" class="avatar-shape"/>`;
     case 'triangle':
-      return `<polygon points="${x},${y-size} ${x-size},${y+size} ${x+size},${y+size}" class="avatar-shape"/>`;
+      return `<polygon points="${x},${y - size} ${x - size},${y + size} ${x + size},${y + size}" class="avatar-shape"/>`;
     case 'diamond':
-      return `<polygon points="${x},${y-size} ${x+size},${y} ${x},${y+size} ${x-size},${y}" class="avatar-shape"/>`;
+      return `<polygon points="${x},${y - size} ${x + size},${y} ${x},${y + size} ${x - size},${y}" class="avatar-shape"/>`;
     case 'star':
       const points = [];
       for (let i = 0; i < 5; i++) {
-        const angle = (i * 144 - 90) * Math.PI / 180;
+        const angle = ((i * 144 - 90) * Math.PI) / 180;
         const outerX = x + Math.cos(angle) * size;
         const outerY = y + Math.sin(angle) * size;
         points.push(`${outerX},${outerY}`);
-        
-        const innerAngle = ((i + 0.5) * 144 - 90) * Math.PI / 180;
+
+        const innerAngle = (((i + 0.5) * 144 - 90) * Math.PI) / 180;
         const innerX = x + Math.cos(innerAngle) * (size * 0.4);
         const innerY = y + Math.sin(innerAngle) * (size * 0.4);
         points.push(`${innerX},${innerY}`);
       }
       return `<polygon points="${points.join(' ')}" class="avatar-shape"/>`;
     case 'heart':
-      return `<path d="M${x},${y+size*0.3} C${x-size*0.7},${y-size*0.3} ${x-size},${y} ${x-size*0.5},${y+size*0.5} L${x},${y+size} L${x+size*0.5},${y+size*0.5} C${x+size},${y} ${x+size*0.7},${y-size*0.3} ${x},${y+size*0.3}" class="avatar-shape"/>`;
+      return `<path d="M${x},${y + size * 0.3} C${x - size * 0.7},${y - size * 0.3} ${x - size},${y} ${x - size * 0.5},${y + size * 0.5} L${x},${y + size} L${x + size * 0.5},${y + size * 0.5} C${x + size},${y} ${x + size * 0.7},${y - size * 0.3} ${x},${y + size * 0.3}" class="avatar-shape"/>`;
     default:
       return `<circle cx="${x}" cy="${y}" r="${size}" class="avatar-shape"/>`;
   }
@@ -196,9 +197,9 @@ app.get('/api/stats', async (req, res) => {
     const recentUsers = await prisma.user.count({
       where: {
         createdAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
-        }
-      }
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+        },
+      },
     });
 
     res.json({
@@ -206,13 +207,13 @@ app.get('/api/stats', async (req, res) => {
       statistics: {
         totalUsers: userCount,
         newUsersThisWeek: recentUsers,
-        databaseConnected: true
-      }
+        databaseConnected: true,
+      },
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: 'Database error' 
+    res.status(500).json({
+      success: false,
+      message: 'Database error',
     });
   }
 });
@@ -225,7 +226,7 @@ io.on('connection', (socket: any) => {
     try {
       const decoded: any = require('jsonwebtoken').verify(token, JWT_SECRET);
       userId = decoded.userId;
-  setUserOnline(userId, socket.id, decoded.username);
+      setUserOnline(userId, socket.id, decoded.username);
     } catch {}
   }
 
@@ -245,7 +246,7 @@ io.on('connection', (socket: any) => {
           state: engine.getGameState(),
           players: engine.getPlayers(),
           gameId,
-          tableConfig
+          tableConfig,
         });
       }
     } catch (err) {
@@ -267,7 +268,7 @@ io.on('connection', (socket: any) => {
           players: engine.getPlayers(),
           gameId,
           tableConfig,
-          requested: true
+          requested: true,
         });
       } else {
         socket.emit('table:noState', { tableId: data.tableId });
@@ -289,159 +290,165 @@ io.on('connection', (socket: any) => {
     }
     console.log('🔌 Player disconnected:', socket.id);
   });
-  
+
   // Handle dealer's trump selection from client
-  socket.on('game:selectTrump', async (data: { tableId: string; gameId: string; trump: string }) => {
-    const { tableId, gameId, trump } = data;
-    try {
-      const engine = require('./gameHub').gameHub.get(gameId);
-      const stateBefore = engine.getGameState();
-      
-      // ✅ VALIDATION: Check if game is in correct phase
-      if (stateBefore.phase !== 'trump_selection') {
-        socket.emit('game:error', { 
-          message: `Cannot select trump in phase '${stateBefore.phase}'`,
-          code: 'INVALID_PHASE'
-        });
-        return;
-      }
+  socket.on(
+    'game:selectTrump',
+    async (data: { tableId: string; gameId: string; trump: string }) => {
+      const { tableId, gameId, trump } = data;
+      try {
+        const engine = require('./gameHub').gameHub.get(gameId);
+        const stateBefore = engine.getGameState();
 
-      // ✅ VALIDATION: Map socket user to player
-      if (!userId) {
-        socket.emit('game:error', { 
-          message: 'Authentication required',
-          code: 'UNAUTHENTICATED'
-        });
-        return;
-      }
+        // ✅ VALIDATION: Check if game is in correct phase
+        if (stateBefore.phase !== 'trump_selection') {
+          socket.emit('game:error', {
+            message: `Cannot select trump in phase '${stateBefore.phase}'`,
+            code: 'INVALID_PHASE',
+          });
+          return;
+        }
 
-      const players = engine.getPlayers();
-      const player = players.find((p: any) => p.userId === userId);
-      
-      if (!player) {
-        socket.emit('game:error', { 
-          message: 'You are not a player in this game',
-          code: 'NOT_IN_GAME'
-        });
-        return;
-      }
+        // ✅ VALIDATION: Map socket user to player
+        if (!userId) {
+          socket.emit('game:error', {
+            message: 'Authentication required',
+            code: 'UNAUTHENTICATED',
+          });
+          return;
+        }
 
-      // ✅ VALIDATION: Check if it's this player's turn
-      if (stateBefore.currentPlayer !== players.indexOf(player)) {
-        socket.emit('game:error', { 
-          message: `Not your turn (current player: ${stateBefore.currentPlayer})`,
-          code: 'NOT_YOUR_TURN'
+        const players = engine.getPlayers();
+        const player = players.find((p: any) => p.userId === userId);
+
+        if (!player) {
+          socket.emit('game:error', {
+            message: 'You are not a player in this game',
+            code: 'NOT_IN_GAME',
+          });
+          return;
+        }
+
+        // ✅ VALIDATION: Check if it's this player's turn
+        if (stateBefore.currentPlayer !== players.indexOf(player)) {
+          socket.emit('game:error', {
+            message: `Not your turn (current player: ${stateBefore.currentPlayer})`,
+            code: 'NOT_YOUR_TURN',
+          });
+          return;
+        }
+
+        // The player whose turn it is (forehand, or partner after schieben) selects trump
+        engine.selectTrump(trump as any, players.indexOf(player));
+        const newState = engine.getGameState();
+
+        // Broadcast updated game state to all clients in the table room
+        io.to(`table:${tableId}`).emit('game:state', {
+          tableId,
+          state: newState,
+          players: engine.getPlayers(),
+          gameId,
         });
-        return;
+      } catch (err) {
+        console.error('Error processing selectTrump:', err);
+        socket.emit('game:error', {
+          message: 'Failed to select trump',
+          code: 'TRUMP_SELECTION_FAILED',
+        });
       }
-      
-      // The player whose turn it is (forehand, or partner after schieben) selects trump
-      engine.selectTrump(trump as any, players.indexOf(player));
-      const newState = engine.getGameState();
-      
-      // Broadcast updated game state to all clients in the table room
-      io.to(`table:${tableId}`).emit('game:state', { 
-        tableId, 
-        state: newState, 
-        players: engine.getPlayers(), 
-        gameId 
-      });
-    } catch (err) {
-      console.error('Error processing selectTrump:', err);
-      socket.emit('game:error', { 
-        message: 'Failed to select trump',
-        code: 'TRUMP_SELECTION_FAILED'
-      });
-    }
-  });
+    },
+  );
 
   // Handle a player's card play in multiplayer
-  socket.on('game:playCard', async (data: { tableId: string; gameId: string; playerId: number; cardId: string }) => {
-    const { tableId, gameId, playerId, cardId } = data;
-    try {
-      const engine = require('./gameHub').gameHub.get(gameId);
-      const state = engine.getGameState();
-      
-      // ✅ VALIDATION: Check if game is in playing phase
-      if (state.phase !== 'playing') {
-        socket.emit('game:error', { 
-          message: `Cannot play cards in phase '${state.phase}'`,
-          code: 'INVALID_PHASE'
-        });
-        return;
-      }
+  socket.on(
+    'game:playCard',
+    async (data: { tableId: string; gameId: string; playerId: number; cardId: string }) => {
+      const { tableId, gameId, playerId, cardId } = data;
+      try {
+        const engine = require('./gameHub').gameHub.get(gameId);
+        const state = engine.getGameState();
 
-      // ✅ VALIDATION: Authenticate user
-      if (!userId) {
-        socket.emit('game:error', { 
-          message: 'Authentication required',
-          code: 'UNAUTHENTICATED'
-        });
-        return;
-      }
+        // ✅ VALIDATION: Check if game is in playing phase
+        if (state.phase !== 'playing') {
+          socket.emit('game:error', {
+            message: `Cannot play cards in phase '${state.phase}'`,
+            code: 'INVALID_PHASE',
+          });
+          return;
+        }
 
-      const players = engine.getPlayers();
-      const player = players.find((p: any) => p.userId === userId);
-      
-      if (!player) {
-        socket.emit('game:error', { 
-          message: 'You are not a player in this game',
-          code: 'NOT_IN_GAME'
-        });
-        return;
-      }
+        // ✅ VALIDATION: Authenticate user
+        if (!userId) {
+          socket.emit('game:error', {
+            message: 'Authentication required',
+            code: 'UNAUTHENTICATED',
+          });
+          return;
+        }
 
-      const playerIndex = players.indexOf(player);
+        const players = engine.getPlayers();
+        const player = players.find((p: any) => p.userId === userId);
 
-      // ✅ VALIDATION: Check turn order
-      if (state.currentPlayer !== playerIndex) {
-        socket.emit('game:error', { 
-          message: `Not your turn (current player: ${state.currentPlayer}, you are: ${playerIndex})`,
-          code: 'NOT_YOUR_TURN'
-        });
-        return;
-      }
+        if (!player) {
+          socket.emit('game:error', {
+            message: 'You are not a player in this game',
+            code: 'NOT_IN_GAME',
+          });
+          return;
+        }
 
-      // ✅ VALIDATION: Check card legality
-      const legalCards = engine.getLegalCards(playerIndex);
-      const isLegal = legalCards.some((c: any) => c.id === cardId);
-      
-      if (!isLegal) {
-        socket.emit('game:error', { 
-          message: 'Illegal card play (must follow suit or play trump)',
-          code: 'ILLEGAL_CARD',
-          legalCards: legalCards.map((c: any) => c.id)
+        const playerIndex = players.indexOf(player);
+
+        // ✅ VALIDATION: Check turn order
+        if (state.currentPlayer !== playerIndex) {
+          socket.emit('game:error', {
+            message: `Not your turn (current player: ${state.currentPlayer}, you are: ${playerIndex})`,
+            code: 'NOT_YOUR_TURN',
+          });
+          return;
+        }
+
+        // ✅ VALIDATION: Check card legality
+        const legalCards = engine.getLegalCards(playerIndex);
+        const isLegal = legalCards.some((c: any) => c.id === cardId);
+
+        if (!isLegal) {
+          socket.emit('game:error', {
+            message: 'Illegal card play (must follow suit or play trump)',
+            code: 'ILLEGAL_CARD',
+            legalCards: legalCards.map((c: any) => c.id),
+          });
+          return;
+        }
+
+        // ✅ All validations passed - apply the move
+        const ok = engine.playCard(cardId, playerIndex);
+        if (!ok) {
+          // Should not happen after validations, but defensive check
+          socket.emit('game:error', {
+            message: 'Card play rejected by engine',
+            code: 'PLAY_REJECTED',
+          });
+          return;
+        }
+
+        // Broadcast updated state to table
+        const newState = engine.getGameState();
+        io.to(`table:${tableId}`).emit('game:state', {
+          tableId,
+          state: newState,
+          players: engine.getPlayers(),
+          gameId,
         });
-        return;
-      }
-      
-      // ✅ All validations passed - apply the move
-      const ok = engine.playCard(cardId, playerIndex);
-      if (!ok) {
-        // Should not happen after validations, but defensive check
-        socket.emit('game:error', { 
-          message: 'Card play rejected by engine',
-          code: 'PLAY_REJECTED'
+      } catch (err) {
+        console.error('Error processing playCard:', err);
+        socket.emit('game:error', {
+          message: 'Failed to play card',
+          code: 'PLAY_FAILED',
         });
-        return;
       }
-      
-      // Broadcast updated state to table
-      const newState = engine.getGameState();
-      io.to(`table:${tableId}`).emit('game:state', { 
-        tableId, 
-        state: newState, 
-        players: engine.getPlayers(), 
-        gameId 
-      });
-    } catch (err) {
-      console.error('Error processing playCard:', err);
-      socket.emit('game:error', { 
-        message: 'Failed to play card',
-        code: 'PLAY_FAILED'
-      });
-    }
-  });
+    },
+  );
 });
 
 app.get('/api/presence/online-count', (req, res) => {
@@ -455,7 +462,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   console.error('Error:', err);
   res.status(500).json({
     success: false,
-    message: 'Internal server error'
+    message: 'Internal server error',
   });
 });
 

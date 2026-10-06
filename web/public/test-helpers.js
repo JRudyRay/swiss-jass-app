@@ -45,39 +45,43 @@ console.log('4. Target score: ≥90');
 console.log('');
 
 // Helper function to clear error
-window.clearTestError = function() {
+window.clearTestError = function () {
   localStorage.removeItem('jassUser');
   localStorage.removeItem('jassToken');
   console.log('✅ Cleared test data. Reload page to see login.');
 };
 
 // Helper function to check component status
-window.checkComponents = function() {
+window.checkComponents = function () {
   console.log('\n🔍 Component Check:');
-  
+
   // Check if React is loaded
   const hasReact = window.React !== undefined;
   console.log(`React: ${hasReact ? '✅' : '❌'}`);
-  
+
   // Check for error boundary elements
   const hasErrorBoundary = document.querySelector('[class*="error"]') !== null;
   console.log(`Error Boundary Present: ${hasErrorBoundary ? '✅' : '❌'}`);
-  
+
   // Check for loading indicators
-  const hasLoadingIndicator = document.querySelector('[class*="spinner"]') !== null ||
-                               document.querySelector('[class*="loading"]') !== null;
-  console.log(`Loading Components: ${hasLoadingIndicator ? '✅ Visible' : 'ℹ️ Not currently showing'}`);
-  
+  const hasLoadingIndicator =
+    document.querySelector('[class*="spinner"]') !== null ||
+    document.querySelector('[class*="loading"]') !== null;
+  console.log(
+    `Loading Components: ${hasLoadingIndicator ? '✅ Visible' : 'ℹ️ Not currently showing'}`,
+  );
+
   // Check for empty states
-  const hasEmptyState = document.body.textContent.includes('No Active Tables') ||
-                        document.body.textContent.includes('No Friends Yet');
+  const hasEmptyState =
+    document.body.textContent.includes('No Active Tables') ||
+    document.body.textContent.includes('No Friends Yet');
   console.log(`Empty States: ${hasEmptyState ? '✅ Visible' : 'ℹ️ Not currently showing'}`);
-  
+
   console.log('\nNote: Loading and Empty states only show when conditions are met.');
 };
 
 // Helper function to measure performance
-window.measureSpinnerPerformance = function() {
+window.measureSpinnerPerformance = function () {
   console.log('\n⏱️ Measuring Spinner Performance...');
   console.log('1. Open DevTools → Performance tab');
   console.log('2. Click Record button');
@@ -87,11 +91,11 @@ window.measureSpinnerPerformance = function() {
 };
 
 // Helper function to test all components
-window.runQuickTests = function() {
+window.runQuickTests = function () {
   console.log('\n🚀 Running Quick Component Tests...\n');
-  
+
   checkComponents();
-  
+
   console.log('\n📋 Manual Tests Required:');
   console.log('1. Trigger error: localStorage.setItem("jassUser", "{bad}"); location.reload();');
   console.log('2. Create table and watch loading spinner');

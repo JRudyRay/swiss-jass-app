@@ -19,7 +19,10 @@ function App() {
   const [token, setToken] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>('game');
   const [lang, setLang] = useState<Lang>(() => {
-    try { const saved = localStorage.getItem('jassLang'); if (isLang(saved)) return saved; } catch {}
+    try {
+      const saved = localStorage.getItem('jassLang');
+      if (isLang(saved)) return saved;
+    } catch {}
     return detectLang();
   });
 
@@ -27,14 +30,13 @@ function App() {
     // Check for saved token and language on mount
     const savedToken = localStorage.getItem('jassToken');
     const savedUser = localStorage.getItem('jassUser');
-    
+
     if (ONLINE_ENABLED && savedToken && savedUser) {
       try {
         setUser(JSON.parse(savedUser));
         setToken(savedToken);
       } catch {}
     }
-    
   }, []);
 
   useEffect(() => {
@@ -43,14 +45,16 @@ function App() {
 
   const handleLangChange = (newLang: Lang) => {
     setLang(newLang);
-    try { localStorage.setItem('jassLang', newLang); } catch {}
+    try {
+      localStorage.setItem('jassLang', newLang);
+    } catch {}
   };
 
   const handleLogin = (newToken: string, newUser: any) => {
     setToken(newToken);
     setUser(newUser);
     setShowAuth(false);
-    
+
     // Save to localStorage
     localStorage.setItem('jassToken', newToken);
     localStorage.setItem('jassUser', JSON.stringify(newUser));
@@ -60,7 +64,7 @@ function App() {
     setUser(null);
     setToken(null);
     setCurrentView('game');
-    
+
     // Clear localStorage
     localStorage.removeItem('jassToken');
     localStorage.removeItem('jassUser');
@@ -85,8 +89,8 @@ function App() {
   return (
     <ErrorBoundary>
       <div style={styles.app}>
-        <AppHeader 
-          user={user} 
+        <AppHeader
+          user={user}
           onLogout={handleLogout}
           onSignIn={() => setShowAuth(true)}
           currentView={view}
@@ -99,21 +103,25 @@ function App() {
           {view === 'dashboard' && (
             <SwissDashboard user={user} token={token || ''} onNavigate={setCurrentView} />
           )}
-          {view === 'game' && (
-            <JassGame user={user} onLogout={handleLogout} lang={lang} />
-          )}
+          {view === 'game' && <JassGame user={user} onLogout={handleLogout} lang={lang} />}
           {view === 'tables' && (
-            <SwissTables user={user} token={token || ''} onJoinGame={(tableId) => {
-              console.log('Joined table:', tableId);
-              setCurrentView('game');
-            }} />
+            <SwissTables
+              user={user}
+              token={token || ''}
+              onJoinGame={(tableId) => {
+                console.log('Joined table:', tableId);
+                setCurrentView('game');
+              }}
+            />
           )}
           {view === 'rankings' && (
-            <Rankings apiUrl={API_URL || ''} onBack={() => setCurrentView('dashboard')} onReset={() => {}} />
+            <Rankings
+              apiUrl={API_URL || ''}
+              onBack={() => setCurrentView('dashboard')}
+              onReset={() => {}}
+            />
           )}
-          {view === 'friends' && (
-            <SwissFriends user={user} token={token || ''} />
-          )}
+          {view === 'friends' && <SwissFriends user={user} token={token || ''} />}
         </main>
       </div>
     </ErrorBoundary>

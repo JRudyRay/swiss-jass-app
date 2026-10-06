@@ -14,20 +14,20 @@ router.post('/create', (req, res) => {
   try {
     const { playerNames, gameType = 'schieber' } = req.body || {};
     const { id, engine } = gameHub.create(playerNames, gameType);
-    
+
     // Deal cards to start the game
     engine.dealCards();
-    
+
     const state = engine.getGameState();
     const players = engine.getPlayers();
-    const humanPlayer = players.find(p => !p.isBot);
-    
-    res.json({ 
-      success: true, 
-      gameId: id, 
+    const humanPlayer = players.find((p) => !p.isBot);
+
+    res.json({
+      success: true,
+      gameId: id,
       state,
       players,
-      hand: humanPlayer?.hand || []
+      hand: humanPlayer?.hand || [],
     });
   } catch (e: any) {
     console.error('Error creating game:', e);
@@ -43,7 +43,7 @@ router.post('/create', (req, res) => {
 router.post('/report', async (req, res) => {
   try {
     const { teamA, teamB, scoreA, scoreB, rounds, isMultiplayer } = req.body || {};
-    
+
     if (!Array.isArray(teamA) || !Array.isArray(teamB)) {
       return res.status(400).json({ success: false, message: 'Invalid teams' });
     }
@@ -53,12 +53,12 @@ router.post('/report', async (req, res) => {
 
     const { updateStatsForMatch } = require('../services/gameService');
     await updateStatsForMatch(
-      teamA, 
-      teamB, 
-      Number(scoreA || 0), 
-      Number(scoreB || 0), 
+      teamA,
+      teamB,
+      Number(scoreA || 0),
+      Number(scoreB || 0),
       Number(rounds || 0),
-      isMultiplayerGame  // ✅ Pass flag
+      isMultiplayerGame, // ✅ Pass flag
     );
 
     res.json({ success: true, message: 'Match report processed' });
@@ -79,18 +79,26 @@ router.post('/user-result', async (req, res) => {
     const token = authHeader ? String(authHeader).split(' ')[1] : null;
     if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
     let decoded: any;
-    try { decoded = AuthService.verifyToken(token); } catch { return res.status(401).json({ success: false, message: 'Invalid token' }); }
+    try {
+      decoded = AuthService.verifyToken(token);
+    } catch {
+      return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
     const userId = decoded?.userId;
     if (!userId) return res.status(401).json({ success: false, message: 'Invalid token user' });
 
     const { won, points = 0, rounds = 0 } = req.body || {};
     const { updateUserStats } = require('../services/gameService');
-    await updateUserStats(userId, {
-      gamesPlayed: 1,
-      gamesWon: won ? 1 : 0,
-      totalPoints: Number(points || 0),
-      totalRounds: Number(rounds || 0)
-    }, false);  // ✅ Explicitly mark as offline (single-user endpoint is for offline games)
+    await updateUserStats(
+      userId,
+      {
+        gamesPlayed: 1,
+        gamesWon: won ? 1 : 0,
+        totalPoints: Number(points || 0),
+        totalRounds: Number(rounds || 0),
+      },
+      false,
+    ); // ✅ Explicitly mark as offline (single-user endpoint is for offline games)
     return res.json({ success: true, message: 'User stats updated', won: !!won });
   } catch (e: any) {
     console.error('Error in user-result:', e);
@@ -108,15 +116,15 @@ router.get('/:id', (req, res) => {
     const engine = gameHub.get(id);
     const state = engine.getGameState();
     const players = engine.getPlayers();
-    const humanPlayer = players.find(p => !p.isBot);
-    
-    res.json({ 
+    const humanPlayer = players.find((p) => !p.isBot);
+
+    res.json({
       success: true,
       gameId: id,
       state,
       players,
       hand: humanPlayer?.hand || [],
-      legalCards: state.currentPlayer === 0 ? engine.getLegalCards(0) : []
+      legalCards: state.currentPlayer === 0 ? engine.getLegalCards(0) : [],
     });
   } catch (e: any) {
     res.status(404).json({ success: false, message: 'Game not found' });
@@ -133,28 +141,28 @@ router.post('/:id/trump', (req, res) => {
     const { id } = req.params;
     const { trump, playerId = 0 } = req.body as { trump: TrumpContract; playerId?: number };
     const engine = gameHub.get(id);
-    
+
     const success = engine.selectTrump(trump, playerId);
-    
+
     if (!success) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cannot select trump at this time' 
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot select trump at this time',
       });
     }
-    
+
     const state = engine.getGameState();
     const players = engine.getPlayers();
-    const humanPlayer = players.find(p => !p.isBot);
-    
+    const humanPlayer = players.find((p) => !p.isBot);
+
     // Start bot play after trump selection
     gameHub.startBotPlay(id);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       state,
       players,
-      hand: humanPlayer?.hand || []
+      hand: humanPlayer?.hand || [],
     });
   } catch (e: any) {
     res.status(400).json({ success: false, message: e.message });
@@ -171,26 +179,26 @@ router.post('/:id/play', (req, res) => {
     const { id } = req.params;
     const { playerId = 0, cardId } = req.body;
     const engine = gameHub.get(id);
-    
+
     const success = engine.playCard(cardId, playerId);
-    
+
     if (!success) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Illegal card play' 
+      return res.status(400).json({
+        success: false,
+        message: 'Illegal card play',
       });
     }
-    
+
     const state = engine.getGameState();
     const players = engine.getPlayers();
-    const humanPlayer = players.find(p => !p.isBot);
-    
-    res.json({ 
-      success: true, 
+    const humanPlayer = players.find((p) => !p.isBot);
+
+    res.json({
+      success: true,
       state,
       players,
       hand: humanPlayer?.hand || [],
-      legalCards: state.currentPlayer === 0 ? engine.getLegalCards(0) : []
+      legalCards: state.currentPlayer === 0 ? engine.getLegalCards(0) : [],
     });
   } catch (e: any) {
     res.status(400).json({ success: false, message: e.message });
@@ -205,17 +213,17 @@ router.post('/:id/bot-action', (req, res) => {
   try {
     const { id } = req.params;
     gameHub.performBotAction(id);
-    
+
     const engine = gameHub.get(id);
     const state = engine.getGameState();
     const players = engine.getPlayers();
-    const humanPlayer = players.find(p => !p.isBot);
-    
-    res.json({ 
-      success: true, 
+    const humanPlayer = players.find((p) => !p.isBot);
+
+    res.json({
+      success: true,
       state,
       players,
-      hand: humanPlayer?.hand || []
+      hand: humanPlayer?.hand || [],
     });
   } catch (e: any) {
     res.status(400).json({ success: false, message: e.message });
@@ -233,7 +241,7 @@ router.post('/:id/complete', async (req, res) => {
     const { userTeamScore, opponentTeamScore, userWon, totalRounds } = req.body;
     // Try to extract userId from Authorization header (JWT)
     let userId: string | null = null;
-    let isMultiplayer = false;  // ✅ Track mode
+    let isMultiplayer = false; // ✅ Track mode
 
     try {
       const authHeader = (req.headers && (req.headers as any).authorization) || null;
@@ -245,7 +253,9 @@ router.post('/:id/complete', async (req, res) => {
 
       // ✅ Check if this is a multiplayer game via gameHub
       const engine = gameHub.get(id);
-      const tableEntry: any = Array.from((gameHub as any)['tableGameMap'].values()).find((e: any) => e.gameId === id);
+      const tableEntry: any = Array.from((gameHub as any)['tableGameMap'].values()).find(
+        (e: any) => e.gameId === id,
+      );
       isMultiplayer = tableEntry?.tableConfig?.gameMode === 'MULTIPLAYER';
     } catch (e) {
       // fall through - userId stays null
@@ -254,10 +264,10 @@ router.post('/:id/complete', async (req, res) => {
     if (!userId) {
       return res.status(401).json({ success: false, message: 'User not authenticated' });
     }
-    
+
     // Import the gameService here to avoid circular dependencies
     const { updateUserStats } = require('../services/gameService');
-    
+
     // Calculate points earned (Swiss Jass typically awards 1-3 points based on margin)
     let pointsEarned = 0;
     if (userWon) {
@@ -270,22 +280,28 @@ router.post('/:id/complete', async (req, res) => {
         pointsEarned = 1; // Close victory
       }
     }
-    
+
     // ✅ Update user stats with isMultiplayer flag
-    await updateUserStats(userId, {
-      gamesPlayed: 1,
-      gamesWon: userWon ? 1 : 0,
-      totalPoints: pointsEarned,
-      totalRounds: totalRounds || 0
-    }, isMultiplayer);
-    
+    await updateUserStats(
+      userId,
+      {
+        gamesPlayed: 1,
+        gamesWon: userWon ? 1 : 0,
+        totalPoints: pointsEarned,
+        totalRounds: totalRounds || 0,
+      },
+      isMultiplayer,
+    );
+
     // Clean up the game from memory
     gameHub.destroyGame(id);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       pointsEarned,
-      message: userWon ? `Congratulations! You earned ${pointsEarned} points!` : 'Better luck next time!'
+      message: userWon
+        ? `Congratulations! You earned ${pointsEarned} points!`
+        : 'Better luck next time!',
     });
   } catch (e: any) {
     console.error('Error completing game:', e);
@@ -294,4 +310,3 @@ router.post('/:id/complete', async (req, res) => {
 });
 
 export default router;
-

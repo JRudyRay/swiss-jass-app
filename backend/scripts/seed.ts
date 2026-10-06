@@ -24,8 +24,8 @@ async function main() {
         lastName: 'Müller',
         country: 'CH',
         city: 'Zürich',
-        isBot: false
-      }
+        isBot: false,
+      },
     }),
     prisma.user.upsert({
       where: { email: 'bob@test.com' },
@@ -38,8 +38,8 @@ async function main() {
         lastName: 'Schmidt',
         country: 'CH',
         city: 'Bern',
-        isBot: false
-      }
+        isBot: false,
+      },
     }),
     prisma.user.upsert({
       where: { email: 'charlie@test.com' },
@@ -52,8 +52,8 @@ async function main() {
         lastName: 'Weber',
         country: 'CH',
         city: 'Basel',
-        isBot: false
-      }
+        isBot: false,
+      },
     }),
     prisma.user.upsert({
       where: { email: 'diana@test.com' },
@@ -66,14 +66,14 @@ async function main() {
         lastName: 'Fischer',
         country: 'CH',
         city: 'Lausanne',
-        isBot: false
-      }
-    })
+        isBot: false,
+      },
+    }),
   ]);
 
   console.log(`✅ Created ${users.length} test users`);
   console.log('📧 Test accounts (all with password: "password123"):');
-  users.forEach(u => console.log(`   - ${u.username} (${u.email})`));
+  users.forEach((u) => console.log(`   - ${u.username} (${u.email})`));
 
   // DO NOT create bot users here
   // They are created on-demand by tableService.ts when filling seats

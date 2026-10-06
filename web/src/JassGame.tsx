@@ -23,7 +23,7 @@ import { messages, type Lang } from './i18n';
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
 // so default to empty string to indicate local-only mode.
-const _meta = (import.meta as any);
+const _meta = import.meta as any;
 
 type GameState = {
   phase: string;
@@ -40,28 +40,80 @@ type GameState = {
 type Player = { id: number; name: string; hand: any[]; team: number; position: string };
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: { fontFamily: '"Helvetica Neue", "Arial", sans-serif', minHeight: '100vh', background: '#f5f2e8', paddingBottom: 40 },
-  header: { background: '#D42E2C', color: 'white', padding: '1rem 1rem', textAlign: 'center' as const, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
-  gameArea: { maxWidth: 960, margin: '12px auto', background: 'rgba(255, 255, 255, 0.8)', borderRadius: 20, padding: 'clamp(8px, 3vw, 24px)', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,0,0,0.05)' },
-  controls: { display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' as const, justifyContent: 'center' },
-  button: { 
-    background: '#1A7A4C', 
-    color: 'white', 
-    border: 'none', 
-    padding: '10px 18px', 
-    borderRadius: 8, 
-    cursor: 'pointer', 
-    fontWeight: 600, 
+  container: {
+    fontFamily: '"Helvetica Neue", "Arial", sans-serif',
+    minHeight: '100vh',
+    background: '#f5f2e8',
+    paddingBottom: 40,
+  },
+  header: {
+    background: '#D42E2C',
+    color: 'white',
+    padding: '1rem 1rem',
+    textAlign: 'center' as const,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  },
+  gameArea: {
+    maxWidth: 960,
+    margin: '12px auto',
+    background: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 20,
+    padding: 'clamp(8px, 3vw, 24px)',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+    backdropFilter: 'blur(8px)',
+    border: '1px solid rgba(0,0,0,0.05)',
+  },
+  controls: {
+    display: 'flex',
+    gap: 12,
+    marginBottom: 16,
+    flexWrap: 'wrap' as const,
+    justifyContent: 'center',
+  },
+  button: {
+    background: '#1A7A4C',
+    color: 'white',
+    border: 'none',
+    padding: '10px 18px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    fontWeight: 600,
     fontSize: 14,
     boxShadow: '0 2px 8px rgba(26, 122, 76, 0.3)',
-    transition: 'all 0.2s ease'
+    transition: 'all 0.2s ease',
   },
-  message: { flex: 1, textAlign: 'center' as const, fontSize: 15, fontWeight: 600, color: '#3a2e20', padding: '8px 12px', background: 'rgba(255,255,255,0.7)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' },
-  hand: { display: 'flex', justifyContent: 'center', padding: '22px 4px 10px', maxWidth: 940, margin: '0 auto' },
-  table: { padding: 14, background: 'rgba(25, 122, 76, 0.1)', borderRadius: 10, minHeight: 140, marginBottom: 12 },
+  message: {
+    flex: 1,
+    textAlign: 'center' as const,
+    fontSize: 15,
+    fontWeight: 600,
+    color: '#3a2e20',
+    padding: '8px 12px',
+    background: 'rgba(255,255,255,0.7)',
+    borderRadius: 10,
+    border: '1px solid rgba(0,0,0,0.05)',
+  },
+  hand: {
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '22px 4px 10px',
+    maxWidth: 940,
+    margin: '0 auto',
+  },
+  table: {
+    padding: 14,
+    background: 'rgba(25, 122, 76, 0.1)',
+    borderRadius: 10,
+    minHeight: 140,
+    marginBottom: 12,
+  },
 };
 
-export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang }> = ({ user, onLogout, lang }) => {
+export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang }> = ({
+  user,
+  onLogout,
+  lang,
+}) => {
   // Add CSS animations for victory modal
   useEffect(() => {
     const style = document.createElement('style');
@@ -97,12 +149,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [message, setMessage] = useState(t.welcome);
   const [isLoading, setIsLoading] = useState(false);
-  const [usersList, setUsersList] = useState<Array<{ id: string; username: string; totalPoints: number; totalWins?: number; totalGames?: number }>>([]);
+  const [usersList, setUsersList] = useState<
+    Array<{
+      id: string;
+      username: string;
+      totalPoints: number;
+      totalWins?: number;
+      totalGames?: number;
+    }>
+  >([]);
   const [totals, setTotals] = useState<Record<string, number>>(() => {
     try {
       const raw = localStorage.getItem('jassTotals');
       return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
+    } catch {
+      return {};
+    }
   });
   const toGameState = (st: Schieber.State): GameState => ({
     phase: st.phase,
@@ -112,23 +174,35 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     scores: st.scores,
     dealer: st.dealer,
     weis: st.weis,
-    forehand: st.forehand ?? null
+    forehand: st.forehand ?? null,
   });
   // richer local user store: name -> { totalPoints, gamesPlayed, wins, lastSeen, passwordHash }
   const [jassUsers, setJassUsers] = useState<Record<string, any>>(() => {
-    try { return JSON.parse(localStorage.getItem('jassUsers') || '{}'); } catch { return {}; }
+    try {
+      return JSON.parse(localStorage.getItem('jassUsers') || '{}');
+    } catch {
+      return {};
+    }
   });
   const [gameType, setGameType] = useState<string>('schieber');
   // Restore the last chosen target so a resumed match ends where it was meant to.
   const [maxPoints, setMaxPoints] = useState<number>(() => {
-    try { const n = Number(JSON.parse(localStorage.getItem('jassLocalOptions') || '{}').maxPoints); return n >= 100 ? n : 1000; } catch { return 1000; }
+    try {
+      const n = Number(JSON.parse(localStorage.getItem('jassLocalOptions') || '{}').maxPoints);
+      return n >= 100 ? n : 1000;
+    } catch {
+      return 1000;
+    }
   });
   // The bots for the next local match, shown on the setup screen.
   const [botNames, setBotNames] = useState<string[]>(() => Schieber.pickBotNames());
   const [isLocal, setIsLocal] = useState<boolean>(false);
   const [chosenTrump, setChosenTrump] = useState<string | null>(null);
   const [playDelayMs, setPlayDelayMs] = useState<number>(450);
-  const [animatingSwoop, setAnimatingSwoop] = useState<{ winnerId: number | null; cards: any[] } | null>(null);
+  const [animatingSwoop, setAnimatingSwoop] = useState<{
+    winnerId: number | null;
+    cards: any[];
+  } | null>(null);
   const [uiPendingResolve, setUiPendingResolve] = useState(false);
   // Recovery helpers to avoid dead-end states
   const prevPlayerRef = useRef<number | null>(null);
@@ -140,10 +214,18 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     west: useRef<HTMLDivElement | null>(null),
     east: useRef<HTMLDivElement | null>(null),
   };
-  const [animPositions, setAnimPositions] = useState<Record<string, { left:number; top:number; rot:number }> | null>(null);
-  const [teamNames, setTeamNames] = useState<{1:string;2:string}>(() => ({ 1: 'Team 1', 2: 'Team 2' }));
+  const [animPositions, setAnimPositions] = useState<Record<
+    string,
+    { left: number; top: number; rot: number }
+  > | null>(null);
+  const [teamNames, setTeamNames] = useState<{ 1: string; 2: string }>(() => ({
+    1: 'Team 1',
+    2: 'Team 2',
+  }));
   const [optionsVisible, setOptionsVisible] = useState(true);
-  const [setupChoice, setSetupChoice] = useState<'welcome' | 'single' | 'multi'>(ONLINE_ENABLED ? 'welcome' : 'single');
+  const [setupChoice, setSetupChoice] = useState<'welcome' | 'single' | 'multi'>(
+    ONLINE_ENABLED ? 'welcome' : 'single',
+  );
 
   // simplify optional checks used in JSX
   const isAnimating = Boolean(animatingSwoop);
@@ -155,7 +237,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [newPasswordInput, setNewPasswordInput] = useState('');
 
   // multiplayer state
-  const [mode, setMode] = useState<'single'|'multi'>('single');
+  const [mode, setMode] = useState<'single' | 'multi'>('single');
   const [socket, setSocket] = useState<Socket | null>(null);
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [tables, setTables] = useState<any[]>([]);
@@ -166,23 +248,34 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [newTeam1, setNewTeam1] = useState('Team 1');
   const [newTeam2, setNewTeam2] = useState('Team 2');
   const [newTargetPoints, setNewTargetPoints] = useState(1000);
-  const [friendsTabData, setFriendsTabData] = useState<{friends:any[]; requests:any[]}>({ friends: [], requests: [] });
+  const [friendsTabData, setFriendsTabData] = useState<{ friends: any[]; requests: any[] }>({
+    friends: [],
+    requests: [],
+  });
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [activeTableId, setActiveTableId] = useState<string | null>(null);
-  
+
   // New UX components state
   const [showVictory, setShowVictory] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'default' | 'success' | 'error' | 'warning' } | null>(null);
-  
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'default' | 'success' | 'error' | 'warning';
+  } | null>(null);
+
   // Toast helper function
-  const showToast = (message: string, type: 'default' | 'success' | 'error' | 'warning' = 'default') => {
+  const showToast = (
+    message: string,
+    type: 'default' | 'success' | 'error' | 'warning' = 'default',
+  ) => {
     setToast({ message, type });
     setMessage(message); // Also update old message display for now
   };
-  
+
   // Ref to avoid stale closure inside initial socket effect
   const activeTableIdRef = useRef<string | null>(null);
-  useEffect(() => { activeTableIdRef.current = activeTableId; }, [activeTableId]);
+  useEffect(() => {
+    activeTableIdRef.current = activeTableId;
+  }, [activeTableId]);
   // Persist last active table
   useEffect(() => {
     try {
@@ -206,12 +299,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [dealerUserId, setDealerUserId] = useState<string | null>(null);
   const [mySeat, setMySeat] = useState<number | null>(null);
   const mySeatRef = useRef<number | null>(null);
-  useEffect(() => { mySeatRef.current = mySeat; }, [mySeat]);
+  useEffect(() => {
+    mySeatRef.current = mySeat;
+  }, [mySeat]);
   const authToken = useRef<string | null>(null);
   const startTableEarly = async (id: string) => {
     if (!authToken.current) return;
     try {
-      const res = await fetch(`${API_URL}/api/tables/${id}/start`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
+      const res = await fetch(`${API_URL}/api/tables/${id}/start`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken.current}` },
+      });
       const data = await res.json();
       if (data.success) {
         setActiveTableId(id);
@@ -226,27 +324,41 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     const enc = new TextEncoder();
     const data = enc.encode(text);
     const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+    return Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 
   const handleChangePassword = async () => {
     if (!currentUserName) return setProfileMessage('No user');
-    if (!newPasswordInput || newPasswordInput.length < 6) return setProfileMessage('Password must be at least 6 chars');
+    if (!newPasswordInput || newPasswordInput.length < 6)
+      return setProfileMessage('Password must be at least 6 chars');
     const h = await sha256(newPasswordInput);
     const users = { ...jassUsers };
-    if (!users[currentUserName]) users[currentUserName] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
+    if (!users[currentUserName])
+      users[currentUserName] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
     users[currentUserName].passwordHash = h;
     localStorage.setItem('jassUsers', JSON.stringify(users));
     setJassUsers(users);
     setProfileMessage('Password updated locally');
     setNewPasswordInput('');
-    setTimeout(()=>setProfileMessage(null), 3000);
+    setTimeout(() => setProfileMessage(null), 3000);
   };
   const [roundStarter, setRoundStarter] = useState(0);
-  const [roundHistory, setRoundHistory] = useState<Array<{round: number, team1: number, team2: number, trump: string}>>([]);
-  const [weisWinner, setWeisWinner] = useState<{playerId: number, teamId: number} | null>(null);
-  const [weisCompetition, setWeisCompetition] = useState<{active: boolean, currentPlayer: number, bestWeis: any, declarations: any[]}>({
-    active: false, currentPlayer: 0, bestWeis: null, declarations: []
+  const [roundHistory, setRoundHistory] = useState<
+    Array<{ round: number; team1: number; team2: number; trump: string }>
+  >([]);
+  const [weisWinner, setWeisWinner] = useState<{ playerId: number; teamId: number } | null>(null);
+  const [weisCompetition, setWeisCompetition] = useState<{
+    active: boolean;
+    currentPlayer: number;
+    bestWeis: any;
+    declarations: any[];
+  }>({
+    active: false,
+    currentPlayer: 0,
+    bestWeis: null,
+    declarations: [],
   });
   // helper: map engine player id to a seat around the table
   const seatForId = (id: number) => {
@@ -254,7 +366,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     return seats[id] || 'south';
   };
   const positionForPlayerId = (id: number) => {
-    const oriented = players.find(p => p.id === id);
+    const oriented = players.find((p) => p.id === id);
     if (oriented?.position) return oriented.position;
     if (mySeat != null) {
       const rel = (id - mySeat + 4) % 4;
@@ -262,71 +374,84 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     }
     return seatForId(id);
   };
-  const mapPlayersWithSeats = (pls: any[]) => (pls || []).map(p => {
-    // Normalize tricks array: engine-local uses p.tricks (array of cards).
-    // Server may not include p.tricks; try to infer from gameState.playedTricks or stored local state.
-    let tricksArr = (p as any).tricks || [];
+  const mapPlayersWithSeats = (pls: any[]) =>
+    (pls || []).map((p) => {
+      // Normalize tricks array: engine-local uses p.tricks (array of cards).
+      // Server may not include p.tricks; try to infer from gameState.playedTricks or stored local state.
+      let tricksArr = (p as any).tricks || [];
 
-    // If no tricks on player object, try to recover from current gameState (server payload)
-    if ((!tricksArr || tricksArr.length === 0) && (gameState as any)?.playedTricks) {
-      try {
-        const played = (gameState as any).playedTricks as any[];
-        if (Array.isArray(played)) {
-          // Flatten and pick cards belonging to this player id
-          const flat = played.flatMap(x => Array.isArray(x) ? x : []);
-          tricksArr = flat.filter(c => c.playerId === p.id).map(c => ({ id: c.id, suit: c.suit, rank: c.rank }));
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    // As a last resort, try localStorage jassLocalState (for local play persisted state)
-    if ((!tricksArr || tricksArr.length === 0)) {
-      try {
-        const raw = localStorage.getItem('jassLocalState');
-        if (raw) {
-          const ls = JSON.parse(raw) as any;
-          if (ls.players && Array.isArray(ls.players)) {
-            const lp = ls.players.find((pp: any) => pp.id === p.id);
-            if (lp && lp.tricks && lp.tricks.length) tricksArr = lp.tricks;
+      // If no tricks on player object, try to recover from current gameState (server payload)
+      if ((!tricksArr || tricksArr.length === 0) && (gameState as any)?.playedTricks) {
+        try {
+          const played = (gameState as any).playedTricks as any[];
+          if (Array.isArray(played)) {
+            // Flatten and pick cards belonging to this player id
+            const flat = played.flatMap((x) => (Array.isArray(x) ? x : []));
+            tricksArr = flat
+              .filter((c) => c.playerId === p.id)
+              .map((c) => ({ id: c.id, suit: c.suit, rank: c.rank }));
           }
+        } catch (e) {
+          // ignore
         }
-      } catch (e) {}
-    }
+      }
 
-    return { id: p.id, name: p.name, hand: p.hand, team: p.team, teamName: teamNames[p.team] || `Team ${p.team}`, position: seatForId(p.id), points: (p as any).points, tricks: tricksArr || [], weis: (p as any).weis || [] };
-  });
+      // As a last resort, try localStorage jassLocalState (for local play persisted state)
+      if (!tricksArr || tricksArr.length === 0) {
+        try {
+          const raw = localStorage.getItem('jassLocalState');
+          if (raw) {
+            const ls = JSON.parse(raw) as any;
+            if (ls.players && Array.isArray(ls.players)) {
+              const lp = ls.players.find((pp: any) => pp.id === p.id);
+              if (lp && lp.tricks && lp.tricks.length) tricksArr = lp.tricks;
+            }
+          }
+        } catch (e) {}
+      }
 
-  const seatPlayer = (pos: string) => players.find(p => p.position === pos);
+      return {
+        id: p.id,
+        name: p.name,
+        hand: p.hand,
+        team: p.team,
+        teamName: teamNames[p.team] || `Team ${p.team}`,
+        position: seatForId(p.id),
+        points: (p as any).points,
+        tricks: tricksArr || [],
+        weis: (p as any).weis || [],
+      };
+    });
+
+  const seatPlayer = (pos: string) => players.find((p) => p.position === pos);
   const northPlayer = seatPlayer('north');
   const westPlayer = seatPlayer('west');
   const eastPlayer = seatPlayer('east');
   const southPlayer = seatPlayer('south');
 
-  function sortHandForDisplay(hand: any[], trump?: string|null) {
+  function sortHandForDisplay(hand: any[], trump?: string | null) {
     if (!hand || !hand.length) return hand.slice();
     const trumpSuit = trump || null;
-    
+
     // Swiss Jass trump order: U(Jack)=20, 9=14, A=11, 10=10, K=4, O(Queen)=3, 8=0, 7=0, 6=0
     // Normal order: A=11, 10=10, K=4, O=3, U=2, 9=0, 8=0, 7=0, 6=0
-    const normalRankOrder = ['6','7','8','9','10','U','O','K','A'];
-    const trumpRankOrder = ['6','7','8','O','K','10','A','9','U']; // Proper Swiss trump order (best to worst)
-    
-    const normalCards = hand.filter(c => c.suit !== trumpSuit);
-    const trumpCards = hand.filter(c => c.suit === trumpSuit);
-    
+    const normalRankOrder = ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
+    const trumpRankOrder = ['6', '7', '8', 'O', 'K', '10', 'A', '9', 'U']; // Proper Swiss trump order (best to worst)
+
+    const normalCards = hand.filter((c) => c.suit !== trumpSuit);
+    const trumpCards = hand.filter((c) => c.suit === trumpSuit);
+
     // Sort normal cards by suit, then by rank
     normalCards.sort((a, b) => {
       if (a.suit !== b.suit) return a.suit.localeCompare(b.suit);
       return normalRankOrder.indexOf(a.rank) - normalRankOrder.indexOf(b.rank);
     });
-    
+
     // Sort trump cards by proper Swiss trump value (highest first for easy selection)
     trumpCards.sort((a, b) => {
       return trumpRankOrder.indexOf(b.rank) - trumpRankOrder.indexOf(a.rank);
     });
-    
+
     return [...normalCards, ...trumpCards];
   }
 
@@ -336,25 +461,44 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     const stack = [] as any[];
     for (let i = 0; i < Math.min(tricksWon, 4); i++) stack.push(i);
     // orientedTrick state now holds current trick cards mapped to perspective positions
-    
+
     return (
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 4,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+        }}
+      >
         <div style={{ position: 'relative', width: 24, height: 32 }}>
           {stack.map((s, i) => (
-            <div key={i} style={{ 
-              position: 'absolute', 
-              left: i * 1.5, 
-              top: -i * 1, 
-              width: 24, 
-              height: 32, 
-              background: '#111827', 
-              borderRadius: 2, 
-              boxShadow: '0 1px 3px rgba(0,0,0,0.3)', 
-              opacity: 0.9 
-            }} />
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                left: i * 1.5,
+                top: -i * 1,
+                width: 24,
+                height: 32,
+                background: '#111827',
+                borderRadius: 2,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                opacity: 0.9,
+              }}
+            />
           ))}
         </div>
-        <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: '600' }}>
+        <div
+          style={{
+            fontSize: 10,
+            color: '#4b5563',
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+            fontWeight: '600',
+          }}
+        >
           {tricksWon} {t.tricks}
         </div>
       </div>
@@ -371,18 +515,23 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     try {
       // If no game or no trick in progress, no reason
       if (!gameState) return null;
-      const trick = (gameState.currentTrick || []);
+      const trick = gameState.currentTrick || [];
       if (!trick || trick.length === 0) return null;
       const leadSuit = trick[0].suit;
       const handCards = hand || [];
-      const hasLeadSuit = handCards.some((h:any) => h.suit === leadSuit);
+      const hasLeadSuit = handCards.some((h: any) => h.suit === leadSuit);
       const contract = gameState.trumpSuit as any;
-      const suitTrump = contract && ['eicheln','schellen','rosen','schilten'].includes(contract) ? contract : null;
+      const suitTrump =
+        contract && ['eicheln', 'schellen', 'rosen', 'schilten'].includes(contract)
+          ? contract
+          : null;
       // Trump may always be played, except to undertrump; otherwise follow suit.
       if (suitTrump && card.suit === suitTrump && leadSuit !== suitTrump) return t.noUndertrump;
       if (hasLeadSuit && card.suit !== leadSuit) return t.mustFollowSuit;
       return t.notLegalNow;
-    } catch (e) { return null; }
+    } catch (e) {
+      return null;
+    }
   }
 
   async function startSwoopAndResolve(st: Schieber.State): Promise<Schieber.State> {
@@ -391,41 +540,56 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     if (winner === null) return st;
     try {
       const tr = messages(lang).trick;
-      setMessage(winner === 0 ? tr.youTake : tr.takes(st.players.find(p => p.id === winner)?.name || ''));
+      setMessage(
+        winner === 0 ? tr.youTake : tr.takes(st.players.find((p) => p.id === winner)?.name || ''),
+      );
       setCollect({ winnerId: winner });
-      await new Promise(r=>setTimeout(r, COLLECT_MS));
-  const newSt = Schieber.resolveTrick(st);
+      await new Promise((r) => setTimeout(r, COLLECT_MS));
+      const newSt = Schieber.resolveTrick(st);
       saveLocalState(newSt);
       setGameState(toGameState(newSt));
       setPlayers(mapPlayersWithSeats(newSt.players));
-      setHand(newSt.players.find(p=>p.id===0)?.hand || []);
+      setHand(newSt.players.find((p) => p.id === 0)?.hand || []);
       setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
       // if round finished, show lastTrick for 2s then clear and award totals
-  if (newSt.phase === 'finished') {
+      if (newSt.phase === 'finished') {
         // short pause on the empty table before the next deal
-        await new Promise(r=>setTimeout(r, 900));
+        await new Promise((r) => setTimeout(r, 900));
         // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
         // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
         // if maxPoints reached by either team, stop; else start a fresh local round
-        const t1 = newSt.scores.team1 || 0; const t2 = newSt.scores.team2 || 0;
+        const t1 = newSt.scores.team1 || 0;
+        const t2 = newSt.scores.team2 || 0;
         const base = newSt.handStartScores || { team1: 0, team2: 0 };
-        setRoundHistory(h => [...h, { round: h.length + 1, team1: t1 - base.team1, team2: t2 - base.team2, trump: String(newSt.trump || '') }]);
-        if (newSt.matchWinner || t1 >= (newSt.target || maxPoints) || t2 >= (newSt.target || maxPoints)) {
+        setRoundHistory((h) => [
+          ...h,
+          {
+            round: h.length + 1,
+            team1: t1 - base.team1,
+            team2: t2 - base.team2,
+            trump: String(newSt.trump || ''),
+          },
+        ]);
+        if (
+          newSt.matchWinner ||
+          t1 >= (newSt.target || maxPoints) ||
+          t2 >= (newSt.target || maxPoints)
+        ) {
           // The first team to reach the target wins, even mid-hand (the engine sets matchWinner).
           setShowVictory(true);
           setMatchFinished(true);
           setGameState({ ...toGameState(newSt), phase: 'finished' });
-          
+
           // Update backend stats if this is an online game
           if (gameId && API_URL) {
-            const userTeam = newSt.players.find(p => p.id === 0)?.team || 1; // User is player 0
+            const userTeam = newSt.players.find((p) => p.id === 0)?.team || 1; // User is player 0
             const userTeamScore = userTeam === 1 ? t1 : t2;
             const opponentTeamScore = userTeam === 1 ? t2 : t1;
             const userWon = userTeamScore > opponentTeamScore;
-            
+
             // Count total rounds played (rough estimate based on score progression)
             const totalRounds = Math.floor((userTeamScore + opponentTeamScore) / 100) + 1;
-            
+
             completeGame(userTeamScore, opponentTeamScore, userWon, totalRounds);
           }
         } else {
@@ -434,11 +598,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           saveLocalState(fresh);
           setPlayers(mapPlayersWithSeats(fresh.players));
           setGameState(toGameState(fresh));
-          setHand(fresh.players.find(p=>p.id===0)?.hand || []);
+          setHand(fresh.players.find((p) => p.id === 0)?.hand || []);
           setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
           // Callers continue their bot loop with the fresh hand, so don't start another one here.
           if (fresh.currentPlayer !== 0) {
-            setMessage(`Waiting for ${fresh.players.find(p=>p.id===fresh.currentPlayer)?.name || 'dealer'} to choose trump...`);
+            setMessage(
+              `Waiting for ${fresh.players.find((p) => p.id === fresh.currentPlayer)?.name || 'dealer'} to choose trump...`,
+            );
           } else {
             setMessage(t.pleaseChooseTrump);
           }
@@ -454,13 +620,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   // Name plate for a seat; it lights up while that player collects the trick.
   const renderSeat = (pos: string, narrow = false) => {
-    const p = players.find(x => x.position === pos);
+    const p = players.find((x) => x.position === pos);
     if (!p) return null;
     const active = gameState?.phase === 'playing' || gameState?.phase === 'trump_selection';
     return (
-      <PlayerSeat lang={lang} name={p.name.replace(/\s*\(bot\)$/i, '')} team={p.team} cardsLeft={p.hand?.length ?? 0} tricks={getTricksCount(p)}
-        isDealer={gameState?.dealer === p.id} isTurn={active && gameState?.currentPlayer === p.id}
-        taking={collect?.winnerId === p.id} seat={pos} narrow={narrow} />
+      <PlayerSeat
+        lang={lang}
+        name={p.name.replace(/\s*\(bot\)$/i, '')}
+        team={p.team}
+        cardsLeft={p.hand?.length ?? 0}
+        tricks={getTricksCount(p)}
+        isDealer={gameState?.dealer === p.id}
+        isTurn={active && gameState?.currentPlayer === p.id}
+        taking={collect?.winnerId === p.id}
+        seat={pos}
+        narrow={narrow}
+      />
     );
   };
 
@@ -483,15 +658,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     let st = loadLocalState();
     // A trick that was waiting for its resolve animation when the page closed
     if (st && !st.target) st.target = maxPoints; // games saved before the target lived in the state
-    if (st?.pendingResolve) { st = Schieber.resolveTrick(st); saveLocalState(st); }
+    if (st?.pendingResolve) {
+      st = Schieber.resolveTrick(st);
+      saveLocalState(st);
+    }
     if (st) {
       // If the stored local game already finished, start a fresh hand instead of resuming finished state
-      const matchOver = st.phase === 'finished' && (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
+      const matchOver =
+        st.phase === 'finished' &&
+        (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
       if (st.phase === 'finished' && !matchOver) {
         const fresh = Schieber.startNewHand(st);
         saveLocalState(fresh);
         setPlayers(mapPlayersWithSeats(fresh.players));
-  setGameState(toGameState(fresh));
+        setGameState(toGameState(fresh));
         setHand(fresh.players.find((p: any) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
         setOptionsVisible(false);
@@ -502,16 +682,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       }
 
       if (!matchOver) {
-  setGameState(toGameState(st));
-      setPlayers(mapPlayersWithSeats(st.players));
-      setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
-      setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
-      setOptionsVisible(false);
-      setIsLocal(true);
-      setMessage(t.resumed);
-      // bots don't wait for a click, so restart their loop if it's their turn
-      if (st.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
-      return;
+        setGameState(toGameState(st));
+        setPlayers(mapPlayersWithSeats(st.players));
+        setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
+        setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
+        setOptionsVisible(false);
+        setIsLocal(true);
+        setMessage(t.resumed);
+        // bots don't wait for a click, so restart their loop if it's their turn
+        if (st.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
+        return;
       }
     }
 
@@ -549,7 +729,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               saveLocalState(resolved);
               setGameState(toGameState(resolved));
               setPlayers(mapPlayersWithSeats(resolved.players));
-              setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
+              setHand(resolved.players.find((p: any) => p.id === 0)?.hand || []);
               setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
               setUiPendingResolve(false);
               setMessage('Auto-resolved stalled trick');
@@ -576,7 +756,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                     saveLocalState(progressed);
                     setGameState(toGameState(progressed));
                     setPlayers(mapPlayersWithSeats(progressed.players));
-                    setHand(progressed.players.find((p:any)=>p.id===0)?.hand || []);
+                    setHand(progressed.players.find((p: any) => p.id === 0)?.hand || []);
                     setLegalCards(Schieber.getLegalCardsForPlayer(progressed, 0));
                     lastProgressAt.current = Date.now();
                     return; // skip message if we advanced
@@ -590,7 +770,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                   saveLocalState(resolved);
                   setGameState(toGameState(resolved));
                   setPlayers(mapPlayersWithSeats(resolved.players));
-                  setHand(resolved.players.find((p:any)=>p.id===0)?.hand || []);
+                  setHand(resolved.players.find((p: any) => p.id === 0)?.hand || []);
                   setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
                   lastProgressAt.current = Date.now();
                   return;
@@ -623,7 +803,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     })();
   }, []);
 
-
   // Update totals when gameState reaches finished (and avoid double-counting)
   useEffect(() => {
     if (!gameState) return;
@@ -646,30 +825,35 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const createGame = async () => {
     setIsLoading(true);
     try {
-  // starting a new game clears any previous match-finished flag
-  setMatchFinished(false);
+      // starting a new game clears any previous match-finished flag
+      setMatchFinished(false);
       if (!API_URL) {
         // no backend available (e.g. GitHub Pages) — start local game instead
         startLocalGameWithOptions();
         setMessage('No backend detected — running local game');
         return;
       }
-      const res = await fetch(`${API_URL}/api/games/create`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ 
-          playerNames: ['You', generateSwissBotName(), generateSwissBotName(), generateSwissBotName()], 
-          gameType 
-        }) 
+      const res = await fetch(`${API_URL}/api/games/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerNames: [
+            'You',
+            generateSwissBotName(),
+            generateSwissBotName(),
+            generateSwissBotName(),
+          ],
+          gameType,
+        }),
       });
       const data = await res.json();
       if (data?.success) {
         setGameId(data.gameId);
         setGameState(data.state || null);
-  setPlayers(mapPlayersWithSeats(data.players || []));
+        setPlayers(mapPlayersWithSeats(data.players || []));
         setHand(data.hand || []);
         setMessage('Game created');
-  setOptionsVisible(false);
+        setOptionsVisible(false);
       } else {
         setMessage(data?.message || 'Failed to create game');
       }
@@ -683,12 +867,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const createGameWithOptions = async (opts?: { gameType?: string; maxPoints?: number }) => {
     setIsLoading(true);
     try {
-  // clear previous finished flag when explicitly creating a game
-  setMatchFinished(false);
-      const body = { 
-        playerNames: ['You', generateSwissBotName(), generateSwissBotName(), generateSwissBotName()], 
-        gameType: opts?.gameType || gameType, 
-        maxPoints: opts?.maxPoints || maxPoints 
+      // clear previous finished flag when explicitly creating a game
+      setMatchFinished(false);
+      const body = {
+        playerNames: [
+          'You',
+          generateSwissBotName(),
+          generateSwissBotName(),
+          generateSwissBotName(),
+        ],
+        gameType: opts?.gameType || gameType,
+        maxPoints: opts?.maxPoints || maxPoints,
       };
       if (!API_URL) {
         // run local flow instead
@@ -696,15 +885,19 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         setMessage('No backend detected — running local game');
         return;
       }
-      const res = await fetch(`${API_URL}/api/games/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res = await fetch(`${API_URL}/api/games/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
       const data = await res.json();
       if (data?.success) {
         setGameId(data.gameId);
         setGameState(data.state || null);
-  setPlayers(mapPlayersWithSeats(data.players || []));
+        setPlayers(mapPlayersWithSeats(data.players || []));
         setHand(data.hand || []);
         setMessage('Game created');
-  setOptionsVisible(false);
+        setOptionsVisible(false);
       } else {
         setMessage(data?.message || 'Failed to create game');
       }
@@ -713,11 +906,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     } finally {
       setIsLoading(false);
     }
-  setIsLocal(false);
+    setIsLocal(false);
   };
 
   // Complete game and update user stats on backend
-  const completeGame = async (userTeamScore: number, opponentTeamScore: number, userWon: boolean, totalRounds: number) => {
+  const completeGame = async (
+    userTeamScore: number,
+    opponentTeamScore: number,
+    userWon: boolean,
+    totalRounds: number,
+  ) => {
     if (!gameId || !API_URL) return; // Only for backend games
 
     try {
@@ -727,14 +925,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           userTeamScore,
           opponentTeamScore,
           userWon,
-          totalRounds
-        })
+          totalRounds,
+        }),
       });
 
       const data = await res.json();
@@ -748,7 +946,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           const r2 = await fetch(`${API_URL}/api/admin/users`);
           const d2 = await r2.json();
           if (d2?.success) setUsersList(d2.users || []);
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          /* ignore */
+        }
       }
     } catch (err) {
       console.error('Failed to complete game:', err);
@@ -760,13 +960,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     const st = Schieber.startGameLocal(undefined, botNames, maxPoints);
     setBotNames(Schieber.pickBotNames());
     // map engine players to our UI players
-  setPlayers(mapPlayersWithSeats(st.players));
+    setPlayers(mapPlayersWithSeats(st.players));
     setGameState(toGameState(st));
-    setHand(st.players.find(p=>p.id===0)?.hand || []);
+    setHand(st.players.find((p) => p.id === 0)?.hand || []);
     setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
     setMessage(t.localStarted);
     // store engine state in ref-like place (we'll keep in localStorage for now)
-  saveLocalState(st);
+    saveLocalState(st);
   };
 
   // Reset game to initial welcome screen state
@@ -785,38 +985,42 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     setOrientedTrick([]);
     setAnimatingSwoop(null);
     setCollect(null);
-    
+
     // Clear multiplayer state
     setMultiGameState(null);
     setMultiplayerGameId(null);
     setActiveTableId(null);
     setMySeat(null);
     setDealerUserId(null);
-    
+
     // Reset to welcome screen
     setOptionsVisible(true);
     setSetupChoice(ONLINE_ENABLED ? 'welcome' : 'single');
     setIsLocal(false);
-    
+
     // Clear localStorage
     try {
       localStorage.removeItem('jassLocalState');
     } catch {}
-    
+
     setMessage(t.welcome);
   };
 
   const startLocalGameWithOptions = () => {
     // persist chosen options for local session
-    try { localStorage.setItem('jassLocalOptions', JSON.stringify({ gameType, maxPoints })); } catch {};
-  // if a previous match finished, starting a new local game clears it
-  setMatchFinished(false);
-  setRoundHistory([]);
-  setIsLocal(true);
-  startLocalGame();
-  // let bots take over (they will auto-select trump if needed)
-  setTimeout(() => { botsTakeTurns(); }, 200);
-  setOptionsVisible(false);
+    try {
+      localStorage.setItem('jassLocalOptions', JSON.stringify({ gameType, maxPoints }));
+    } catch {}
+    // if a previous match finished, starting a new local game clears it
+    setMatchFinished(false);
+    setRoundHistory([]);
+    setIsLocal(true);
+    startLocalGame();
+    // let bots take over (they will auto-select trump if needed)
+    setTimeout(() => {
+      botsTakeTurns();
+    }, 200);
+    setOptionsVisible(false);
   };
 
   const loadLocalState = (): Schieber.State | null => {
@@ -827,13 +1031,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       // Backfill missing timestamp to avoid huge age values
       if (!parsed._lastActionAt) parsed._lastActionAt = Date.now();
       return parsed as Schieber.State;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   };
 
   const saveLocalState = (st: Schieber.State) => {
     try {
       // annotate with last action timestamp used by UI watchdog
-      try { (st as any)._lastActionAt = Date.now(); } catch (e) {}
+      try {
+        (st as any)._lastActionAt = Date.now();
+      } catch (e) {}
       localStorage.setItem('jassLocalState', JSON.stringify(st));
     } catch (e) {
       // ignore storage errors
@@ -841,11 +1049,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   };
 
   const botsTakeTurns = async () => {
-  // loop until finished
-  let st = loadLocalState();
-  if (!st) return;
-  while (st.phase !== 'finished') {
-  if (matchFinished) break;
+    // loop until finished
+    let st = loadLocalState();
+    if (!st) return;
+    while (st.phase !== 'finished') {
+      if (matchFinished) break;
       // if trump selection phase, let bots choose only when it's their turn
       if (st.phase === 'trump_selection') {
         if (st.currentPlayer === 0) {
@@ -855,35 +1063,37 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           break;
         }
         // let engine pick a smart trump for bots
-        const chooser = st.players.find(p => p.id === st.currentPlayer);
+        const chooser = st.players.find((p) => p.id === st.currentPlayer);
         const chosen = Bot.chooseTrump(st, st.currentPlayer);
         const newState = Schieber.setTrumpAndDetectWeis(st, chosen);
         st = newState;
         if (chosen === 'schieben') {
-          setMessage(t.schobenTo(newState.players.find(p => p.id === newState.currentPlayer)?.name || ''));
+          setMessage(
+            t.schobenTo(newState.players.find((p) => p.id === newState.currentPlayer)?.name || ''),
+          );
         } else {
           setChosenTrump(chosen);
           setMessage(t.botChose(chooser?.name || 'Bot', trumpName(chosen, lang)));
         }
         saveLocalState(newState);
-  setGameState(toGameState(st));
+        setGameState(toGameState(st));
         // update UI players and hand
         setPlayers(mapPlayersWithSeats(st.players));
-        setHand(st.players.find(p=>p.id===0)?.hand || []);
+        setHand(st.players.find((p) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
-        await new Promise(r=>setTimeout(r, playDelayMs));
+        await new Promise((r) => setTimeout(r, playDelayMs));
         continue;
-      }      // if it's a bot's turn (0 is our south player), let bots play automatically
+      } // if it's a bot's turn (0 is our south player), let bots play automatically
       if (st.currentPlayer !== 0) {
         const id = st.currentPlayer;
         const pick = Bot.chooseCard(st, id);
         if (!pick) break;
-  st = Schieber.playCardLocal(st, id, pick);
+        st = Schieber.playCardLocal(st, id, pick);
         saveLocalState(st);
-  setGameState(toGameState(st));
-  setPlayers(mapPlayersWithSeats(st.players));
+        setGameState(toGameState(st));
+        setPlayers(mapPlayersWithSeats(st.players));
         // refresh human's hand and legal cards
-        setHand(st.players.find(p=>p.id===0)?.hand || []);
+        setHand(st.players.find((p) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
         // if trick completed and pendingResolve flagged, pause so UI shows last card, then resolve
         if (st.pendingResolve) {
@@ -897,15 +1107,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           }
           continue;
         }
-        await new Promise(r=>setTimeout(r, playDelayMs));
+        await new Promise((r) => setTimeout(r, playDelayMs));
         continue;
       }
 
       // if it's our turn (0), wait for player action — return to let UI handle double-click plays
       if (st.currentPlayer === 0) {
         // update UI to reflect it's player's turn
-  setGameState(toGameState(st));
-        setHand(st.players.find(p=>p.id===0)?.hand || []);
+        setGameState(toGameState(st));
+        setHand(st.players.find((p) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
         break;
       }
@@ -914,7 +1124,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     if (st.phase !== 'finished') return;
     setMessage(t.roundFinished);
     // compute per-player points based on st.scores distribution
-  updateTotalsFromGameState({ phase: 'finished', currentPlayer: st.currentPlayer, trumpSuit: st.trump, scores: st.scores }, st.players as any, 'local-'+Date.now());
+    updateTotalsFromGameState(
+      {
+        phase: 'finished',
+        currentPlayer: st.currentPlayer,
+        trumpSuit: st.trump,
+        scores: st.scores,
+      },
+      st.players as any,
+      'local-' + Date.now(),
+    );
   };
 
   const submitTrump = (override?: string) => {
@@ -924,48 +1143,60 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       const st = loadLocalState();
       if (!st) return;
       if (!choice) return setMessage(t.chooseTrumpFirst);
-      
+
       // Schieben: the engine hands the choice to the partner, who must then choose.
       if (choice === 'schieben') {
         const passed = Schieber.setTrumpAndDetectWeis(st, 'schieben');
-        setMessage(t.schobenTo(passed.players.find(p => p.id === passed.currentPlayer)?.name || ''));
+        setMessage(
+          t.schobenTo(passed.players.find((p) => p.id === passed.currentPlayer)?.name || ''),
+        );
         saveLocalState(passed);
         setGameState(toGameState(passed));
         setChosenTrump(null);
-        setTimeout(()=>botsTakeTurns(), 200);
+        setTimeout(() => botsTakeTurns(), 200);
         return;
       }
       setChosenTrump(choice);
 
       st.trump = choice as any;
       st.phase = 'playing';
-      
+
       // Detect Weis for all players now that trump is known
       const updatedSt = Schieber.setTrumpAndDetectWeis(st, choice as any);
-      
+
       // Determine Weis winner (authentic Swiss Jass competition)
-      const weisWinnerResult = Schieber.bestWeis(updatedSt.players, updatedSt.trump as Schieber.TrumpContract, updatedSt.forehand);
+      const weisWinnerResult = Schieber.bestWeis(
+        updatedSt.players,
+        updatedSt.trump as Schieber.TrumpContract,
+        updatedSt.forehand,
+      );
       setWeisWinner(weisWinnerResult);
-      
+
       saveLocalState(updatedSt);
       setPlayers(mapPlayersWithSeats(updatedSt.players));
-  setGameState(toGameState(updatedSt));
-      
+      setGameState(toGameState(updatedSt));
+
       if (weisWinnerResult) {
-  const winnerName = updatedSt.players.find((p:any) => p.id === weisWinnerResult.playerId)?.name;
+        const winnerName = updatedSt.players.find(
+          (p: any) => p.id === weisWinnerResult.playerId,
+        )?.name;
         setMessage(t.trumpWithWeis(trumpName(choice, lang), winnerName || ''));
       } else {
         setMessage(t.trumpNoWeis(trumpName(choice, lang)));
       }
       // start bots playing
-      setTimeout(()=>botsTakeTurns(), 200);
+      setTimeout(() => botsTakeTurns(), 200);
       return;
     }
 
     // If server-backed multiplayer game, emit via socket
     if (!choice) return setMessage(t.chooseTrumpFirst);
     if (mode === 'multi' && socket && activeTableId && multiplayerGameId) {
-      socket.emit('game:selectTrump', { tableId: activeTableId, gameId: multiplayerGameId, trump: choice });
+      socket.emit('game:selectTrump', {
+        tableId: activeTableId,
+        gameId: multiplayerGameId,
+        trump: choice,
+      });
       setMessage(`Trump submitted: ${choice}`);
       return;
     }
@@ -974,15 +1205,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   };
 
   const playLocalCard = async (cardId: string) => {
-  // prevent playing while UI is resolving a trick or when match finished
-  if (matchFinished) return setMessage(t.matchFinished);
-  // prevent playing while UI is resolving a trick
+    // prevent playing while UI is resolving a trick or when match finished
+    if (matchFinished) return setMessage(t.matchFinished);
+    // prevent playing while UI is resolving a trick
     if (uiPendingResolve) return;
     const st = loadLocalState();
     if (!st) return;
     if (st.phase !== 'playing') return setMessage(t.notPlaying);
     if (st.currentPlayer !== 0) return setMessage(t.notYourTurn);
-    const legal = Schieber.getLegalCardsForPlayer(st, 0).map(c=>c.id);
+    const legal = Schieber.getLegalCardsForPlayer(st, 0).map((c) => c.id);
     if (!legal.includes(cardId)) return setMessage(t.illegalCard);
     const newSt = Schieber.playCardLocal(st, 0, cardId);
     // if this play completes a trick, the engine will set pendingResolve
@@ -990,37 +1221,37 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       setUiPendingResolve(true);
       try {
         // save immediate state so UI shows the just-played card
-  saveLocalState(newSt);
-  setGameState(toGameState(newSt));
-    setPlayers(mapPlayersWithSeats(newSt.players));
-    setHand(newSt.players.find(p=>p.id===0)?.hand || []);
-    setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
-  // perform swoop animation then resolve and retrieve resulting state
-  const resolved = await startSwoopAndResolve(newSt);
-  // update newSt to the resolved state so later logic uses correct state
-  // (resolved may be same object)
-  // ensure we persist resolved state
-  saveLocalState(resolved);
-    // refresh UI with resolved state so trick counters update
-  setPlayers(mapPlayersWithSeats(resolved.players));
-  setGameState(toGameState(resolved));
-    setHand(resolved.players.find(p=>p.id===0)?.hand || []);
-    setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
+        saveLocalState(newSt);
+        setGameState(toGameState(newSt));
+        setPlayers(mapPlayersWithSeats(newSt.players));
+        setHand(newSt.players.find((p) => p.id === 0)?.hand || []);
+        setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
+        // perform swoop animation then resolve and retrieve resulting state
+        const resolved = await startSwoopAndResolve(newSt);
+        // update newSt to the resolved state so later logic uses correct state
+        // (resolved may be same object)
+        // ensure we persist resolved state
+        saveLocalState(resolved);
+        // refresh UI with resolved state so trick counters update
+        setPlayers(mapPlayersWithSeats(resolved.players));
+        setGameState(toGameState(resolved));
+        setHand(resolved.players.find((p) => p.id === 0)?.hand || []);
+        setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
       } finally {
         setUiPendingResolve(false);
       }
       // after resolution, let bots continue
-      setTimeout(()=>botsTakeTurns(), 80);
+      setTimeout(() => botsTakeTurns(), 80);
       return;
     }
     // normal play: persist and update UI, then let bots act
     saveLocalState(newSt);
-  setPlayers(mapPlayersWithSeats(newSt.players));
-  setGameState(toGameState(newSt));
-  setHand(newSt.players.find(p=>p.id===0)?.hand || []);
-  setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
+    setPlayers(mapPlayersWithSeats(newSt.players));
+    setGameState(toGameState(newSt));
+    setHand(newSt.players.find((p) => p.id === 0)?.hand || []);
+    setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
     // let bots respond
-    setTimeout(()=>botsTakeTurns(), 200);
+    setTimeout(() => botsTakeTurns(), 200);
   };
 
   const loadGameState = async (id: string) => {
@@ -1036,7 +1267,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         if (data.state?.phase === 'finished' || data.state?.phase === 'scoring') {
           const processedRaw = localStorage.getItem('jassProcessedGames');
           const processed: string[] = processedRaw ? JSON.parse(processedRaw) : [];
-          if (id && !processed.includes(id)) updateTotalsFromGameState(data.state, data.players || [], id);
+          if (id && !processed.includes(id))
+            updateTotalsFromGameState(data.state, data.players || [], id);
         }
       }
     } catch (err) {
@@ -1045,20 +1277,28 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   };
 
   // Persist and update per-player totals stored in localStorage
-  const updateTotalsFromGameState = (state: GameState, playersList: Player[], maybeGameId?: string | null) => {
+  const updateTotalsFromGameState = (
+    state: GameState,
+    playersList: Player[],
+    maybeGameId?: string | null,
+  ) => {
     try {
-  // Prevent double-processing the same finished game (by id)
-  if (maybeGameId) {
-    try {
-      const processedRawCheck = localStorage.getItem('jassProcessedGames');
-      const processedCheck: string[] = processedRawCheck ? JSON.parse(processedRawCheck) : [];
-      if (processedCheck.includes(maybeGameId)) return; // already applied
-    } catch (e) { /* ignore parse errors */ }
-  }
-  const currentTotalsRaw = localStorage.getItem('jassTotals');
-  const currentTotals: Record<string, number> = currentTotalsRaw ? JSON.parse(currentTotalsRaw) : {};
-  const currentUsersRaw = localStorage.getItem('jassUsers');
-  const currentUsers: Record<string, any> = currentUsersRaw ? JSON.parse(currentUsersRaw) : {};
+      // Prevent double-processing the same finished game (by id)
+      if (maybeGameId) {
+        try {
+          const processedRawCheck = localStorage.getItem('jassProcessedGames');
+          const processedCheck: string[] = processedRawCheck ? JSON.parse(processedRawCheck) : [];
+          if (processedCheck.includes(maybeGameId)) return; // already applied
+        } catch (e) {
+          /* ignore parse errors */
+        }
+      }
+      const currentTotalsRaw = localStorage.getItem('jassTotals');
+      const currentTotals: Record<string, number> = currentTotalsRaw
+        ? JSON.parse(currentTotalsRaw)
+        : {};
+      const currentUsersRaw = localStorage.getItem('jassUsers');
+      const currentUsers: Record<string, any> = currentUsersRaw ? JSON.parse(currentUsersRaw) : {};
 
       // Determine per-player points from state - Swiss Jass is TEAM-based scoring
       const additions: Record<string, number> = {};
@@ -1075,7 +1315,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             // to prevent double-application of Weis/multiplier/match bonus.
             const incomingScores = (state.scores as any) || { team1: 0, team2: 0 };
             const sum = (incomingScores.team1 || 0) + (incomingScores.team2 || 0);
-            const hasMultiplier = (state as any).trumpMultiplier !== undefined && (state as any).trumpMultiplier !== null;
+            const hasMultiplier =
+              (state as any).trumpMultiplier !== undefined &&
+              (state as any).trumpMultiplier !== null;
             if (hasMultiplier || sum > 157) {
               // Already settled or contains multiplier -> trust provided scores
               team1Score = incomingScores.team1 || team1Score;
@@ -1090,24 +1332,31 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         } catch (e) {
           // fallback to provided state.scores if settlement fails
         }
-        const team1Players = playersList.filter(p => p.team === 1);
-        const team2Players = playersList.filter(p => p.team === 2);
-        
-  // In Swiss Jass, each player gets their team's FULL score (not divided)
-  team1Players.forEach(p => additions[p.name] = team1Score);
-  team2Players.forEach(p => additions[p.name] = team2Score);
-      } else if (playersList && playersList.length && playersList.every(p => typeof (p as any).points === 'number')) {
+        const team1Players = playersList.filter((p) => p.team === 1);
+        const team2Players = playersList.filter((p) => p.team === 2);
+
+        // In Swiss Jass, each player gets their team's FULL score (not divided)
+        team1Players.forEach((p) => (additions[p.name] = team1Score));
+        team2Players.forEach((p) => (additions[p.name] = team2Score));
+      } else if (
+        playersList &&
+        playersList.length &&
+        playersList.every((p) => typeof (p as any).points === 'number')
+      ) {
         // Fallback: if per-player points are already calculated
-        playersList.forEach(p => { additions[p.name] = (p as any).points || 0; });
+        playersList.forEach((p) => {
+          additions[p.name] = (p as any).points || 0;
+        });
       }
 
       // Apply additions to totals and to user records
       const newTotals = { ...currentTotals };
       const newUsers = { ...currentUsers };
-      Object.keys(additions).forEach(name => {
+      Object.keys(additions).forEach((name) => {
         const pts = additions[name] || 0;
         newTotals[name] = (newTotals[name] || 0) + pts;
-        if (!newUsers[name]) newUsers[name] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
+        if (!newUsers[name])
+          newUsers[name] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
         newUsers[name].totalPoints = (newUsers[name].totalPoints || 0) + pts;
         newUsers[name].gamesPlayed = (newUsers[name].gamesPlayed || 0) + 1;
       });
@@ -1115,92 +1364,149 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       const t1 = (state.scores as any)?.team1 || 0;
       const t2 = (state.scores as any)?.team2 || 0;
       const winningTeam = t1 >= t2 ? 1 : 2;
-      playersList.filter(p => p.team === winningTeam).forEach(p => {
-        const nm = p.name;
-        if (!newUsers[nm]) newUsers[nm] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
-        newUsers[nm].wins = (newUsers[nm].wins || 0) + 1;
-      });
+      playersList
+        .filter((p) => p.team === winningTeam)
+        .forEach((p) => {
+          const nm = p.name;
+          if (!newUsers[nm])
+            newUsers[nm] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
+          newUsers[nm].wins = (newUsers[nm].wins || 0) + 1;
+        });
       // update lastSeen timestamp for all players
       const now = Date.now();
-      playersList.forEach(p => {
+      playersList.forEach((p) => {
         const nm = p.name;
-        if (!newUsers[nm]) newUsers[nm] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
+        if (!newUsers[nm])
+          newUsers[nm] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
         newUsers[nm].lastSeen = now;
       });
 
       setMessage(`${messages(lang).game.finalScore}: ${t1} : ${t2}`);
 
-  localStorage.setItem('jassTotals', JSON.stringify(newTotals));
-  localStorage.setItem('jassUsers', JSON.stringify(newUsers));
-  setTotals(newTotals);
-  setJassUsers(newUsers);
+      localStorage.setItem('jassTotals', JSON.stringify(newTotals));
+      localStorage.setItem('jassUsers', JSON.stringify(newUsers));
+      setTotals(newTotals);
+      setJassUsers(newUsers);
 
-  // If there are no server-side users loaded (usersList empty), expose local totals
-  // as a lightweight usersList so the Rankings tab shows local players immediately.
-  try {
-    if (!usersList || usersList.length === 0) {
-      const merged = Object.entries(newTotals).map(([name, pts]) => ({ id: `local-${name}`, username: name, totalPoints: pts }));
-      setUsersList(merged);
-    }
-  } catch (e) { /* ignore */ }
+      // If there are no server-side users loaded (usersList empty), expose local totals
+      // as a lightweight usersList so the Rankings tab shows local players immediately.
+      try {
+        if (!usersList || usersList.length === 0) {
+          const merged = Object.entries(newTotals).map(([name, pts]) => ({
+            id: `local-${name}`,
+            username: name,
+            totalPoints: pts,
+          }));
+          setUsersList(merged);
+        }
+      } catch (e) {
+        /* ignore */
+      }
 
       // Best-effort: try to sync totals to backend if available and refresh server-side users list
-      if (ONLINE_ENABLED) (async () => {
-        try {
-          const token = localStorage.getItem('jassToken');
-          // First, try the admin totals sync (adds points to matching usernames)
-          const res = await fetch(`${API_URL}/api/admin/totals/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ totals: newTotals }) });
-          const j = await res.json();
-          if (j?.success) {
-            // Refresh server user totals for Rankings
-            try {
-              const r2 = await fetch(`${API_URL}/api/admin/users`);
-              const u = await r2.json();
-              if (u?.success) setUsersList(u.users || []);
-            } catch (e) { /* ignore */ }
-          }
-
-          // If logged-in, try to report the match per-team for TrueSkill updates
+      if (ONLINE_ENABLED)
+        (async () => {
           try {
             const token = localStorage.getItem('jassToken');
-            if (token && playersList && playersList.length > 0 && state.scores) {
-              // Attempt to map local player names to server userId from usersList
-              const mapNameToId: Record<string,string> = {};
-              (usersList || []).forEach((u:any) => { mapNameToId[u.username] = u.id; });
-              // Also map a generic 'You' placeholder to the logged-in user (if present)
-              const loggedIn = (usersList || []).find(u => u.username === currentUserName);
-              if (loggedIn) {
-                mapNameToId['You'] = loggedIn.id;
-              }
-              // Debug mapping
-              console.log('Mapping player names to IDs', { playersList: playersList.map(p=>p.name), mapNameToId });
-              const teamAIds = playersList.filter(p => p.team === 1).map(p => mapNameToId[p.name]).filter(Boolean);
-              const teamBIds = playersList.filter(p => p.team === 2).map(p => mapNameToId[p.name]).filter(Boolean);
-              if (teamAIds.length > 0 && teamBIds.length > 0) {
-                await fetch(`${API_URL}/api/games/report`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ teamA: teamAIds, teamB: teamBIds, scoreA: (state.scores as any).team1, scoreB: (state.scores as any).team2, rounds: 0 }) });
-                // refresh server users after rating change
-                const r3 = await fetch(`${API_URL}/api/admin/users`);
-                const u3 = await r3.json();
-                if (u3?.success) setUsersList(u3.users || []);
-              } else {
-                console.warn('Skipping /games/report due to unmapped players; attempting single-user fallback', { teamAIds, teamBIds });
-                try {
-                  const youWon = ((state.scores as any)?.team1 || 0) >= ((state.scores as any)?.team2 || 0);
-                  await fetch(`${API_URL}/api/games/user-result`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ won: youWon, points: youWon ? 3 : 0, rounds: 0 }) });
-                  const after = await fetch(`${API_URL}/api/admin/users`);
-                  const afterJson = await after.json();
-                  if (afterJson?.success) setUsersList(afterJson.users || []);
-                } catch (fe) { /* ignore */ }
+            // First, try the admin totals sync (adds points to matching usernames)
+            const res = await fetch(`${API_URL}/api/admin/totals/sync`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              body: JSON.stringify({ totals: newTotals }),
+            });
+            const j = await res.json();
+            if (j?.success) {
+              // Refresh server user totals for Rankings
+              try {
+                const r2 = await fetch(`${API_URL}/api/admin/users`);
+                const u = await r2.json();
+                if (u?.success) setUsersList(u.users || []);
+              } catch (e) {
+                /* ignore */
               }
             }
+
+            // If logged-in, try to report the match per-team for TrueSkill updates
+            try {
+              const token = localStorage.getItem('jassToken');
+              if (token && playersList && playersList.length > 0 && state.scores) {
+                // Attempt to map local player names to server userId from usersList
+                const mapNameToId: Record<string, string> = {};
+                (usersList || []).forEach((u: any) => {
+                  mapNameToId[u.username] = u.id;
+                });
+                // Also map a generic 'You' placeholder to the logged-in user (if present)
+                const loggedIn = (usersList || []).find((u) => u.username === currentUserName);
+                if (loggedIn) {
+                  mapNameToId['You'] = loggedIn.id;
+                }
+                // Debug mapping
+                console.log('Mapping player names to IDs', {
+                  playersList: playersList.map((p) => p.name),
+                  mapNameToId,
+                });
+                const teamAIds = playersList
+                  .filter((p) => p.team === 1)
+                  .map((p) => mapNameToId[p.name])
+                  .filter(Boolean);
+                const teamBIds = playersList
+                  .filter((p) => p.team === 2)
+                  .map((p) => mapNameToId[p.name])
+                  .filter(Boolean);
+                if (teamAIds.length > 0 && teamBIds.length > 0) {
+                  await fetch(`${API_URL}/api/games/report`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                      teamA: teamAIds,
+                      teamB: teamBIds,
+                      scoreA: (state.scores as any).team1,
+                      scoreB: (state.scores as any).team2,
+                      rounds: 0,
+                    }),
+                  });
+                  // refresh server users after rating change
+                  const r3 = await fetch(`${API_URL}/api/admin/users`);
+                  const u3 = await r3.json();
+                  if (u3?.success) setUsersList(u3.users || []);
+                } else {
+                  console.warn(
+                    'Skipping /games/report due to unmapped players; attempting single-user fallback',
+                    { teamAIds, teamBIds },
+                  );
+                  try {
+                    const youWon =
+                      ((state.scores as any)?.team1 || 0) >= ((state.scores as any)?.team2 || 0);
+                    await fetch(`${API_URL}/api/games/user-result`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ won: youWon, points: youWon ? 3 : 0, rounds: 0 }),
+                    });
+                    const after = await fetch(`${API_URL}/api/admin/users`);
+                    const afterJson = await after.json();
+                    if (afterJson?.success) setUsersList(afterJson.users || []);
+                  } catch (fe) {
+                    /* ignore */
+                  }
+                }
+              }
+            } catch (e) {
+              // non-blocking
+            }
           } catch (e) {
-            // non-blocking
+            // ignore network errors — backend may not implement this endpoint yet
+            console.warn('Totals sync failed', e);
           }
-        } catch (e) {
-          // ignore network errors — backend may not implement this endpoint yet
-          console.warn('Totals sync failed', e);
-        }
-      })();
+        })();
 
       if (maybeGameId) {
         const processedRaw = localStorage.getItem('jassProcessedGames');
@@ -1224,12 +1530,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         st.trump = trump as any;
         st.phase = 'playing';
         saveLocalState(st);
-  setGameState(toGameState(st));
+        setGameState(toGameState(st));
         setMessage(`Trump selected: ${trump}`);
-        setTimeout(()=>botsTakeTurns(),200);
+        setTimeout(() => botsTakeTurns(), 200);
         return;
       }
-      const res = await fetch(`${API_URL}/api/games/${gameId}/trump`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trump, playerId: 0 }) });
+      const res = await fetch(`${API_URL}/api/games/${gameId}/trump`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trump, playerId: 0 }),
+      });
       const data = await res.json();
       if (data?.success) {
         setGameState(data.state || null);
@@ -1237,9 +1547,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         setHand(data.hand || []);
         // If backend provided weis, determine winner for UI display
         try {
-          const weisObj = (data.state && data.state.weis) ? data.state.weis : null;
+          const weisObj = data.state && data.state.weis ? data.state.weis : null;
           if (weisObj) {
-            const withWeis = (data.players || []).map((p: any) => ({ id: p.id, team: p.team, weis: weisObj[p.id] || [] }));
+            const withWeis = (data.players || []).map((p: any) => ({
+              id: p.id,
+              team: p.team,
+              weis: weisObj[p.id] || [],
+            }));
             const ww = Schieber.bestWeis(withWeis, null, null);
             setWeisWinner(ww);
           }
@@ -1261,8 +1575,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     }
     // Multiplayer via socket
     if (mode === 'multi' && socket && activeTableId && multiplayerGameId) {
-      if (mySeat === null || gameState?.currentPlayer !== mySeat) { setMessage(t.notYourTurn); return; }
-      socket.emit('game:playCard', { tableId: activeTableId, gameId: multiplayerGameId, playerId: mySeat, cardId });
+      if (mySeat === null || gameState?.currentPlayer !== mySeat) {
+        setMessage(t.notYourTurn);
+        return;
+      }
+      socket.emit('game:playCard', {
+        tableId: activeTableId,
+        gameId: multiplayerGameId,
+        playerId: mySeat,
+        cardId,
+      });
       setSelectedCard(null);
       return;
     }
@@ -1273,7 +1595,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     }
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/games/${gameId}/play`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerId: 0, cardId }) });
+      const res = await fetch(`${API_URL}/api/games/${gameId}/play`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: 0, cardId }),
+      });
       const data = await res.json();
       if (data?.success) {
         setGameState(data.state || null);
@@ -1286,7 +1612,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         if (data.state?.phase === 'finished' || data.state?.phase === 'scoring') {
           const processedRaw = localStorage.getItem('jassProcessedGames');
           const processed: string[] = processedRaw ? JSON.parse(processedRaw) : [];
-          if (gameId && !processed.includes(gameId)) updateTotalsFromGameState(data.state, data.players || [], gameId);
+          if (gameId && !processed.includes(gameId))
+            updateTotalsFromGameState(data.state, data.players || [], gameId);
         }
       } else setMessage(data?.message || 'Invalid play');
     } catch (err) {
@@ -1297,24 +1624,26 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   };
 
   const resetTotals = () => {
-  localStorage.removeItem('jassTotals');
-  localStorage.removeItem('jassProcessedGames');
-  localStorage.removeItem('jassUsers');
-  setTotals({});
-  setJassUsers({});
-  setUsersList([]);
+    localStorage.removeItem('jassTotals');
+    localStorage.removeItem('jassProcessedGames');
+    localStorage.removeItem('jassUsers');
+    setTotals({});
+    setJassUsers({});
+    setUsersList([]);
   };
 
   // multiplayer handlers
   useEffect(() => {
-    try { authToken.current = localStorage.getItem('jassToken'); } catch {}
+    try {
+      authToken.current = localStorage.getItem('jassToken');
+    } catch {}
     if (mode === 'multi' && !socket) {
       const s = io(API_URL || 'http://localhost:3000', { auth: { token: authToken.current } });
       setSocket(s);
       s.on('connect', () => {});
       s.on('presence:count', (p: any) => setOnlineCount(p.online));
       s.on('tables:updated', () => fetchTables());
-      
+
       // CRITICAL FIX: Handle table:starting for ALL players (including non-room members)
       s.on('table:starting', (payload: any) => {
         console.debug('[multiplayer] table:starting received', payload);
@@ -1329,13 +1658,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           s.emit('table:join', { tableId: payload.tableId });
         }
       });
-      
+
       s.on('game:dealerAssigned', (data: any) => {
         setMultiplayerGameId(data.gameId);
         setDealerUserId(data.dealerUserId);
         setMessage(`Dealer assigned: ${data.dealerUserId}`);
       });
-      
+
       s.on('table:started', (payload: any) => {
         // Game started
         // Placeholder: could initialize synchronized game state here
@@ -1344,10 +1673,19 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       s.on('friends:update', () => fetchFriends());
       s.on('game:state', (payload: any) => {
         if (payload?.tableId && payload.tableId !== activeTableIdRef.current) {
-          console.debug('[multiplayer] Ignoring game:state for other table', payload.tableId, 'expected', activeTableIdRef.current);
+          console.debug(
+            '[multiplayer] Ignoring game:state for other table',
+            payload.tableId,
+            'expected',
+            activeTableIdRef.current,
+          );
           return;
         }
-        console.debug('[multiplayer] game:state received', { table: payload.tableId, phase: payload?.state?.phase, gameId: payload?.gameId });
+        console.debug('[multiplayer] game:state received', {
+          table: payload.tableId,
+          phase: payload?.state?.phase,
+          gameId: payload?.gameId,
+        });
         const { state: st, players: pls, tableConfig, gameId: incomingGameId } = payload;
         if (incomingGameId && (!multiplayerGameId || multiplayerGameId !== incomingGameId)) {
           setMultiplayerGameId(incomingGameId);
@@ -1362,12 +1700,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           roundScores: st.roundScores,
           dealer: st.dealer,
           forehand: st.forehand ?? null,
-          weis: st.weis
+          weis: st.weis,
         });
         if (tableConfig) {
           try {
-            setTeamNames({ 1: tableConfig.team1Name || 'Team 1', 2: tableConfig.team2Name || 'Team 2' });
-            if (typeof tableConfig.targetPoints === 'number') setMaxPoints(tableConfig.targetPoints);
+            setTeamNames({
+              1: tableConfig.team1Name || 'Team 1',
+              2: tableConfig.team2Name || 'Team 2',
+            });
+            if (typeof tableConfig.targetPoints === 'number')
+              setMaxPoints(tableConfig.targetPoints);
           } catch {}
         }
         // Load players and hands
@@ -1377,19 +1719,26 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           hand: p.hand,
           team: p.team,
           position: p.position,
-          userId: (p as any).userId
+          userId: (p as any).userId,
         }));
         const previousSeatIdx = typeof mySeatRef.current === 'number' ? mySeatRef.current : null;
         const playerByUser = user?.id ? rawPlayers.find((p: any) => p.userId === user.id) : null;
-        const previousSeatPlayer = previousSeatIdx !== null ? rawPlayers.find((p: any) => p.id === previousSeatIdx) : null;
+        const previousSeatPlayer =
+          previousSeatIdx !== null ? rawPlayers.find((p: any) => p.id === previousSeatIdx) : null;
         const fallbackSeatPlayer = !user?.id ? rawPlayers.find((p: any) => p.id === 0) : null;
         const seatSource = playerByUser || previousSeatPlayer || fallbackSeatPlayer || null;
-        const mySeatIdx = typeof (playerByUser?.id ?? seatSource?.id ?? previousSeatIdx) === 'number'
-          ? (playerByUser?.id ?? seatSource?.id ?? previousSeatIdx)! : null;
+        const mySeatIdx =
+          typeof (playerByUser?.id ?? seatSource?.id ?? previousSeatIdx) === 'number'
+            ? (playerByUser?.id ?? seatSource?.id ?? previousSeatIdx)!
+            : null;
 
         if (playerByUser && playerByUser.id !== previousSeatIdx) {
           setMySeat(playerByUser.id);
-        } else if (!playerByUser && previousSeatIdx === null && typeof seatSource?.id === 'number') {
+        } else if (
+          !playerByUser &&
+          previousSeatIdx === null &&
+          typeof seatSource?.id === 'number'
+        ) {
           setMySeat(seatSource.id);
         }
 
@@ -1402,14 +1751,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           const rel = (playerId - mySeatIdx + 4) % 4;
           return rel === 0 ? 'south' : rel === 1 ? 'east' : rel === 2 ? 'north' : 'west';
         };
-        const oriented = rawPlayers.map(p => ({ ...p, position: remapPosition(p.id) }));
+        const oriented = rawPlayers.map((p) => ({ ...p, position: remapPosition(p.id) }));
         setPlayers(oriented);
         // Hide options once multiplayer state is active
         if (mode === 'multi') setOptionsVisible(false);
         // Compute perspective oriented trick (map each played card to its seat relative to me)
         const trickRaw = st.currentTrick || [];
         if (trickRaw.length) {
-          const oriented = trickRaw.map((pc:any) => {
+          const oriented = trickRaw.map((pc: any) => {
             if (mySeatIdx === null) {
               const fallbackPos = rawPlayers[pc.playerId]?.position || 'south';
               return { ...pc, pos: fallbackPos };
@@ -1432,12 +1781,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           const trick = st.currentTrick || [];
           if (trick.length === 0) return myHand.slice();
           const leadSuit = trick[0].suit;
-          const hasLead = myHand.some(c=>c.suit===leadSuit);
-          if (hasLead) return myHand.filter(c=>c.suit===leadSuit);
+          const hasLead = myHand.some((c) => c.suit === leadSuit);
+          if (hasLead) return myHand.filter((c) => c.suit === leadSuit);
           // Enforce trump obligation if standard suit trump and player holds trump
-          const trumpSuit = st.trumpSuit && ['eicheln','schellen','rosen','schilten'].includes(st.trumpSuit) ? st.trumpSuit : null;
+          const trumpSuit =
+            st.trumpSuit && ['eicheln', 'schellen', 'rosen', 'schilten'].includes(st.trumpSuit)
+              ? st.trumpSuit
+              : null;
           if (trumpSuit) {
-            const tr = myHand.filter(c=>c.suit===trumpSuit);
+            const tr = myHand.filter((c) => c.suit === trumpSuit);
             if (tr.length) return tr;
           }
           return myHand.slice();
@@ -1445,7 +1797,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         const lc = computeLegal();
         setLegalCards(lc);
         // Debug window binding
-        try { (window as any).gameDebug = { state: st, mySeat: mySeatIdx, legal: lc, trick: st.currentTrick }; } catch {}
+        try {
+          (window as any).gameDebug = {
+            state: st,
+            mySeat: mySeatIdx,
+            legal: lc,
+            trick: st.currentTrick,
+          };
+        } catch {}
         if (st.phase && st.phase !== 'waiting') {
           setMessage(`Game phase: ${st.phase}`);
         }
@@ -1460,15 +1819,26 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       // Periodic retry until we have a phase
       let retryAttempts = 0;
       const retryInterval = setInterval(() => {
-        if (gameState?.phase) { clearInterval(retryInterval); return; }
-        if (mode !== 'multi' || !activeTableIdRef.current) { clearInterval(retryInterval); return; }
+        if (gameState?.phase) {
+          clearInterval(retryInterval);
+          return;
+        }
+        if (mode !== 'multi' || !activeTableIdRef.current) {
+          clearInterval(retryInterval);
+          return;
+        }
         retryAttempts++;
-        if (retryAttempts > 5) { clearInterval(retryInterval); return; }
+        if (retryAttempts > 5) {
+          clearInterval(retryInterval);
+          return;
+        }
         console.debug('[multiplayer] Retry requesting state attempt', retryAttempts);
         s.emit('table:requestState', { tableId: activeTableIdRef.current });
       }, 2000);
-      
-      return () => { s.disconnect(); };
+
+      return () => {
+        s.disconnect();
+      };
     }
   }, [mode]);
 
@@ -1479,19 +1849,24 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       setMessage(err?.message || 'Illegal move');
     };
     socket.on('game:error', handler);
-    return () => { socket.off('game:error', handler); };
+    return () => {
+      socket.off('game:error', handler);
+    };
   }, [socket]);
 
   useEffect(() => {
     if (!user?.id || !players.length) return;
-    const seatPlayer = players.find((p:any) => p.userId === user.id);
+    const seatPlayer = players.find((p: any) => p.userId === user.id);
     if (!seatPlayer) return;
     if (seatPlayer.id !== mySeatRef.current) {
       setMySeat(seatPlayer.id);
     }
-    setHand(prev => {
+    setHand((prev) => {
       const newHand = seatPlayer.hand || [];
-      if (prev.length === newHand.length && prev.every((card:any, idx:number) => card?.id === newHand[idx]?.id)) {
+      if (
+        prev.length === newHand.length &&
+        prev.every((card: any, idx: number) => card?.id === newHand[idx]?.id)
+      ) {
         return prev;
       }
       return newHand;
@@ -1503,9 +1878,28 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     if (!orientedTrick.length) return null;
     // Example minimal rendering; integrate with your styled board center if needed
     return (
-      <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', display:'flex', gap:12 }}>
-        {orientedTrick.map(c => (
-          <div key={c.id} style={{ padding:6, background:'#fff', borderRadius:8, boxShadow:'0 2px 6px rgba(0,0,0,0.25)' }}>{c.rank}</div>
+      <div
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%,-50%)',
+          display: 'flex',
+          gap: 12,
+        }}
+      >
+        {orientedTrick.map((c) => (
+          <div
+            key={c.id}
+            style={{
+              padding: 6,
+              background: '#fff',
+              borderRadius: 8,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+            }}
+          >
+            {c.rank}
+          </div>
         ))}
       </div>
     );
@@ -1519,7 +1913,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       const st: any = gameState;
       const trickRaw = st.currentTrick || [];
       if (trickRaw.length) {
-        const oriented = trickRaw.map((pc:any) => {
+        const oriented = trickRaw.map((pc: any) => {
           const rel = (pc.playerId - mySeat + 4) % 4;
           const pos = rel === 0 ? 'south' : rel === 1 ? 'east' : rel === 2 ? 'north' : 'west';
           return { ...pc, pos };
@@ -1530,19 +1924,24 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       }
       // Recompute legal (same logic as computeLegal) if it's our turn
       const currentPlayer = st.currentPlayer;
-      const me = players.find(p=>p.id===mySeat);
+      const me = players.find((p) => p.id === mySeat);
       if (me && currentPlayer === mySeat && st.phase === 'playing') {
         const myHand = me.hand || [];
         let lc: any[] = [];
         if (myHand.length) {
           const trick = st.currentTrick || [];
-          if (!trick.length) lc = myHand.slice(); else {
+          if (!trick.length) lc = myHand.slice();
+          else {
             const leadSuit = trick[0].suit;
-            const hasLead = myHand.some((c:any)=>c.suit===leadSuit);
-            if (hasLead) lc = myHand.filter((c:any)=>c.suit===leadSuit); else {
-              const trumpSuit = st.trumpSuit && ['eicheln','schellen','rosen','schilten'].includes(st.trumpSuit) ? st.trumpSuit : null;
+            const hasLead = myHand.some((c: any) => c.suit === leadSuit);
+            if (hasLead) lc = myHand.filter((c: any) => c.suit === leadSuit);
+            else {
+              const trumpSuit =
+                st.trumpSuit && ['eicheln', 'schellen', 'rosen', 'schilten'].includes(st.trumpSuit)
+                  ? st.trumpSuit
+                  : null;
               if (trumpSuit) {
-                const tr = myHand.filter((c:any)=>c.suit===trumpSuit);
+                const tr = myHand.filter((c: any) => c.suit === trumpSuit);
                 lc = tr.length ? tr : myHand.slice();
               } else lc = myHand.slice();
             }
@@ -1568,8 +1967,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         return;
       }
       // If stalled and current player is a bot (not us and flagged in players list)
-      const curPlayer = players.find(p=>p.id===cp);
-      if (st.phase === 'playing' && curPlayer && curPlayer.id !== mySeat && /bot_/i.test(curPlayer.name)) {
+      const curPlayer = players.find((p) => p.id === cp);
+      if (
+        st.phase === 'playing' &&
+        curPlayer &&
+        curPlayer.id !== mySeat &&
+        /bot_/i.test(curPlayer.name)
+      ) {
         attempts++;
         if (attempts === 2 && socket && activeTableId) {
           socket.emit('table:requestState', { tableId: activeTableId });
@@ -1596,72 +2000,118 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const fetchTables = async () => {
     if (!authToken.current) return;
     try {
-      const res = await fetch(`${API_URL}/api/tables`, { headers: { Authorization: `Bearer ${authToken.current}` }});
+      const res = await fetch(`${API_URL}/api/tables`, {
+        headers: { Authorization: `Bearer ${authToken.current}` },
+      });
       const data = await res.json();
       if (data.success) setTables(data.tables || []);
     } catch {}
   };
 
   const createTable = async (nameOverride?: string) => {
-    if (!authToken.current) return; setCreatingTable(true);
+    if (!authToken.current) return;
+    setCreatingTable(true);
     try {
-      const res = await fetch(`${API_URL}/api/tables`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ name: nameOverride || 'Table', maxPlayers: 4, gameType: newTableGameType, team1Name: newTeam1, team2Name: newTeam2, targetPoints: newTargetPoints }) });
+      const res = await fetch(`${API_URL}/api/tables`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken.current}`,
+        },
+        body: JSON.stringify({
+          name: nameOverride || 'Table',
+          maxPlayers: 4,
+          gameType: newTableGameType,
+          team1Name: newTeam1,
+          team2Name: newTeam2,
+          targetPoints: newTargetPoints,
+        }),
+      });
       const data = await res.json();
       if (!data.success) {
         setMessage(data.message || 'Failed to create table');
       } else {
         setMessage(`Table '${data.table?.name || nameOverride || 'Table'}' created`);
         setTableName('');
-  setActiveTableId(data.table.id);
-  socket?.emit('table:join', { tableId: data.table.id });
-    setOptionsVisible(false);
+        setActiveTableId(data.table.id);
+        socket?.emit('table:join', { tableId: data.table.id });
+        setOptionsVisible(false);
         setMode('multi');
       }
       fetchTables();
     } catch (e) {
       setMessage('Error creating table');
-    } finally { setCreatingTable(false); }
+    } finally {
+      setCreatingTable(false);
+    }
   };
 
   const joinTable = async (id: string) => {
-    if (!authToken.current) return; setJoiningTableId(id);
+    if (!authToken.current) return;
+    setJoiningTableId(id);
     try {
-      await fetch(`${API_URL}/api/tables/${id}/join`, { method: 'POST', headers: { Authorization: `Bearer ${authToken.current}` }});
-  setActiveTableId(id);
-  socket?.emit('table:join', { tableId: id });
+      await fetch(`${API_URL}/api/tables/${id}/join`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken.current}` },
+      });
+      setActiveTableId(id);
+      socket?.emit('table:join', { tableId: id });
       setOptionsVisible(false);
       setMode('multi');
       fetchTables();
-    } finally { setJoiningTableId(null); }
+    } finally {
+      setJoiningTableId(null);
+    }
   };
 
   const fetchFriends = async () => {
-    if (!authToken.current) return; setFriendsLoading(true);
+    if (!authToken.current) return;
+    setFriendsLoading(true);
     try {
       const [friendsRes, reqRes] = await Promise.all([
-        fetch(`${API_URL}/api/friends`, { headers: { Authorization: `Bearer ${authToken.current}` }}),
-        fetch(`${API_URL}/api/friends/requests`, { headers: { Authorization: `Bearer ${authToken.current}` }})
+        fetch(`${API_URL}/api/friends`, {
+          headers: { Authorization: `Bearer ${authToken.current}` },
+        }),
+        fetch(`${API_URL}/api/friends/requests`, {
+          headers: { Authorization: `Bearer ${authToken.current}` },
+        }),
       ]);
       const fr = await friendsRes.json();
       const rq = await reqRes.json();
-      if (fr.success && rq.success) setFriendsTabData({ friends: fr.friends, requests: rq.requests });
-    } finally { setFriendsLoading(false); }
+      if (fr.success && rq.success)
+        setFriendsTabData({ friends: fr.friends, requests: rq.requests });
+    } finally {
+      setFriendsLoading(false);
+    }
   };
 
   const sendFriendRequest = async (username: string) => {
     if (!authToken.current || !username) return;
-    await fetch(`${API_URL}/api/friends/request`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ username }) });
+    await fetch(`${API_URL}/api/friends/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken.current}` },
+      body: JSON.stringify({ username }),
+    });
     fetchFriends();
   };
 
   const respondFriendRequest = async (id: string, accept: boolean) => {
     if (!authToken.current) return;
-    await fetch(`${API_URL}/api/friends/requests/${id}/respond`, { method: 'POST', headers: { 'Content-Type':'application/json', Authorization: `Bearer ${authToken.current}` }, body: JSON.stringify({ accept }) });
+    await fetch(`${API_URL}/api/friends/requests/${id}/respond`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken.current}` },
+      body: JSON.stringify({ accept }),
+    });
     fetchFriends();
   };
 
   // Trigger initial fetch when switching to multi tabs
-  useEffect(() => { if (mode==='multi') { fetchTables(); fetchFriends(); } }, [mode]);
+  useEffect(() => {
+    if (mode === 'multi') {
+      fetchTables();
+      fetchFriends();
+    }
+  }, [mode]);
 
   const handleSwitchMode = (nextMode: 'single' | 'multi') => {
     if (nextMode === mode) return;
@@ -1690,59 +2140,196 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       STARTING: { bg: '#fef9c3', color: '#92400e', label: 'Starting' },
       IN_PROGRESS: { bg: '#e0f2fe', color: '#1d4ed8', label: 'In progress' },
       COMPLETED: { bg: '#ede9fe', color: '#5b21b6', label: 'Completed' },
-      CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Cancelled' }
+      CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Cancelled' },
     };
     return (
-      <div style={{ padding:12 }}>
-        <div style={{ display:'flex', gap:10, marginBottom:14, alignItems:'center', flexWrap:'wrap' }}>
-          <input value={tableName} onChange={e=>setTableName(e.target.value)} placeholder='Table name' style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10, minWidth:180 }} />
-          <select value={newTableGameType} onChange={e=>setNewTableGameType(e.target.value)} style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10 }}>
-            <option value='schieber'>Schieber</option>
+      <div style={{ padding: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            marginBottom: 14,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <input
+            value={tableName}
+            onChange={(e) => setTableName(e.target.value)}
+            placeholder="Table name"
+            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, minWidth: 180 }}
+          />
+          <select
+            value={newTableGameType}
+            onChange={(e) => setNewTableGameType(e.target.value)}
+            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10 }}
+          >
+            <option value="schieber">Schieber</option>
           </select>
-          <input value={newTeam1} onChange={e=>setNewTeam1(e.target.value)} placeholder='Team 1 name' style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10, width:140 }} />
-          <input value={newTeam2} onChange={e=>setNewTeam2(e.target.value)} placeholder='Team 2 name' style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10, width:140 }} />
-          <input type='number' value={newTargetPoints} onChange={e=>setNewTargetPoints(parseInt(e.target.value)||1000)} placeholder='Target' style={{ padding:10, border:'1px solid #d1d5db', borderRadius:10, width:110 }} />
-          <button disabled={creatingTable} style={{ ...styles.button, background: creatingTable ? '#94a3b8' : '#1A7A4C', padding: '10px 18px' }} onClick={() => createTable(tableName || 'Table')}>{creatingTable? 'Creating…':'Create table'}</button>
-          <button style={{ ...styles.button, background:'#2563eb', padding: '10px 18px' }} onClick={fetchTables}>Refresh list</button>
-          <div style={{ fontSize:12, color:'#4b5563' }}>Online: {onlineCount}</div>
+          <input
+            value={newTeam1}
+            onChange={(e) => setNewTeam1(e.target.value)}
+            placeholder="Team 1 name"
+            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 140 }}
+          />
+          <input
+            value={newTeam2}
+            onChange={(e) => setNewTeam2(e.target.value)}
+            placeholder="Team 2 name"
+            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 140 }}
+          />
+          <input
+            type="number"
+            value={newTargetPoints}
+            onChange={(e) => setNewTargetPoints(parseInt(e.target.value) || 1000)}
+            placeholder="Target"
+            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 110 }}
+          />
+          <button
+            disabled={creatingTable}
+            style={{
+              ...styles.button,
+              background: creatingTable ? '#94a3b8' : '#1A7A4C',
+              padding: '10px 18px',
+            }}
+            onClick={() => createTable(tableName || 'Table')}
+          >
+            {creatingTable ? 'Creating…' : 'Create table'}
+          </button>
+          <button
+            style={{ ...styles.button, background: '#2563eb', padding: '10px 18px' }}
+            onClick={fetchTables}
+          >
+            Refresh list
+          </button>
+          <div style={{ fontSize: 12, color: '#4b5563' }}>Online: {onlineCount}</div>
         </div>
-        <div style={{ fontSize:12, color:'#6b7280', marginBottom: 14 }}>Host a public table or join an existing lobby below. Tables automatically upgrade to live games when everyone is ready.</div>
-        <div style={{ display:'grid', gap:14, gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))' }}>
-          {tables.map(t => (
-            <div key={t.id} style={{ border:'1px solid #e5e7eb', borderRadius:14, padding:16, background:'#ffffff', boxShadow:'0 10px 24px rgba(15,23,42,0.08)', display:'flex', flexDirection:'column', gap:12 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                <div style={{ fontWeight:700, fontSize:16, color:'#111827' }}>{t.name}</div>
+        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 14 }}>
+          Host a public table or join an existing lobby below. Tables automatically upgrade to live
+          games when everyone is ready.
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gap: 14,
+            gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))',
+          }}
+        >
+          {tables.map((t) => (
+            <div
+              key={t.id}
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: 14,
+                padding: 16,
+                background: '#ffffff',
+                boxShadow: '0 10px 24px rgba(15,23,42,0.08)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: 16, color: '#111827' }}>{t.name}</div>
                 {(() => {
-                  const theme = statusTheme[t.status] || { bg: '#e5e7eb', color: '#374151', label: t.status };
-                  return <span style={{ background: theme.bg, color: theme.color, padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, textTransform:'uppercase', letterSpacing: '.6px' }}>{theme.label}</span>;
+                  const theme = statusTheme[t.status] || {
+                    bg: '#e5e7eb',
+                    color: '#374151',
+                    label: t.status,
+                  };
+                  return (
+                    <span
+                      style={{
+                        background: theme.bg,
+                        color: theme.color,
+                        padding: '4px 10px',
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '.6px',
+                      }}
+                    >
+                      {theme.label}
+                    </span>
+                  );
                 })()}
               </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:6, fontSize:12, color:'#4b5563' }}>
-                <div><strong>Host:</strong> {t.players?.find((p:any)=>p.isHost)?.user?.username || 'Unknown'}</div>
-                <div><strong>Teams:</strong> {(t.team1Name || 'Team 1')} vs {(t.team2Name || 'Team 2')}</div>
-                <div><strong>Target:</strong> {t.targetPoints || newTargetPoints} pts • <strong>Players:</strong> {(t.players?.length || 0)}/{t.maxPlayers}</div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  fontSize: 12,
+                  color: '#4b5563',
+                }}
+              >
+                <div>
+                  <strong>Host:</strong>{' '}
+                  {t.players?.find((p: any) => p.isHost)?.user?.username || 'Unknown'}
+                </div>
+                <div>
+                  <strong>Teams:</strong> {t.team1Name || 'Team 1'} vs {t.team2Name || 'Team 2'}
+                </div>
+                <div>
+                  <strong>Target:</strong> {t.targetPoints || newTargetPoints} pts •{' '}
+                  <strong>Players:</strong> {t.players?.length || 0}/{t.maxPlayers}
+                </div>
               </div>
               {t.players && t.players.length > 0 && (
-                <div style={{ display:'flex', gap:6, flexWrap:'wrap', fontSize:11, color:'#6b7280' }}>
-                  {t.players.map((p:any) => (
-                    <span key={p.id} style={{ background:'#f3f4f6', borderRadius:999, padding:'4px 8px', border: p.isHost ? '1px solid #1A7A4C' : '1px solid #e5e7eb' }}>
-                      {p.user?.username || p.userId}{p.isHost ? ' ★' : ''}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 6,
+                    flexWrap: 'wrap',
+                    fontSize: 11,
+                    color: '#6b7280',
+                  }}
+                >
+                  {t.players.map((p: any) => (
+                    <span
+                      key={p.id}
+                      style={{
+                        background: '#f3f4f6',
+                        borderRadius: 999,
+                        padding: '4px 8px',
+                        border: p.isHost ? '1px solid #1A7A4C' : '1px solid #e5e7eb',
+                      }}
+                    >
+                      {p.user?.username || p.userId}
+                      {p.isHost ? ' ★' : ''}
                     </span>
                   ))}
                 </div>
               )}
-              <div style={{ display:'flex', gap:8, marginTop:'auto' }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
                 <button
-                  disabled={joiningTableId===t.id || (t.status !== 'OPEN' && t.status !== 'STARTING')}
+                  disabled={
+                    joiningTableId === t.id || (t.status !== 'OPEN' && t.status !== 'STARTING')
+                  }
                   style={{
                     ...styles.button,
                     flex: 1,
-                    background: joiningTableId===t.id ? '#94a3b8' : '#1A7A4C'
+                    background: joiningTableId === t.id ? '#94a3b8' : '#1A7A4C',
                   }}
-                  onClick={()=>joinTable(t.id)}
-                >{joiningTableId===t.id? 'Joining…':'Join table'}</button>
-                {t.status==='OPEN' && t.createdById === user?.id && (
-                  <button style={{ ...styles.button, background:'#f59e0b' }} onClick={()=>startTableEarly(t.id)}>Start now</button>
+                  onClick={() => joinTable(t.id)}
+                >
+                  {joiningTableId === t.id ? 'Joining…' : 'Join table'}
+                </button>
+                {t.status === 'OPEN' && t.createdById === user?.id && (
+                  <button
+                    style={{ ...styles.button, background: '#f59e0b' }}
+                    onClick={() => startTableEarly(t.id)}
+                  >
+                    Start now
+                  </button>
                 )}
               </div>
             </div>
@@ -1753,16 +2340,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               title="No Active Tables"
               description="Be the first to create a public table and invite friends to play!"
               action={
-                <button 
+                <button
                   onClick={() => createTable('My Table')}
                   disabled={creatingTable}
                   style={{
                     ...styles.button,
                     padding: '12px 24px',
-                    fontSize: '1rem'
+                    fontSize: '1rem',
                   }}
                 >
-                  {creatingTable ? <><Spinner size="sm" /> {t.creating}</> : '+ Create First Table'}
+                  {creatingTable ? (
+                    <>
+                      <Spinner size="sm" /> {t.creating}
+                    </>
+                  ) : (
+                    '+ Create First Table'
+                  )}
                 </button>
               }
             />
@@ -1774,21 +2367,66 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   const [friendInput, setFriendInput] = useState('');
   const renderFriends = () => (
-    <div style={{ padding:12 }}>
-      <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center', flexWrap:'wrap' }}>
-        <input value={friendInput} onChange={e=>setFriendInput(e.target.value)} placeholder='Friend username' style={{ flex:1, padding:8, border:'1px solid #ddd', borderRadius:6 }} />
-        <button style={styles.button} onClick={()=>{ sendFriendRequest(friendInput); setFriendInput(''); }}>Add</button>
-        <button style={styles.button} onClick={fetchFriends}>Refresh</button>
+    <div style={{ padding: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          marginBottom: 12,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
+        <input
+          value={friendInput}
+          onChange={(e) => setFriendInput(e.target.value)}
+          placeholder="Friend username"
+          style={{ flex: 1, padding: 8, border: '1px solid #ddd', borderRadius: 6 }}
+        />
+        <button
+          style={styles.button}
+          onClick={() => {
+            sendFriendRequest(friendInput);
+            setFriendInput('');
+          }}
+        >
+          Add
+        </button>
+        <button style={styles.button} onClick={fetchFriends}>
+          Refresh
+        </button>
       </div>
       {friendsLoading && <Loading message="Loading friends..." />}
       {!friendsLoading && (
         <>
-          <h4 style={{ margin:'8px 0 4px' }}>Friends</h4>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-            {friendsTabData.friends.map(f => <div key={f.id} style={{ background:'#fff', padding:'6px 10px', borderRadius:20, fontSize:12, border:'1px solid #e5e7eb', display:'flex', alignItems:'center', gap:6 }}>
-              <span style={{ width:8, height:8, borderRadius:4, background: f.online? '#10b981':'#9ca3af', display:'inline-block' }} />
-              {f.username}
-            </div>)}
+          <h4 style={{ margin: '8px 0 4px' }}>Friends</h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {friendsTabData.friends.map((f) => (
+              <div
+                key={f.id}
+                style={{
+                  background: '#fff',
+                  padding: '6px 10px',
+                  borderRadius: 20,
+                  fontSize: 12,
+                  border: '1px solid #e5e7eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    background: f.online ? '#10b981' : '#9ca3af',
+                    display: 'inline-block',
+                  }}
+                />
+                {f.username}
+              </div>
+            ))}
             {!friendsTabData.friends.length && (
               <EmptyState
                 icon="👥"
@@ -1798,22 +2436,48 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               />
             )}
           </div>
-          <h4 style={{ margin:'12px 0 4px' }}>Requests</h4>
-          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-            {friendsTabData.requests.map(r => (
-              <div key={r.id} style={{ background:'#fff', padding:'8px 10px', borderRadius:8, border:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div style={{ fontSize:12 }}>
-                  {r.senderId === user?.id ? `To ${r.receiver?.username}` : `From ${r.sender?.username}`} – {r.status}
+          <h4 style={{ margin: '12px 0 4px' }}>Requests</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {friendsTabData.requests.map((r) => (
+              <div
+                key={r.id}
+                style={{
+                  background: '#fff',
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: '1px solid #e5e7eb',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <div style={{ fontSize: 12 }}>
+                  {r.senderId === user?.id
+                    ? `To ${r.receiver?.username}`
+                    : `From ${r.sender?.username}`}{' '}
+                  – {r.status}
                 </div>
-                {r.status==='PENDING' && r.receiverId === user?.id && (
-                  <div style={{ display:'flex', gap:6 }}>
-                    <button style={{ ...styles.button, background:'#1A7A4C' }} onClick={()=>respondFriendRequest(r.id,true)}>Accept</button>
-                    <button style={{ ...styles.button, background:'#D42E2C' }} onClick={()=>respondFriendRequest(r.id,false)}>Decline</button>
+                {r.status === 'PENDING' && r.receiverId === user?.id && (
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      style={{ ...styles.button, background: '#1A7A4C' }}
+                      onClick={() => respondFriendRequest(r.id, true)}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      style={{ ...styles.button, background: '#D42E2C' }}
+                      onClick={() => respondFriendRequest(r.id, false)}
+                    >
+                      Decline
+                    </button>
                   </div>
                 )}
               </div>
             ))}
-            {!friendsTabData.requests.length && <div style={{ fontSize:12, color:'#555' }}>No pending requests</div>}
+            {!friendsTabData.requests.length && (
+              <div style={{ fontSize: 12, color: '#555' }}>No pending requests</div>
+            )}
           </div>
         </>
       )}
@@ -1833,13 +2497,19 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         roundScores: multiGameState.roundScores,
         dealer: multiGameState.dealer,
         forehand: multiGameState.forehand ?? null,
-        weis: multiGameState.weis
+        weis: multiGameState.weis,
       });
       // Map players
-      const uiPlayers = multiGameState.players.map((p: any) => ({ id: p.id, name: p.userId === dealerUserId ? 'You (Dealer)' : p.userId, hand: p.hand, team: p.team, position: p.position }));
+      const uiPlayers = multiGameState.players.map((p: any) => ({
+        id: p.id,
+        name: p.userId === dealerUserId ? 'You (Dealer)' : p.userId,
+        hand: p.hand,
+        team: p.team,
+        position: p.position,
+      }));
       setPlayers(uiPlayers);
       // Set hand of this user (id matches first player)
-      const me = uiPlayers.find(p => p.userId === user?.id || p.id === 0);
+      const me = uiPlayers.find((p) => p.userId === user?.id || p.id === 0);
       setHand(me?.hand || []);
       // Legal cards for current player
       if (multiGameState.currentPlayer === 0) {
@@ -1855,9 +2525,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   return (
     <div style={styles.container}>
       <div style={styles.gameArea}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+          }}
+        >
           {showPlaySurface && <div style={styles.message}>{message}</div>}
-          
+
           {/* Quick action buttons - always available when not on welcome screen */}
           {(showPlaySurface || setupChoice !== 'welcome') && (
             <div style={{ display: 'flex', gap: 8 }}>
@@ -1879,10 +2556,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                     fontWeight: 600,
                     cursor: 'pointer',
                     boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#dc2626'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#ef4444'}
+                  onMouseOver={(e) => (e.currentTarget.style.background = '#dc2626')}
+                  onMouseOut={(e) => (e.currentTarget.style.background = '#ef4444')}
                 >
                   {t.newGame || 'New Game'}
                 </button>
@@ -1894,35 +2571,107 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         {/* Game-only HUD (scores, trump, history) */}
         {showPlaySurface && (
           <>
-            <ScoreBar lang={lang} teamNames={teamNames} scores={gameState?.scores || { team1: 0, team2: 0 }} target={maxPoints} trump={currentTrump} myTeam={players.find(p => p.position === 'south')?.team} />
-            {mode==='multi' && multiGameState && (
-              <div style={{ margin: '0 auto 16px', maxWidth: 760, background:'#fff', padding:12, borderRadius:12, border:'1px solid #e5e7eb' }}>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:16, alignItems:'center' }}>
-                  <div style={{ fontSize:14, fontWeight:700 }}>Multiplayer State</div>
-                  <div style={{ fontSize:12 }}>Dealer Seat: {multiGameState.dealerSeat}</div>
-                  <div style={{ fontSize:12 }}>Current Player Seat: {multiGameState.currentPlayerSeat}</div>
-                  {activeTableId && <div style={{ fontSize:12, color:'#374151' }}>Table: {activeTableId}</div>}
+            <ScoreBar
+              lang={lang}
+              teamNames={teamNames}
+              scores={gameState?.scores || { team1: 0, team2: 0 }}
+              target={maxPoints}
+              trump={currentTrump}
+              myTeam={players.find((p) => p.position === 'south')?.team}
+            />
+            {mode === 'multi' && multiGameState && (
+              <div
+                style={{
+                  margin: '0 auto 16px',
+                  maxWidth: 760,
+                  background: '#fff',
+                  padding: 12,
+                  borderRadius: 12,
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>Multiplayer State</div>
+                  <div style={{ fontSize: 12 }}>Dealer Seat: {multiGameState.dealerSeat}</div>
+                  <div style={{ fontSize: 12 }}>
+                    Current Player Seat: {multiGameState.currentPlayerSeat}
+                  </div>
+                  {activeTableId && (
+                    <div style={{ fontSize: 12, color: '#374151' }}>Table: {activeTableId}</div>
+                  )}
                 </div>
-                <div style={{ marginTop:8 }}>
-                  <div style={{ fontSize:12, fontWeight:600, marginBottom:4 }}>Your Multiplayer Hand</div>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                    {(multiGameState.players||[]).find((p:any)=>p.userId===user?.id)?.hand?.map((c:string,i:number)=>(
-                      <div key={i} style={{ padding:'4px 6px', background:'#1A7A4C', color:'#fff', borderRadius:6, fontSize:12, letterSpacing:.5 }}>{c}</div>
-                    )) || <div style={{ fontSize:12, color:'#6b7280' }}>No hand</div>}
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                    Your Multiplayer Hand
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {(multiGameState.players || [])
+                      .find((p: any) => p.userId === user?.id)
+                      ?.hand?.map((c: string, i: number) => (
+                        <div
+                          key={i}
+                          style={{
+                            padding: '4px 6px',
+                            background: '#1A7A4C',
+                            color: '#fff',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          {c}
+                        </div>
+                      )) || <div style={{ fontSize: 12, color: '#6b7280' }}>No hand</div>}
                   </div>
                 </div>
               </div>
             )}
             {roundHistory.length > 0 && (
-              <details style={{ maxWidth: 700, margin: '0 auto 10px', background: '#fffaf0', border: '1px solid #e3d7bf', borderRadius: 10, padding: '6px 12px' }}>
-                <summary style={{ fontSize: 13, fontWeight: 600, color: '#3a2e20', cursor: 'pointer' }}>{t.roundHistory} ({roundHistory.length})</summary>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', margin: '8px 0 4px' }}>
+              <details
+                style={{
+                  maxWidth: 700,
+                  margin: '0 auto 10px',
+                  background: '#fffaf0',
+                  border: '1px solid #e3d7bf',
+                  borderRadius: 10,
+                  padding: '6px 12px',
+                }}
+              >
+                <summary
+                  style={{ fontSize: 13, fontWeight: 600, color: '#3a2e20', cursor: 'pointer' }}
+                >
+                  {t.roundHistory} ({roundHistory.length})
+                </summary>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    margin: '8px 0 4px',
+                  }}
+                >
                   {roundHistory.map((round, idx) => (
-                    <div key={idx} style={{ background: 'white', borderRadius: 6, padding: '4px 8px', fontSize: 12, border: '1px solid #e5e7eb', minWidth: 80, textAlign: 'center' }}>
-                      <div style={{ fontWeight: 600 }}>{t.round} {round.round}</div>
+                    <div
+                      key={idx}
+                      style={{
+                        background: 'white',
+                        borderRadius: 6,
+                        padding: '4px 8px',
+                        fontSize: 12,
+                        border: '1px solid #e5e7eb',
+                        minWidth: 80,
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>
+                        {t.round} {round.round}
+                      </div>
                       <div style={{ color: TEAM_COLORS[1] }}>{round.team1}</div>
                       <div style={{ color: TEAM_COLORS[2] }}>{round.team2}</div>
-                      <div style={{ fontSize: 10, color: '#6b7280' }}>{trumpName(round.trump, lang)}</div>
+                      <div style={{ fontSize: 10, color: '#6b7280' }}>
+                        {trumpName(round.trump, lang)}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1931,21 +2680,97 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           </>
         )}
 
-  {showPlaySurface && (
+        {showPlaySurface && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <div data-jass-table style={{ width: '100%', maxWidth: 760, height: 'var(--table-h)', position: 'relative', background: 'radial-gradient(ellipse at center, #22875a 0%, #17683f 60%, #0f4c2d 100%)', borderRadius: 18, boxShadow: 'inset 0 0 40px rgba(0,0,0,0.45), 0 8px 25px rgba(0,0,0,0.2)', border: '6px solid #6b4423', boxSizing: 'border-box' }}>
-              
+            <div
+              data-jass-table
+              style={{
+                width: '100%',
+                maxWidth: 760,
+                height: 'var(--table-h)',
+                position: 'relative',
+                background:
+                  'radial-gradient(ellipse at center, #22875a 0%, #17683f 60%, #0f4c2d 100%)',
+                borderRadius: 18,
+                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.45), 0 8px 25px rgba(0,0,0,0.2)',
+                border: '6px solid #6b4423',
+                boxSizing: 'border-box',
+              }}
+            >
               {/* Seats: north/south centred, west/east on the sides */}
-              <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 5 }}>{renderSeat('north')}</div>
-              <div style={{ position: 'absolute', top: '24%', left: 6, transform: 'translateY(-50%)', zIndex: 5 }}>{renderSeat('west', true)}</div>
-              <div style={{ position: 'absolute', top: '24%', right: 6, transform: 'translateY(-50%)', zIndex: 5 }}>{renderSeat('east', true)}</div>
-              <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 5 }}>{renderSeat('south')}</div>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 5,
+                }}
+              >
+                {renderSeat('north')}
+              </div>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '24%',
+                  left: 6,
+                  transform: 'translateY(-50%)',
+                  zIndex: 5,
+                }}
+              >
+                {renderSeat('west', true)}
+              </div>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '24%',
+                  right: 6,
+                  transform: 'translateY(-50%)',
+                  zIndex: 5,
+                }}
+              >
+                {renderSeat('east', true)}
+              </div>
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 8,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 5,
+                }}
+              >
+                {renderSeat('south')}
+              </div>
 
               {/* Trick: cards upright, nudged toward the player who played them */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 'var(--trick-w)', height: 'var(--trick-h)' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%,-50%)',
+                  width: 'var(--trick-w)',
+                  height: 'var(--trick-h)',
+                }}
+              >
                 <TrickArea
-                  cards={(gameState?.currentTrick || []).map((c: any, i: number) => ({ card: c, seat: positionForPlayerId(c.playerId ?? i) }))}
-                  collect={collect ? { winnerSeat: positionForPlayerId(collect.winnerId), winningCardId: String((gameState?.currentTrick || []).find((c: any) => c.playerId === collect.winnerId)?.id ?? '') } : null}
+                  cards={(gameState?.currentTrick || []).map((c: any, i: number) => ({
+                    card: c,
+                    seat: positionForPlayerId(c.playerId ?? i),
+                  }))}
+                  collect={
+                    collect
+                      ? {
+                          winnerSeat: positionForPlayerId(collect.winnerId),
+                          winningCardId: String(
+                            (gameState?.currentTrick || []).find(
+                              (c: any) => c.playerId === collect.winnerId,
+                            )?.id ?? '',
+                          ),
+                        }
+                      : null
+                  }
                   emptyLabel={uiPendingResolve || isAnimating ? null : t.noCardsPlayed}
                 />
               </div>
@@ -1956,62 +2781,72 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         {/* Welcome Screen - shown when user hasn't chosen single or multi yet */}
         {optionsVisible && setupChoice === 'welcome' && (
           <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ 
-              width: '100%', 
-              maxWidth: 900, 
-              background: 'linear-gradient(135deg, #FF0000 0%, #DC143C 100%)', 
-              borderRadius: 20, 
-              padding: '48px 32px', 
-              boxShadow: '0 24px 60px rgba(220, 20, 60, 0.4)', 
-              border: '2px solid rgba(255, 255, 255, 0.2)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
+            <div
+              style={{
+                width: '100%',
+                maxWidth: 900,
+                background: 'linear-gradient(135deg, #FF0000 0%, #DC143C 100%)',
+                borderRadius: 20,
+                padding: '48px 32px',
+                boxShadow: '0 24px 60px rgba(220, 20, 60, 0.4)',
+                border: '2px solid rgba(255, 255, 255, 0.2)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
               {/* Swiss Cross Pattern Background */}
-              <div style={{ 
-                position: 'absolute', 
-                top: 0, 
-                left: 0, 
-                right: 0, 
-                bottom: 0, 
-                opacity: 0.08,
-                backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 35px, white 35px, white 40px),
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  opacity: 0.08,
+                  backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 35px, white 35px, white 40px),
                                   repeating-linear-gradient(90deg, transparent, transparent 35px, white 35px, white 40px)`,
-                pointerEvents: 'none'
-              }} />
+                  pointerEvents: 'none',
+                }}
+              />
 
               <div style={{ position: 'relative', zIndex: 1 }}>
                 {/* Header */}
                 <div style={{ textAlign: 'center', marginBottom: 40 }}>
                   <div style={{ fontSize: 56, marginBottom: 12 }}>🇨🇭</div>
-                  <h2 style={{ 
-                    margin: 0, 
-                    fontSize: 36, 
-                    fontWeight: 900, 
-                    color: '#ffffff', 
-                    textShadow: '0 2px 12px rgba(0,0,0,0.2)',
-                    letterSpacing: '-0.5px'
-                  }}>
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: 36,
+                      fontWeight: 900,
+                      color: '#ffffff',
+                      textShadow: '0 2px 12px rgba(0,0,0,0.2)',
+                      letterSpacing: '-0.5px',
+                    }}
+                  >
                     Grüezi! Willkommen zum Jass
                   </h2>
-                  <p style={{ 
-                    margin: '12px 0 0', 
-                    fontSize: 16, 
-                    color: 'rgba(255, 255, 255, 0.95)', 
-                    fontWeight: 500,
-                    lineHeight: 1.5
-                  }}>
+                  <p
+                    style={{
+                      margin: '12px 0 0',
+                      fontSize: 16,
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      fontWeight: 500,
+                      lineHeight: 1.5,
+                    }}
+                  >
                     Choose your Swiss Jass adventure below
                   </p>
                 </div>
 
                 {/* Two Main Options */}
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
-                  gap: 24,
-                  marginBottom: 32
-                }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                    gap: 24,
+                    marginBottom: 32,
+                  }}
+                >
                   {/* Local Game Option */}
                   <button
                     onClick={() => {
@@ -2026,7 +2861,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                       boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                      textAlign: 'left'
+                      textAlign: 'left',
                     }}
                     onMouseOver={(e) => {
                       e.currentTarget.style.transform = 'translateY(-4px)';
@@ -2038,35 +2873,42 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                     }}
                   >
                     <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
-                    <h3 style={{ 
-                      margin: 0, 
-                      fontSize: 24, 
-                      fontWeight: 800, 
-                      color: '#1f2937',
-                      marginBottom: 8
-                    }}>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: 24,
+                        fontWeight: 800,
+                        color: '#1f2937',
+                        marginBottom: 8,
+                      }}
+                    >
                       Play Local vs Bots
                     </h3>
-                    <p style={{ 
-                      margin: 0, 
-                      fontSize: 14, 
-                      color: '#6b7280', 
-                      lineHeight: 1.6,
-                      marginBottom: 16
-                    }}>
-                      Practice your skills against AI opponents. Perfect for learning the game or playing offline.
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 14,
+                        color: '#6b7280',
+                        lineHeight: 1.6,
+                        marginBottom: 16,
+                      }}
+                    >
+                      Practice your skills against AI opponents. Perfect for learning the game or
+                      playing offline.
                     </p>
-                    <div style={{ 
-                      display: 'inline-block',
-                      background: '#dcfce7',
-                      color: '#166534',
-                      padding: '6px 12px',
-                      borderRadius: 999,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
+                    <div
+                      style={{
+                        display: 'inline-block',
+                        background: '#dcfce7',
+                        color: '#166534',
+                        padding: '6px 12px',
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
                       ⚡ Instant Start
                     </div>
                   </button>
@@ -2085,7 +2927,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                       boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                      textAlign: 'left'
+                      textAlign: 'left',
                     }}
                     onMouseOver={(e) => {
                       e.currentTarget.style.transform = 'translateY(-4px)';
@@ -2097,56 +2939,67 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                     }}
                   >
                     <div style={{ fontSize: 48, marginBottom: 16 }}>🌐</div>
-                    <h3 style={{ 
-                      margin: 0, 
-                      fontSize: 24, 
-                      fontWeight: 800, 
-                      color: '#1f2937',
-                      marginBottom: 8
-                    }}>
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: 24,
+                        fontWeight: 800,
+                        color: '#1f2937',
+                        marginBottom: 8,
+                      }}
+                    >
                       Play Online
                     </h3>
-                    <p style={{ 
-                      margin: 0, 
-                      fontSize: 14, 
-                      color: '#6b7280', 
-                      lineHeight: 1.6,
-                      marginBottom: 16
-                    }}>
-                      Join tables and play with other Jass enthusiasts from around the world in real-time.
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 14,
+                        color: '#6b7280',
+                        lineHeight: 1.6,
+                        marginBottom: 16,
+                      }}
+                    >
+                      Join tables and play with other Jass enthusiasts from around the world in
+                      real-time.
                     </p>
-                    <div style={{ 
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      background: '#dbeafe',
-                      color: '#1e40af',
-                      padding: '6px 12px',
-                      borderRadius: 999,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      <span style={{ 
-                        width: 8, 
-                        height: 8, 
-                        background: '#10b981', 
-                        borderRadius: '50%',
-                        display: 'inline-block'
-                      }} />
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        background: '#dbeafe',
+                        color: '#1e40af',
+                        padding: '6px 12px',
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          background: '#10b981',
+                          borderRadius: '50%',
+                          display: 'inline-block',
+                        }}
+                      />
                       {onlineCount} Online
                     </div>
                   </button>
                 </div>
 
                 {/* Footer Info */}
-                <div style={{ 
-                  textAlign: 'center', 
-                  color: 'rgba(255, 255, 255, 0.85)', 
-                  fontSize: 13,
-                  fontWeight: 500
-                }}>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    color: 'rgba(255, 255, 255, 0.85)',
+                    fontSize: 13,
+                    fontWeight: 500,
+                  }}
+                >
                   🏔️ Authentic Swiss Schieber Jass • 🧀 Traditional Rules • 🫕 Modern Interface
                 </div>
               </div>
@@ -2156,38 +3009,88 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
         {optionsVisible && setupChoice === 'single' && mode === 'single' && (
           <div style={{ marginTop: 4 }}>
-            <MatchSetup lang={lang} bots={botNames.map(n => n.replace(/\s*\(bot\)$/, ''))} teamNames={teamNames} onTeamNames={setTeamNames} target={maxPoints} onTarget={setMaxPoints}
-              onStart={startLocalGameWithOptions} onBack={ONLINE_ENABLED ? () => setSetupChoice('welcome') : undefined} backLabel={messages(lang).header.home} />
+            <MatchSetup
+              lang={lang}
+              bots={botNames.map((n) => n.replace(/\s*\(bot\)$/, ''))}
+              teamNames={teamNames}
+              onTeamNames={setTeamNames}
+              target={maxPoints}
+              onTarget={setMaxPoints}
+              onStart={startLocalGameWithOptions}
+              onBack={ONLINE_ENABLED ? () => setSetupChoice('welcome') : undefined}
+              backLabel={messages(lang).header.home}
+            />
           </div>
         )}
 
         {optionsVisible && setupChoice === 'multi' && mode === 'multi' && (
           <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: '100%', maxWidth: 760, background: '#ffffff', borderRadius: 16, padding: '24px 28px', boxShadow: '0 18px 40px rgba(17, 24, 39, 0.12)', border: '1px solid #e5e7eb' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <div
+              style={{
+                width: '100%',
+                maxWidth: 760,
+                background: '#ffffff',
+                borderRadius: 16,
+                padding: '24px 28px',
+                boxShadow: '0 18px 40px rgba(17, 24, 39, 0.12)',
+                border: '1px solid #e5e7eb',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 20,
+                }}
+              >
                 <div>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1f2937' }}>Multiplayer Game</h3>
-                  <p style={{ margin: '6px 0 0', fontSize: 13, color: '#4b5563' }}>Join or create tables to play with others online</p>
+                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1f2937' }}>
+                    Multiplayer Game
+                  </h3>
+                  <p style={{ margin: '6px 0 0', fontSize: 13, color: '#4b5563' }}>
+                    Join or create tables to play with others online
+                  </p>
                 </div>
-                <div style={{ background: '#2563eb', color: '#fff', borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600 }}>
+                <div
+                  style={{
+                    background: '#2563eb',
+                    color: '#fff',
+                    borderRadius: 999,
+                    padding: '6px 14px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
                   {onlineCount} Online
                 </div>
               </div>
-              <div style={{ background: '#f9fafb', borderRadius: 14, padding: '16px 20px', border: '1px solid #e5e7eb', color: '#374151', fontSize: 13, marginBottom: 20 }}>
-                {t.multiTablesBlurb || "Go to the Tables tab to create or join a game table. Once all players are ready, the game will begin automatically."}
+              <div
+                style={{
+                  background: '#f9fafb',
+                  borderRadius: 14,
+                  padding: '16px 20px',
+                  border: '1px solid #e5e7eb',
+                  color: '#374151',
+                  fontSize: 13,
+                  marginBottom: 20,
+                }}
+              >
+                {t.multiTablesBlurb ||
+                  'Go to the Tables tab to create or join a game table. Once all players are ready, the game will begin automatically.'}
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
-                <button 
-                  style={{ 
-                    padding: '10px 20px', 
-                    borderRadius: 10, 
-                    border: '1px solid #d1d5db', 
-                    background: '#ffffff', 
-                    color: '#4b5563', 
-                    cursor: 'pointer', 
-                    fontSize: 14, 
-                    fontWeight: 600 
-                  }} 
+                <button
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    border: '1px solid #d1d5db',
+                    background: '#ffffff',
+                    color: '#4b5563',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
                   onClick={() => setSetupChoice('welcome')}
                 >
                   ← Back
@@ -2197,72 +3100,146 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           </div>
         )}
 
-  {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
-  {gameState?.phase === 'trump_selection' && ((mode==='multi' ? (mySeat !== null && gameState.currentPlayer === mySeat) : gameState.currentPlayer === 0)) && (
-          <div style={{ marginTop: 12 }}>
-            <h4 style={{ margin: '0 0 4px' }}>{t.selectTrump}</h4>
-            <div className="trump-dealer" style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}>
-              {t.dealer}: {players.find(p => p.id === gameState.dealer)?.name || `Player ${gameState.dealer}`}
+        {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
+        {gameState?.phase === 'trump_selection' &&
+          (mode === 'multi'
+            ? mySeat !== null && gameState.currentPlayer === mySeat
+            : gameState.currentPlayer === 0) && (
+            <div style={{ marginTop: 12 }}>
+              <h4 style={{ margin: '0 0 4px' }}>{t.selectTrump}</h4>
+              <div
+                className="trump-dealer"
+                style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}
+              >
+                {t.dealer}:{' '}
+                {players.find((p) => p.id === gameState.dealer)?.name ||
+                  `Player ${gameState.dealer}`}
+              </div>
+              <div className="trump-grid">
+                {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map((t) => (
+                  <button
+                    key={t}
+                    data-trump={t}
+                    onClick={() => submitTrump(t)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 2,
+                      minWidth: 76,
+                      minHeight: 64,
+                      padding: '6px 8px',
+                      background: '#fffaf0',
+                      border: '2px solid #d9c9a8',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#3a2e20',
+                    }}
+                  >
+                    <SuitIcon trump={t} size={34} />
+                    {trumpName(t, lang)}
+                  </button>
+                ))}
+                {/* Only the original chooser (forehand) may schieben; the partner can't push it back. */}
+                {isLocal && gameState.forehand === 0 && (
+                  <button
+                    data-trump="schieben"
+                    style={{ ...styles.button, background: '#6b7280', minHeight: 44 }}
+                    onClick={() => submitTrump('schieben')}
+                  >
+                    ↻ {t.schieben}
+                  </button>
+                )}
+              </div>
+              <div className="trump-hint" style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
+                {gameState.forehand === 0 || !isLocal ? t.trumpHintChooser : t.trumpHintPartner}
+              </div>
             </div>
-            <div className="trump-grid">
-              {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map(t => (
-                <button key={t} data-trump={t} onClick={() => submitTrump(t)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minWidth: 76, minHeight: 64, padding: '6px 8px', background: '#fffaf0', border: '2px solid #d9c9a8', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#3a2e20' }}>
-                  <SuitIcon trump={t} size={34} />
-                  {trumpName(t, lang)}
-                </button>
-              ))}
-              {/* Only the original chooser (forehand) may schieben; the partner can't push it back. */}
-              {isLocal && gameState.forehand === 0 && (
-                <button data-trump="schieben" style={{ ...styles.button, background: '#6b7280', minHeight: 44 }} onClick={() => submitTrump('schieben')}>
-                  ↻ {t.schieben}
-                </button>
-              )}
-            </div>
-            <div className="trump-hint" style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
-              {gameState.forehand === 0 || !isLocal ? t.trumpHintChooser : t.trumpHintPartner}
-            </div>
-          </div>
-        )}
+          )}
 
         {/* Hand */}
         <div>
           {/* Fanned hand: wrappers shrink so cards overlap on narrow screens, corner index stays visible. */}
           <div style={styles.hand}>
-            {hand.length ? sortHandForDisplay(hand, chosenTrump).map((card, i, arr) => {
-              const playable = legalCards.some((c: any) => c.id === card.id);
-              const reason = !playable ? notPlayableReason(card) : null;
-              return (
-                <div key={card.id} style={{ position: 'relative', flex: i === arr.length - 1 ? '0 0 calc(var(--card-w) + 4px)' : '0 1 calc(var(--card-w) + 10px)', minWidth: 0 }}>
-                  {/* Tap to select, tap again to play (dblclick never fires reliably on touch). */}
-                  <div data-card-id={card.id} data-playable={playable ? 'true' : 'false'} title={reason || undefined} onClick={() => {
-                    if (!playable) { if (reason) setMessage(reason); return; }
-                    if (selectedCard !== card.id) { setSelectedCard(card.id); return; }
-                    setSelectedCard(null);
-                    if (isLocal) playLocalCard(card.id); else playCard(card.id);
-                  }}>
-                    {/* Only mark playability while it's our turn, so the hand isn't dimmed while waiting. */}
-                    <SwissCard card={card} isSelected={selectedCard === card.id} isPlayable={gameState?.phase === 'trump_selection' ? undefined : (legalCards.length ? playable : undefined)} />
-                  </div>
-                </div>
-              );
-            }) : null}
+            {hand.length
+              ? sortHandForDisplay(hand, chosenTrump).map((card, i, arr) => {
+                  const playable = legalCards.some((c: any) => c.id === card.id);
+                  const reason = !playable ? notPlayableReason(card) : null;
+                  return (
+                    <div
+                      key={card.id}
+                      style={{
+                        position: 'relative',
+                        flex:
+                          i === arr.length - 1
+                            ? '0 0 calc(var(--card-w) + 4px)'
+                            : '0 1 calc(var(--card-w) + 10px)',
+                        minWidth: 0,
+                      }}
+                    >
+                      {/* Tap to select, tap again to play (dblclick never fires reliably on touch). */}
+                      <div
+                        data-card-id={card.id}
+                        data-playable={playable ? 'true' : 'false'}
+                        title={reason || undefined}
+                        onClick={() => {
+                          if (!playable) {
+                            if (reason) setMessage(reason);
+                            return;
+                          }
+                          if (selectedCard !== card.id) {
+                            setSelectedCard(card.id);
+                            return;
+                          }
+                          setSelectedCard(null);
+                          if (isLocal) playLocalCard(card.id);
+                          else playCard(card.id);
+                        }}
+                      >
+                        {/* Only mark playability while it's our turn, so the hand isn't dimmed while waiting. */}
+                        <SwissCard
+                          card={card}
+                          isSelected={selectedCard === card.id}
+                          isPlayable={
+                            gameState?.phase === 'trump_selection'
+                              ? undefined
+                              : legalCards.length
+                                ? playable
+                                : undefined
+                          }
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              : null}
           </div>
         </div>
 
-        <WeisPanel lang={lang} weis={gameState?.weis as any} players={players as any} weisWinner={weisWinner as any} />
+        <WeisPanel
+          lang={lang}
+          weis={gameState?.weis as any}
+          players={players as any}
+          weisWinner={weisWinner as any}
+        />
 
         <InfoPanels lang={lang} />
 
         <CardCredits lang={lang} />
       </div>
-      
+
       {showVictory && (
         <VictoryModal
           isOpen={showVictory}
           lang={lang}
-          myTeam={players.find(p => p.position === 'south')?.team}
+          myTeam={players.find((p) => p.position === 'south')?.team}
           teamNames={teamNames}
-          finalScores={{ team1: gameState?.scores?.team1 || 0, team2: gameState?.scores?.team2 || 0 }}
+          finalScores={{
+            team1: gameState?.scores?.team1 || 0,
+            team2: gameState?.scores?.team2 || 0,
+          }}
           roundHistory={roundHistory}
           onPlayAgain={() => {
             setShowVictory(false);
@@ -2278,7 +3255,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           onClose={() => setShowVictory(false)}
         />
       )}
-      
+
       {/* Toast Notifications */}
       {toast && (
         <Toast

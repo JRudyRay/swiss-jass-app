@@ -9,7 +9,7 @@ type Props = {
 
 const YouTubePlayer = forwardRef((props: Props, ref) => {
   const { playlistId, width = 320, height = 200, autoplay = false } = props;
-  const containerId = useRef('yt-player-' + Math.random().toString(36).slice(2,9));
+  const containerId = useRef('yt-player-' + Math.random().toString(36).slice(2, 9));
   const playerRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
@@ -41,8 +41,8 @@ const YouTubePlayer = forwardRef((props: Props, ref) => {
         events: {
           onReady: (e: any) => {
             // nothing
-          }
-        }
+          },
+        },
       });
     };
 
@@ -52,7 +52,9 @@ const YouTubePlayer = forwardRef((props: Props, ref) => {
     (window as any).onYouTubeIframeAPIReady = onAPIReady;
 
     return () => {
-      try { playerRef.current?.destroy(); } catch(e){}
+      try {
+        playerRef.current?.destroy();
+      } catch (e) {}
     };
   }, [playlistId, width, height, autoplay]);
 

@@ -42,13 +42,9 @@ function registerAndLogin(username: string, email: string) {
     if (!tableRes.body.success) throw new Error('Table create failed');
 
     // Bob lists tables and joins
-    const listRes = await request(app)
-      .get('/api/tables')
-      .set('Authorization', `Bearer ${token2}`);
+    const listRes = await request(app).get('/api/tables').set('Authorization', `Bearer ${token2}`);
     const tableId = listRes.body.tables[0].id;
-    await request(app)
-      .post(`/api/tables/${tableId}/join`)
-      .set('Authorization', `Bearer ${token2}`);
+    await request(app).post(`/api/tables/${tableId}/join`).set('Authorization', `Bearer ${token2}`);
 
     // Alice sends friend request to Bob
     const frReq = await request(app)
@@ -77,7 +73,7 @@ function registerAndLogin(username: string, email: string) {
     console.log('SMOKE_RESULT', {
       tableCreated: tableRes.body.table?.id,
       bobJoined: true,
-      friendshipCount: aliceFriends.body.friends.length
+      friendshipCount: aliceFriends.body.friends.length,
     });
   } catch (e) {
     console.error('SMOKE_TEST_FAILED', e);

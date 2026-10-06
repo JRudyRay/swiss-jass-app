@@ -13,11 +13,15 @@ const env = ((import.meta as any).env || {}) as Record<string, string | undefine
 
 function resolveApiUrl(): string {
   try {
-    const override = typeof window !== 'undefined' ? window.localStorage.getItem('jassApiUrl') : null;
+    const override =
+      typeof window !== 'undefined' ? window.localStorage.getItem('jassApiUrl') : null;
     if (override !== null) return override.trim();
   } catch {}
   if (env.VITE_API_URL) return env.VITE_API_URL;
-  if (typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+  if (
+    typeof window !== 'undefined' &&
+    ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ) {
     return 'http://localhost:3000';
   }
   return '';

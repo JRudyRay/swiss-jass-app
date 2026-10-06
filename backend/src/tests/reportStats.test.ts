@@ -19,11 +19,19 @@ import { PrismaClient } from '@prisma/client';
     await prisma.user.deleteMany();
 
     console.log('Registering users...');
-    const regA = await request(app).post('/api/auth/register').send({ username: 'ra', email: 'ra@example.com', password: 'swiss' });
-    const regB = await request(app).post('/api/auth/register').send({ username: 'rb', email: 'rb@example.com', password: 'swiss' });
-    const regC = await request(app).post('/api/auth/register').send({ username: 'rc', email: 'rc@example.com', password: 'swiss' });
-    const regD = await request(app).post('/api/auth/register').send({ username: 'rd', email: 'rd@example.com', password: 'swiss' });
-    const [userA, userB, userC, userD] = [regA, regB, regC, regD].map(r => r.body.user.id);
+    const regA = await request(app)
+      .post('/api/auth/register')
+      .send({ username: 'ra', email: 'ra@example.com', password: 'swiss' });
+    const regB = await request(app)
+      .post('/api/auth/register')
+      .send({ username: 'rb', email: 'rb@example.com', password: 'swiss' });
+    const regC = await request(app)
+      .post('/api/auth/register')
+      .send({ username: 'rc', email: 'rc@example.com', password: 'swiss' });
+    const regD = await request(app)
+      .post('/api/auth/register')
+      .send({ username: 'rd', email: 'rd@example.com', password: 'swiss' });
+    const [userA, userB, userC, userD] = [regA, regB, regC, regD].map((r) => r.body.user.id);
 
     console.log('Reporting match...');
     const res = await request(app)
@@ -34,8 +42,10 @@ import { PrismaClient } from '@prisma/client';
     console.log('Verifying database updates...');
     const uA = await prisma.user.findUnique({ where: { id: userA } });
     const uC = await prisma.user.findUnique({ where: { id: userC } });
-    if (uA?.totalGames !== 1 || uA?.totalWins !== 1) throw new Error(`Unexpected stats for A: games=${uA?.totalGames} wins=${uA?.totalWins}`);
-    if (uC?.totalGames !== 1 || uC?.totalWins !== 0) throw new Error(`Unexpected stats for C: games=${uC?.totalGames} wins=${uC?.totalWins}`);
+    if (uA?.totalGames !== 1 || uA?.totalWins !== 1)
+      throw new Error(`Unexpected stats for A: games=${uA?.totalGames} wins=${uA?.totalWins}`);
+    if (uC?.totalGames !== 1 || uC?.totalWins !== 0)
+      throw new Error(`Unexpected stats for C: games=${uC?.totalGames} wins=${uC?.totalWins}`);
 
     console.log('Stats report test passed');
     process.exit(0);
