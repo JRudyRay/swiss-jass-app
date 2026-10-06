@@ -19,11 +19,11 @@ So every later change can be verified.
 - [x] (2026-10-06) `typecheck` and `check` scripts in `web` and `backend`.
 - [x] (2026-10-06) CI and deploy use Node 22; `deploy.yml` runs web `check`
       before building. (Backend `check` is not in CI yet.)
-- [ ] Update the Commands section of `CLAUDE.md` to the new `check` scripts.
+- [x] (2026-10-06) Commands section of `CLAUDE.md` uses the `check` scripts.
 
 ## M1: Clean foundation
 
-- [ ] Delete dead files (list in `CLAUDE.md`; grep first).
+- [x] (2026-10-06) Delete dead files. Kept `multiGameManager.ts`: `npm run multi` uses it.
 - [ ] Move `docs/ai-sessions/` and `docs/audit/` to `docs/archive/`.
 - [ ] Rewrite `README.md` (currently two READMEs interleaved), `STRUCTURE.md`
       and `DEPLOYMENT.md` to match reality, briefly.

@@ -41,11 +41,8 @@ enforces it).
 - **The two engines have diverged** (contract names, who picks trump and
   leads). Until they're unified (roadmap M2), a rules change must be made in
   both, or explicitly scoped to one with a note.
-- Probably dead (verify with grep before deleting): `web/src/AuthForm.tsx`,
-  `components/Dashboard.tsx`, `components/GameHeader.tsx`,
-  `components/PremiumGameTable.css`, `backend/src/services/gameService.simple.ts`,
-  `backend/src/gameEngine/multiGameManager.ts` (French deck, only used by one
-  test).
+- Probably dead: `backend/src/gameEngine/multiGameManager.ts` (French deck, only
+  used by `npm run multi`).
 
 ## Commands
 
