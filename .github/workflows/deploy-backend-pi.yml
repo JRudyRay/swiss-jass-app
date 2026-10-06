@@ -32,7 +32,7 @@ jobs:
           sudo chmod -R u+w . || true
           
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Deploy with Docker
         run: |
