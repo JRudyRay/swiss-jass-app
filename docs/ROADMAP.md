@@ -27,7 +27,7 @@ So every later change can be verified.
 - [x] (2026-10-06) Move `docs/ai-sessions/` and `docs/audit/` to `docs/archive/`.
 - [x] (2026-10-06) Rewrite `README.md` (currently two READMEs interleaved), `STRUCTURE.md`
       and `DEPLOYMENT.md` to match reality, briefly.
-- [ ] Add ESLint + Prettier (one shared config), format once in its own commit.
+- [x] (2026-10-06) ESLint (flat config per project) + Prettier (root `.prettierrc.json`); `lint`, `format`, `format:check` scripts, and `check` runs lint + format check. Formatted once in its own commit. Warnings remain (unused vars, hook deps), no errors.
 - [ ] Decide on `swiss_jass.db` (prefer seed script). (`web/dist/` untracked 2026-10-06.)
 - [x] (2026-10-05) Move translations out of `JassGame.tsx` into `web/src/i18n/`:
       en, ch, de, fr, it, rm. Romansh (`rm.ts`) needs a native speaker's

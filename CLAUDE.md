@@ -49,7 +49,7 @@ enforces it).
 Node 22 on the Pi (CI uses 18/20). Two separate npm projects; run each from
 its own folder.
 
-- Full check (must pass before a push):
+- Full check (includes lint and Prettier check; `npm run format` fixes formatting) (must pass before a push):
   `(cd web && npm ci && npm run check) && (cd backend && npm ci && npx prisma generate && npm run check)`
 - `npm run smoke` runs the web unit tests and a 40-hand simulation; it exits
   non-zero on any failure (all pass as of 2026-10-05). Backend engine tests:
