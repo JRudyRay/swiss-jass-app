@@ -56,8 +56,7 @@ its own folder.
   `cd backend && npx ts-node src/tests/gameEngine.test.ts` (no DB).
 - `vite build` doesn't typecheck; run `cd web && npx tsc --noEmit` too when
   changing TypeScript. Both tsconfigs have `strict: false`.
-- `npm run build` rewrites the tracked `web/dist/index.html`; restore it with
-  `git checkout -- web/dist/index.html` unless the change is intended.
+- `web/dist/` is untracked; `npm run build` output is not committed.
 - Backend tests in `backend/src/tests/` are hand-rolled scripts (`npm run
   smoke`, `npm run multi` in `backend/`) that hit the real SQLite DB.
 - Dev servers: `cd web && npm run dev`, `cd backend && npm run dev` (port 3000).
