@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config';
+import Icon, { IconName } from './Icon';
 import './SwissDashboard.css';
 
 interface DashboardProps {
@@ -69,25 +70,25 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
   const quickActions = [
     {
       label: 'Start Game',
-      icon: '🎴',
+      icon: 'play' as IconName,
       onClick: () => onNavigate('game'),
       description: 'Play Swiss Jass now',
     },
     {
       label: 'Join Table',
-      icon: '🪑',
+      icon: 'table' as IconName,
       onClick: () => onNavigate('tables'),
       description: 'Find a table to join',
     },
     {
       label: 'Rankings',
-      icon: '🏔️',
+      icon: 'trophy' as IconName,
       onClick: () => onNavigate('rankings'),
       description: 'View player rankings',
     },
     {
       label: 'Friends',
-      icon: '🤝',
+      icon: 'friends' as IconName,
       onClick: () => onNavigate('friends'),
       description: 'Manage your friends',
     },
@@ -100,105 +101,97 @@ const SwissDashboard: React.FC<DashboardProps> = ({ user, token, onNavigate }) =
     return 'Guete Abig';
   };
 
+  const winRate =
+    stats && stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
+
+  const statItems = stats
+    ? [
+        { icon: 'play' as IconName, value: stats.gamesPlayed, label: 'Games Played' },
+        { icon: 'trophy' as IconName, value: stats.gamesWon, label: 'Games Won' },
+        { icon: 'chart' as IconName, value: `${winRate}%`, label: 'Win Rate' },
+        {
+          icon: 'star' as IconName,
+          value: Math.round(stats.trueskillMu || 25),
+          label: 'Skill Rating',
+        },
+      ]
+    : [];
+
   return (
-    <div className="swiss-dashboard">
-      {/* Swiss-themed Welcome Banner */}
-      <div className="welcome-banner">
-        <div className="welcome-content">
-          <div className="swiss-pattern"></div>
-          <div className="welcome-text">
-            <h1 className="welcome-title">
-              {getGreeting()}, {user?.firstName || user?.username}! 🇨🇭
-            </h1>
-            <p className="welcome-subtitle">Ready for a game of Swiss Jass?</p>
-          </div>
+    <div className="page dash">
+      <section className="card dash__hero">
+        <div className="dash__hero-text">
+          <h1 className="page__title">
+            {getGreeting()}, {user?.firstName || user?.username}!
+          </h1>
+          <p className="page__sub">Ready for a game of Swiss Jass?</p>
         </div>
-        <button className="play-now-btn" onClick={() => onNavigate('game')}>
-          <span className="btn-icon">🎴</span>
-          <span className="btn-text">Play Now</span>
+        <button className="btn btn--primary btn--big dash__play" onClick={() => onNavigate('game')}>
+          <Icon name="play" size={22} />
+          Play Now
         </button>
-      </div>
+      </section>
 
-      {/* Stats Overview - Only Real Data */}
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon swiss-red">🎮</div>
-            <div className="stat-content">
-              <div className="stat-value">{stats.gamesPlayed}</div>
-              <div className="stat-label">Games Played</div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon swiss-gold">🏆</div>
-            <div className="stat-content">
-              <div className="stat-value">{stats.gamesWon}</div>
-              <div className="stat-label">Games Won</div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon swiss-green">📊</div>
-            <div className="stat-content">
-              <div className="stat-value">
-                {stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0}
-                %
-              </div>
-              <div className="stat-label">Win Rate</div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon swiss-blue">⭐</div>
-            <div className="stat-content">
-              <div className="stat-value">{Math.round(stats.trueskillMu || 25)}</div>
-              <div className="stat-label">Skill Rating</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* No Stats Yet - First Time User */}
-      {!loading && !stats?.gamesPlayed && (
-        <div className="no-stats-card">
-          <div className="no-stats-icon">🎴</div>
-          <h3 className="no-stats-title">Welcome to Swiss Jass!</h3>
-          <p className="no-stats-text">Start your first game to see your statistics here.</p>
-          <button className="start-first-game-btn" onClick={() => onNavigate('game')}>
-            Start Your First Game
-          </button>
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      <div className="section">
-        <h2 className="section-title">Quick Actions</h2>
-        <div className="actions-grid">
-          {quickActions.map((action, index) => (
-            <button key={index} className="action-card" onClick={action.onClick}>
-              <div className="action-icon">{action.icon}</div>
-              <div className="action-content">
-                <div className="action-label">{action.label}</div>
-                <div className="action-description">{action.description}</div>
-              </div>
-              <div className="action-arrow">→</div>
-            </button>
+      {loading && (
+        <div className="dash__stats" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="skeleton dash__skel" />
           ))}
         </div>
+      )}
+
+      {stats && (
+        <div className="dash__stats">
+          {statItems.map((it) => (
+            <div key={it.label} className="card dash__stat">
+              <span className="dash__stat-icon">
+                <Icon name={it.icon} size={20} />
+              </span>
+              <div>
+                <div className="dash__stat-value tabular">{it.value}</div>
+                <div className="dash__stat-label">{it.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && !stats?.gamesPlayed && (
+        <section className="card dash__first">
+          <h3 className="empty__title">Welcome to Swiss Jass!</h3>
+          <p className="empty__text">Start your first game to see your statistics here.</p>
+          <button className="btn btn--primary" onClick={() => onNavigate('game')}>
+            Start Your First Game
+          </button>
+        </section>
+      )}
+
+      <h2 className="dash__section">Quick Actions</h2>
+      <div className="dash__actions">
+        {quickActions.map((action) => (
+          <button key={action.label} className="row dash__action" onClick={action.onClick}>
+            <span className="dash__action-icon">
+              <Icon name={action.icon} size={22} />
+            </span>
+            <span className="row__main">
+              <span className="row__title dash__block">{action.label}</span>
+              <span className="row__meta dash__block">{action.description}</span>
+            </span>
+            <Icon name="arrow" size={18} />
+          </button>
+        ))}
       </div>
 
-      {/* Swiss Facts / Tips */}
-      <div className="swiss-tip-card">
-        <div className="swiss-tip-icon">💡</div>
-        <div className="swiss-tip-content">
-          <h4 className="swiss-tip-title">Did you know?</h4>
-          <p className="swiss-tip-text">
+      <aside className="dash__tip">
+        <Icon name="bulb" size={22} />
+        <div>
+          <h4>Did you know?</h4>
+          <p>
             Jass is the most popular card game in Switzerland, with regional variations played
             across all cantons. Schieber is the most common variant!
           </p>
         </div>
-      </div>
+      </aside>
     </div>
   );
 };

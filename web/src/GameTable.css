@@ -22,10 +22,18 @@
   --muted: var(--color-muted, #7a6f5f);
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   touch-action: manipulation;
+  min-height: calc(100dvh - 56px);
+  background: var(--color-cream, #f6efe0);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.jass-screen__area {
+  max-width: 960px;
+  margin: 8px auto;
+  padding: clamp(8px, 2.5vw, 20px);
 }
 
 .jass-screen--choosing {
-  --g-table-h: clamp(180px, calc(100dvh - 570px), 380px);
+  --g-table-h: clamp(170px, calc(100dvh - 630px), 380px);
 }
 
 .jass-screen button {
@@ -1087,6 +1095,16 @@
     --g-table-h: 170px;
     --g-seat-v: 38px;
     --g-seat-h: 84px;
+    /* Exactly one screen tall: no page scroll. Weis, rules and credits scroll inside. */
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .jass-screen__area {
+    margin: 0 auto;
+    padding: 4px 12px 8px;
   }
   .score-bar {
     padding: 4px 10px 5px;

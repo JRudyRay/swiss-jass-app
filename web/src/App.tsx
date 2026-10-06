@@ -73,8 +73,8 @@ function App() {
   if (showAuth) {
     return (
       <ErrorBoundary>
-        <div style={{ position: 'relative' }}>
-          <button style={styles.backButton} onClick={() => setShowAuth(false)}>
+        <div className="auth-page">
+          <button className="auth-back" onClick={() => setShowAuth(false)}>
             ← {messages(lang).header.backToGame}
           </button>
           <EnhancedAuthForm onLogin={handleLogin} />
@@ -88,7 +88,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div style={styles.app}>
+      <div className="app">
         <AppHeader
           user={user}
           onLogout={handleLogout}
@@ -99,7 +99,7 @@ function App() {
           lang={lang}
           onLangChange={handleLangChange}
         />
-        <main style={styles.main}>
+        <main className="app-main">
           {view === 'dashboard' && (
             <SwissDashboard user={user} token={token || ''} onNavigate={setCurrentView} />
           )}
@@ -127,54 +127,5 @@ function App() {
     </ErrorBoundary>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  app: {
-    minHeight: '100vh',
-    background: '#f5f5f7',
-  },
-  main: {
-    minHeight: 'calc(100vh - 80px)',
-    paddingTop: '1rem',
-    paddingBottom: '2rem',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    zIndex: 10,
-    padding: '8px 14px',
-    background: 'white',
-    border: 'none',
-    borderRadius: 10,
-    fontWeight: 700,
-    cursor: 'pointer',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-  },
-  placeholder: {
-    maxWidth: 600,
-    margin: '4rem auto',
-    textAlign: 'center' as const,
-    padding: '3rem 2rem',
-    background: 'white',
-    borderRadius: 20,
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-  },
-  placeholderIcon: {
-    fontSize: 80,
-    marginBottom: '1rem',
-  },
-  placeholderTitle: {
-    fontSize: 28,
-    fontWeight: 700,
-    color: '#111827',
-    marginBottom: '0.5rem',
-  },
-  placeholderText: {
-    fontSize: 16,
-    color: '#6b7280',
-    margin: 0,
-  },
-};
 
 export default App;

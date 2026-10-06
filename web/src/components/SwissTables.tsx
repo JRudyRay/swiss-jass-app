@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../config';
 import { io, Socket } from 'socket.io-client';
 import { Loading, Spinner, EmptyState } from './Loading';
+import Icon from './Icon';
 import './SwissTables.css';
 
 interface SwissTablesProps {
@@ -147,12 +148,12 @@ const SwissTables: React.FC<SwissTablesProps> = ({ user, token, onJoinGame }) =>
     }
   };
 
-  const statusTheme: Record<string, { bg: string; color: string; label: string }> = {
-    OPEN: { bg: '#dcfce7', color: '#166534', label: 'Offen' },
-    STARTING: { bg: '#fef9c3', color: '#92400e', label: 'Startet' },
-    IN_PROGRESS: { bg: '#e0f2fe', color: '#1d4ed8', label: 'Am Laufe' },
-    COMPLETED: { bg: '#ede9fe', color: '#5b21b6', label: 'Fertig' },
-    CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Abgseit' },
+  const statusTheme: Record<string, { pill: string; label: string }> = {
+    OPEN: { pill: 'pill--ok', label: 'Offen' },
+    STARTING: { pill: 'pill--warn', label: 'Startet' },
+    IN_PROGRESS: { pill: 'pill--live', label: 'Am Laufe' },
+    COMPLETED: { pill: '', label: 'Fertig' },
+    CANCELLED: { pill: '', label: 'Abgseit' },
   };
 
   if (isLoading && tables.length === 0) {
@@ -160,29 +161,33 @@ const SwissTables: React.FC<SwissTablesProps> = ({ user, token, onJoinGame }) =>
   }
 
   return (
-    <div className="swiss-tables-container">
-      <div className="swiss-tables-header">
-        <div className="header-title">
-          <span className="header-icon">🎲</span>
-          <h1>Multiplayer Tische</h1>
-        </div>
-        <div className="header-subtitle">
-          Hoste än eigene Tisch oder tritt bim ene bstehende Lobby bi. Tische upgradiere automatisch
-          zu live Spiel, wenn alli bereit sind.
-        </div>
-      </div>
+    <div className="page tables">
+      <h1 className="page__title tables__title">
+        <Icon name="table" size={26} />
+        Multiplayer Tische
+      </h1>
+      <p className="page__sub">
+        Hoste än eigene Tisch oder tritt bim ene bstehende Lobby bi. Tische upgradiere automatisch
+        zu live Spiel, wenn alli bereit sind.
+      </p>
 
-      <div className="table-creation-form">
+      <form
+        className="card tables__form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          createTable(tableName || 'Mein Tisch');
+        }}
+      >
         <input
           value={tableName}
           onChange={(e) => setTableName(e.target.value)}
           placeholder="Tisch Name"
-          className="form-input"
+          className="input tables__name"
         />
         <select
           value={newTableGameType}
           onChange={(e) => setNewTableGameType(e.target.value)}
-          className="form-select"
+          className="input"
         >
           <option value="schieber">Schieber</option>
         </select>
@@ -190,138 +195,130 @@ const SwissTables: React.FC<SwissTablesProps> = ({ user, token, onJoinGame }) =>
           value={newTeam1}
           onChange={(e) => setNewTeam1(e.target.value)}
           placeholder="Team 1 Name"
-          className="form-input"
+          className="input"
         />
         <input
           value={newTeam2}
           onChange={(e) => setNewTeam2(e.target.value)}
           placeholder="Team 2 Name"
-          className="form-input"
+          className="input"
         />
         <input
           type="number"
+          inputMode="numeric"
           value={newTargetPoints}
           onChange={(e) => setNewTargetPoints(parseInt(e.target.value) || 1000)}
           placeholder="Ziel Punkte"
-          className="form-input form-input-number"
+          className="input tabular"
         />
-        <button
-          disabled={creatingTable}
-          className={`btn-create ${creatingTable ? 'loading' : ''}`}
-          onClick={() => createTable(tableName || 'Mein Tisch')}
-        >
+        <button disabled={creatingTable} className="btn btn--primary tables__create" type="submit">
           {creatingTable ? (
             <>
-              <Spinner size="sm" /> Erstelle...
+              <Spinner size="sm" color="#fff" /> Erstelle...
             </>
           ) : (
-            '+ Tisch erstelle'
+            <>
+              <Icon name="plus" size={18} /> Tisch erstelle
+            </>
           )}
         </button>
-        <button className="btn-refresh" onClick={fetchTables}>
-          🔄 Aktualisiere
+      </form>
+
+      <div className="tables__bar">
+        <span className="pill pill--ok tabular">Online: {onlineCount}</span>
+        <button className="btn btn--ghost" onClick={fetchTables}>
+          <Icon name="refresh" size={18} />
+          Aktualisiere
         </button>
-        <div className="online-indicator">
-          <span className="online-dot"></span>
-          Online: {onlineCount}
-        </div>
       </div>
 
-      <div className="tables-grid">
-        {tables.map((t) => (
-          <div key={t.id} className="table-card">
-            <div className="table-card-header">
-              <div className="table-name">{t.name}</div>
-              {(() => {
-                const theme = statusTheme[t.status] || {
-                  bg: '#e5e7eb',
-                  color: '#374151',
-                  label: t.status,
-                };
-                return (
-                  <span
-                    className="table-status"
-                    style={{ background: theme.bg, color: theme.color }}
-                  >
-                    {theme.label}
+      <div className="tables__grid">
+        {tables.map((t) => {
+          const theme = statusTheme[t.status] || { pill: '', label: t.status };
+          const count = t.players?.length || 0;
+          const host = t.players?.find((p: any) => p.isHost)?.user?.username || 'Unbekannt';
+          const joinable = t.status === 'OPEN' || t.status === 'STARTING';
+          return (
+            <div key={t.id} className="card table-card">
+              <div className="table-card__head">
+                <div className="avatar">{String(host).charAt(0).toUpperCase()}</div>
+                <div className="row__main">
+                  <div className="row__title">{t.name}</div>
+                  <div className="row__meta">
+                    {t.team1Name || 'Team 1'} vs {t.team2Name || 'Team 2'}
+                  </div>
+                </div>
+                <div className="table-card__side">
+                  <span className={`pill ${theme.pill}`}>{theme.label}</span>
+                  <span className="table-card__seats tabular">
+                    {count}/{t.maxPlayers}
                   </span>
-                );
-              })()}
-            </div>
+                </div>
+              </div>
 
-            <div className="table-details">
-              <div>
-                <strong>Host:</strong>{' '}
-                {t.players?.find((p: any) => p.isHost)?.user?.username || 'Unbekannt'}
+              <div className="row__meta">
+                <strong>Host:</strong> {host} · <strong>Ziel:</strong>{' '}
+                <span className="tabular">{t.targetPoints || newTargetPoints}</span> Pkt
               </div>
-              <div>
-                <strong>Teams:</strong> {t.team1Name || 'Team 1'} vs {t.team2Name || 'Team 2'}
-              </div>
-              <div>
-                <strong>Ziel:</strong> {t.targetPoints || newTargetPoints} Pkt •{' '}
-                <strong>Spieler:</strong> {t.players?.length || 0}/{t.maxPlayers}
-              </div>
-            </div>
 
-            {t.players && t.players.length > 0 && (
-              <div className="table-players">
-                {t.players.map((p: any) => (
-                  <span key={p.id} className={`player-badge ${p.isHost ? 'host' : ''}`}>
-                    {p.user?.username || p.userId}
-                    {p.isHost ? ' ★' : ''}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="table-actions">
-              <button
-                disabled={
-                  joiningTableId === t.id || (t.status !== 'OPEN' && t.status !== 'STARTING')
-                }
-                className={`btn-join ${joiningTableId === t.id ? 'loading' : ''}`}
-                onClick={() => joinTable(t.id)}
-              >
-                {joiningTableId === t.id ? (
-                  <>
-                    <Spinner size="sm" /> Beitrete...
-                  </>
-                ) : (
-                  'Beitreten'
-                )}
-              </button>
-              {t.status === 'OPEN' && t.createdById === user?.id && (
-                <button className="btn-start" onClick={() => startTableEarly(t.id)}>
-                  Jetzt starte
-                </button>
+              {count > 0 && (
+                <div className="table-card__players">
+                  {t.players.map((p: any) => (
+                    <span key={p.id} className={`pill${p.isHost ? ' pill--warn' : ''}`}>
+                      {p.user?.username || p.userId}
+                      {p.isHost ? ' ★' : ''}
+                    </span>
+                  ))}
+                </div>
               )}
-            </div>
-          </div>
-        ))}
 
-        {!tables.length && !isLoading && (
-          <EmptyState
-            icon="🎴"
-            title="Kei aktivi Tische"
-            description="Sei dr Erst wo än öffentliche Tisch erstellt und Fründ iladet zum spiele!"
-            action={
-              <button
-                onClick={() => createTable('Mein Tisch')}
-                disabled={creatingTable}
-                className="btn-create-first"
-              >
-                {creatingTable ? (
-                  <>
-                    <Spinner size="sm" /> Erstelle...
-                  </>
-                ) : (
-                  '+ Erste Tisch erstelle'
+              <div className="table-card__actions">
+                <button
+                  disabled={joiningTableId === t.id || !joinable}
+                  className="btn btn--primary"
+                  onClick={() => joinTable(t.id)}
+                >
+                  {joiningTableId === t.id ? (
+                    <>
+                      <Spinner size="sm" color="#fff" /> Beitrete...
+                    </>
+                  ) : (
+                    'Beitreten'
+                  )}
+                </button>
+                {t.status === 'OPEN' && t.createdById === user?.id && (
+                  <button className="btn" onClick={() => startTableEarly(t.id)}>
+                    Jetzt starte
+                  </button>
                 )}
-              </button>
-            }
-          />
-        )}
+              </div>
+            </div>
+          );
+        })}
       </div>
+
+      {!tables.length && !isLoading && (
+        <EmptyState
+          icon={<Icon name="table" size={44} />}
+          title="Kei aktivi Tische"
+          description="Sei dr Erst wo än öffentliche Tisch erstellt und Fründ iladet zum spiele!"
+          action={
+            <button
+              onClick={() => createTable('Mein Tisch')}
+              disabled={creatingTable}
+              className="btn btn--primary"
+            >
+              {creatingTable ? (
+                <>
+                  <Spinner size="sm" color="#fff" /> Erstelle...
+                </>
+              ) : (
+                '+ Erste Tisch erstelle'
+              )}
+            </button>
+          }
+        />
+      )}
     </div>
   );
 };

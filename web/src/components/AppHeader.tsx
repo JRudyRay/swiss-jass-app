@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import logo from '../assets/logo.png';
+import Icon, { type IconName } from './Icon';
+import './AppHeader.css';
 import { LANGS, messages, type Lang } from '../i18n';
 
 export type View = 'dashboard' | 'game' | 'tables' | 'rankings' | 'friends';
@@ -29,61 +31,59 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const t = messages(lang).header;
 
   // Online views only make sense with a backend and an account.
-  const navItems: { id: View; label: string; icon: string }[] = [
-    { id: 'game', label: t.play, icon: '🃏' },
+  const navItems: { id: View; label: string; icon: IconName }[] = [
+    { id: 'game', label: t.play, icon: 'play' },
   ];
   if (online && user) {
     navItems.push(
-      { id: 'dashboard', label: t.home, icon: '🏠' },
-      { id: 'tables', label: t.tables, icon: '🎲' },
-      { id: 'rankings', label: t.rankings, icon: '🏆' },
-      { id: 'friends', label: t.friends, icon: '👥' },
+      { id: 'dashboard', label: t.home, icon: 'home' },
+      { id: 'tables', label: t.tables, icon: 'table' },
+      { id: 'rankings', label: t.rankings, icon: 'trophy' },
+      { id: 'friends', label: t.friends, icon: 'friends' },
     );
   }
 
+  const current = LANGS.find((l) => l.code === lang);
+  const hasNav = navItems.length > 1;
+
   return (
-    <header className="app-header" style={styles.header}>
-      <div style={styles.headerContent}>
-        <button style={styles.brand} onClick={() => onViewChange('game')} aria-label="Swiss Jass">
-          <img src={logo} alt="" style={styles.logo} />
-          <div style={styles.brandText}>
-            <span style={styles.title}>Swiss Jass</span>
-            <span className="app-subtitle" style={styles.subtitle}>
-              🇨🇭 {t.subtitle}
-            </span>
-          </div>
+    <header className="app-header" data-view={currentView} data-tabs={hasNav ? 'true' : undefined}>
+      <div className="app-header__inner">
+        <button className="app-brand" onClick={() => onViewChange('game')} aria-label="Swiss Jass">
+          <img src={logo} alt="" className="app-brand__logo" />
+          <span className="app-brand__text">
+            <span className="app-brand__title">Swiss Jass</span>
+            <span className="app-brand__sub">{t.subtitle}</span>
+          </span>
         </button>
 
-        {navItems.length > 1 && (
-          <nav style={styles.nav}>
+        {hasNav && (
+          <nav className="app-nav" aria-label="Swiss Jass">
             {navItems.map((item) => (
               <button
                 key={item.id}
+                className="app-nav__btn"
+                aria-current={currentView === item.id ? 'page' : undefined}
                 onClick={() => onViewChange(item.id)}
-                style={{
-                  ...styles.navButton,
-                  ...(currentView === item.id ? styles.navButtonActive : {}),
-                }}
               >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
+                <Icon name={item.icon} size={20} />
+                <span className="app-nav__label">{item.label}</span>
               </button>
             ))}
           </nav>
         )}
 
-        <div style={styles.actions}>
-          <label style={styles.langSelector}>
-            <span style={styles.srOnly}>{t.language}</span>
+        <div className="app-actions">
+          <label className="app-lang">
+            <Icon name="globe" size={18} />
+            <span className="app-lang__code">{current?.short}</span>
             <select
               value={lang}
               onChange={(e) => onLangChange(e.target.value as Lang)}
-              className="app-lang"
-              style={styles.langSelect}
               aria-label={t.language}
             >
               {LANGS.map((l) => (
-                <option key={l.code} value={l.code} style={{ color: '#111' }}>
+                <option key={l.code} value={l.code}>
                   {l.short} · {l.label}
                 </option>
               ))}
@@ -91,31 +91,33 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </label>
 
           {online && !user && (
-            <button style={styles.signInButton} onClick={onSignIn}>
+            <button className="app-signin" onClick={onSignIn}>
               {t.signIn}
             </button>
           )}
 
           {user && (
-            <div style={{ position: 'relative' }}>
+            <div className="app-user">
               <button
-                style={styles.userButton}
+                className="app-user__btn"
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 aria-label={user.username}
+                aria-expanded={showUserMenu}
               >
-                <div style={styles.userAvatar}>{user.username?.[0]?.toUpperCase() || '?'}</div>
+                <span className="app-user__avatar">{user.username?.[0]?.toUpperCase() || '?'}</span>
               </button>
               {showUserMenu && (
-                <div style={styles.dropdown}>
-                  <div style={styles.dropdownUsername}>{user.username}</div>
+                <div className="app-user__menu">
+                  <div className="app-user__name">{user.username}</div>
                   <button
-                    style={styles.dropdownItem}
+                    className="app-user__item"
                     onClick={() => {
                       setShowUserMenu(false);
                       onLogout();
                     }}
                   >
-                    🚪 {t.logout}
+                    <Icon name="logout" size={18} />
+                    {t.logout}
                   </button>
                 </div>
               )}
@@ -125,134 +127,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
     </header>
   );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-  header: {
-    position: 'sticky',
-    top: 0,
-    zIndex: 1000,
-    background: 'linear-gradient(135deg, #FF0000 0%, #DC143C 100%)',
-    boxShadow: '0 2px 12px rgba(220, 20, 60, 0.3)',
-  },
-  headerContent: {
-    maxWidth: 1400,
-    margin: '0 auto',
-    padding: '0.5rem 1rem',
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '0.5rem 1rem',
-  },
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.6rem',
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-  },
-  logo: { width: 40, height: 40, borderRadius: 10 },
-  brandText: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 },
-  title: { fontSize: 18, fontWeight: 800, color: 'white', lineHeight: 1 },
-  subtitle: { fontSize: 11, color: 'rgba(255,255,255,0.9)', fontWeight: 500, lineHeight: 1 },
-  nav: {
-    display: 'flex',
-    gap: 4,
-    flexWrap: 'wrap',
-    order: 3,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  navButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '6px 12px',
-    background: 'rgba(255,255,255,0.12)',
-    border: 'none',
-    borderRadius: 10,
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  navButtonActive: { background: 'white', color: '#DC143C' },
-  actions: { display: 'flex', alignItems: 'center', gap: 8 },
-  langSelector: { display: 'flex', position: 'relative' },
-  langSelect: {
-    maxWidth: 150,
-    padding: '10px 8px',
-    background: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.35)',
-    borderRadius: 10,
-    color: 'white',
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    overflow: 'hidden',
-    clip: 'rect(0 0 0 0)',
-    whiteSpace: 'nowrap',
-  },
-  signInButton: {
-    padding: '11px 14px',
-    background: 'white',
-    color: '#DC143C',
-    border: 'none',
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  userButton: { background: 'none', border: 'none', padding: 0, cursor: 'pointer' },
-  userAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: '50%',
-    background: 'white',
-    color: '#DC143C',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 800,
-    fontSize: 16,
-  },
-  dropdown: {
-    position: 'absolute',
-    right: 0,
-    top: 44,
-    minWidth: 180,
-    background: 'white',
-    borderRadius: 12,
-    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-    padding: 8,
-    zIndex: 1001,
-  },
-  dropdownUsername: {
-    padding: '8px 10px',
-    fontWeight: 700,
-    color: '#111827',
-    borderBottom: '1px solid #eee',
-    marginBottom: 4,
-  },
-  dropdownItem: {
-    width: '100%',
-    textAlign: 'left',
-    padding: '8px 10px',
-    background: 'none',
-    border: 'none',
-    borderRadius: 8,
-    color: '#ef4444',
-    fontSize: 14,
-    cursor: 'pointer',
-  },
 };
 
 export default AppHeader;

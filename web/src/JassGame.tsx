@@ -14,6 +14,7 @@ import TrumpChooser from './components/table/TrumpChooser';
 import { API_URL, ONLINE_ENABLED } from './config';
 import { io, Socket } from 'socket.io-client';
 import Rankings from './components/Rankings';
+import { WelcomeCard, MultiInfoCard } from './components/setup/WelcomeCard';
 import MatchSetup from './components/setup/MatchSetup';
 import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
@@ -42,23 +43,12 @@ type GameState = {
 type Player = { id: number; name: string; hand: any[]; team: number; position: string };
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    fontFamily: '"Helvetica Neue", "Arial", sans-serif',
-    minHeight: '100dvh',
-    background: 'var(--color-cream, #f6efe0)',
-    paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
-  },
   header: {
     background: '#D42E2C',
     color: 'white',
     padding: '1rem 1rem',
     textAlign: 'center' as const,
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  },
-  gameArea: {
-    maxWidth: 960,
-    margin: '8px auto',
-    padding: 'clamp(8px, 2.5vw, 20px)',
   },
   controls: {
     display: 'flex',
@@ -2501,11 +2491,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const showPlaySurface = !optionsVisible || (mode === 'multi' && !!gameState);
 
   return (
-    <div
-      className={`jass-screen${choosingTrump ? ' jass-screen--choosing' : ''}`}
-      style={styles.container}
-    >
-      <div style={styles.gameArea}>
+    <div className={`jass-screen${choosingTrump ? ' jass-screen--choosing' : ''}`}>
+      <div className="jass-screen__area">
         {/* Game-only HUD: slim score bar with trump pill */}
         {showPlaySurface && (
           <ScoreBar
@@ -2695,231 +2682,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
         {/* Welcome Screen - shown when user hasn't chosen single or multi yet */}
         {optionsVisible && setupChoice === 'welcome' && (
-          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
-            <div
-              style={{
-                width: '100%',
-                maxWidth: 900,
-                background: 'linear-gradient(135deg, #FF0000 0%, #DC143C 100%)',
-                borderRadius: 20,
-                padding: '48px 32px',
-                boxShadow: '0 24px 60px rgba(220, 20, 60, 0.4)',
-                border: '2px solid rgba(255, 255, 255, 0.2)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Swiss Cross Pattern Background */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  opacity: 0.08,
-                  backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 35px, white 35px, white 40px),
-                                  repeating-linear-gradient(90deg, transparent, transparent 35px, white 35px, white 40px)`,
-                  pointerEvents: 'none',
-                }}
-              />
-
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                {/* Header */}
-                <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                  <div style={{ fontSize: 56, marginBottom: 12 }}>🇨🇭</div>
-                  <h2
-                    style={{
-                      margin: 0,
-                      fontSize: 36,
-                      fontWeight: 900,
-                      color: '#ffffff',
-                      textShadow: '0 2px 12px rgba(0,0,0,0.2)',
-                      letterSpacing: '-0.5px',
-                    }}
-                  >
-                    Grüezi! Willkommen zum Jass
-                  </h2>
-                  <p
-                    style={{
-                      margin: '12px 0 0',
-                      fontSize: 16,
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      fontWeight: 500,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    Choose your Swiss Jass adventure below
-                  </p>
-                </div>
-
-                {/* Two Main Options */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                    gap: 24,
-                    marginBottom: 32,
-                  }}
-                >
-                  {/* Local Game Option */}
-                  <button
-                    onClick={() => {
-                      setMode('single');
-                      setSetupChoice('single');
-                    }}
-                    style={{
-                      background: '#ffffff',
-                      border: 'none',
-                      borderRadius: 16,
-                      padding: 32,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                      textAlign: 'left',
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-4px)';
-                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.2)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
-                    }}
-                  >
-                    <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontSize: 24,
-                        fontWeight: 800,
-                        color: '#1f2937',
-                        marginBottom: 8,
-                      }}
-                    >
-                      Play Local vs Bots
-                    </h3>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 14,
-                        color: '#6b7280',
-                        lineHeight: 1.6,
-                        marginBottom: 16,
-                      }}
-                    >
-                      Practice your skills against AI opponents. Perfect for learning the game or
-                      playing offline.
-                    </p>
-                    <div
-                      style={{
-                        display: 'inline-block',
-                        background: '#dcfce7',
-                        color: '#166534',
-                        padding: '6px 12px',
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      ⚡ Instant Start
-                    </div>
-                  </button>
-
-                  {/* Online Game Option */}
-                  <button
-                    onClick={() => {
-                      setMode('multi');
-                      setSetupChoice('multi');
-                    }}
-                    style={{
-                      background: '#ffffff',
-                      border: 'none',
-                      borderRadius: 16,
-                      padding: 32,
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                      textAlign: 'left',
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-4px)';
-                      e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.2)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
-                    }}
-                  >
-                    <div style={{ fontSize: 48, marginBottom: 16 }}>🌐</div>
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontSize: 24,
-                        fontWeight: 800,
-                        color: '#1f2937',
-                        marginBottom: 8,
-                      }}
-                    >
-                      Play Online
-                    </h3>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 14,
-                        color: '#6b7280',
-                        lineHeight: 1.6,
-                        marginBottom: 16,
-                      }}
-                    >
-                      Join tables and play with other Jass enthusiasts from around the world in
-                      real-time.
-                    </p>
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        background: '#dbeafe',
-                        color: '#1e40af',
-                        padding: '6px 12px',
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 8,
-                          height: 8,
-                          background: '#10b981',
-                          borderRadius: '50%',
-                          display: 'inline-block',
-                        }}
-                      />
-                      {onlineCount} Online
-                    </div>
-                  </button>
-                </div>
-
-                {/* Footer Info */}
-                <div
-                  style={{
-                    textAlign: 'center',
-                    color: 'rgba(255, 255, 255, 0.85)',
-                    fontSize: 13,
-                    fontWeight: 500,
-                  }}
-                >
-                  🏔️ Authentic Swiss Schieber Jass • 🧀 Traditional Rules • 🫕 Modern Interface
-                </div>
-              </div>
-            </div>
-          </div>
+          <WelcomeCard
+            onlineCount={onlineCount}
+            onSingle={() => {
+              setMode('single');
+              setSetupChoice('single');
+            }}
+            onMulti={() => {
+              setMode('multi');
+              setSetupChoice('multi');
+            }}
+          />
         )}
 
         {optionsVisible && setupChoice === 'single' && mode === 'single' && (
@@ -2939,80 +2712,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         )}
 
         {optionsVisible && setupChoice === 'multi' && mode === 'multi' && (
-          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
-            <div
-              style={{
-                width: '100%',
-                maxWidth: 760,
-                background: '#ffffff',
-                borderRadius: 16,
-                padding: '24px 28px',
-                boxShadow: '0 18px 40px rgba(17, 24, 39, 0.12)',
-                border: '1px solid #e5e7eb',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 20,
-                }}
-              >
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1f2937' }}>
-                    Multiplayer Game
-                  </h3>
-                  <p style={{ margin: '6px 0 0', fontSize: 13, color: '#4b5563' }}>
-                    Join or create tables to play with others online
-                  </p>
-                </div>
-                <div
-                  style={{
-                    background: '#2563eb',
-                    color: '#fff',
-                    borderRadius: 999,
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                  }}
-                >
-                  {onlineCount} Online
-                </div>
-              </div>
-              <div
-                style={{
-                  background: '#f9fafb',
-                  borderRadius: 14,
-                  padding: '16px 20px',
-                  border: '1px solid #e5e7eb',
-                  color: '#374151',
-                  fontSize: 13,
-                  marginBottom: 20,
-                }}
-              >
-                {t.multiTablesBlurb ||
-                  'Go to the Tables tab to create or join a game table. Once all players are ready, the game will begin automatically.'}
-              </div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: 10,
-                    border: '1px solid #d1d5db',
-                    background: '#ffffff',
-                    color: '#4b5563',
-                    cursor: 'pointer',
-                    fontSize: 14,
-                    fontWeight: 600,
-                  }}
-                  onClick={() => setSetupChoice('welcome')}
-                >
-                  ← Back
-                </button>
-              </div>
-            </div>
-          </div>
+          <MultiInfoCard
+            onlineCount={onlineCount}
+            blurb={
+              t.multiTablesBlurb ||
+              'Go to the Tables tab to create or join a game table. Once all players are ready, the game will begin automatically.'
+            }
+            onBack={() => setSetupChoice('welcome')}
+          />
         )}
 
         <Hand

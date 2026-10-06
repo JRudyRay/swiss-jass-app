@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loading, EmptyState } from './Loading';
+import Icon from './Icon';
 import './Rankings.css';
 import { authFetch } from '../authFetch';
 
@@ -64,99 +65,73 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
     return <Loading message="Lade Rangliste..." />;
   }
 
-  return (
-    <div className="rankings-container">
-      <div className="rankings-header">
-        <div className="header-title">
-          <span className="header-icon">🏆</span>
-          <h1>Rangliste</h1>
-        </div>
-        <div className="header-subtitle">
-          Die beschte Jass Spieler vo de Welt – sortiert nach dine Kriterie.
-        </div>
-      </div>
+  const podiumOrder = sorted.length >= 3 ? [1, 0, 2] : [];
+  const rest = sorted.length >= 3 ? sorted.slice(3) : sorted;
+  const restOffset = sorted.length >= 3 ? 3 : 0;
 
-      <div className="rankings-controls">
-        <div className="sort-control">
-          <label className="sort-label">Sortiere nach:</label>
-          <select
-            value={metric}
-            onChange={(e) => setMetric(e.target.value as any)}
-            className="sort-select"
-          >
-            <option value="totalWins">🏅 Siege</option>
-            <option value="totalGames">🎮 Gspilti Spiel</option>
-            <option value="totalPoints">⭐ Total Punkte</option>
-            <option value="winRate">📊 Siegquote</option>
-          </select>
-        </div>
+  return (
+    <div className="page rank">
+      <h1 className="page__title rank__title">
+        <Icon name="trophy" size={26} />
+        Rangliste
+      </h1>
+      <p className="page__sub">
+        Die beschte Jass Spieler vo de Welt – sortiert nach dine Kriterie.
+      </p>
+
+      <div className="rank__sort">
+        <label className="rank__sort-label" htmlFor="rank-metric">
+          Sortiere nach:
+        </label>
+        <select
+          id="rank-metric"
+          value={metric}
+          onChange={(e) => setMetric(e.target.value as any)}
+          className="input rank__select"
+        >
+          <option value="totalWins">Siege</option>
+          <option value="totalGames">Gspilti Spiel</option>
+          <option value="totalPoints">Total Punkte</option>
+          <option value="winRate">Siegquote</option>
+        </select>
       </div>
 
       {sorted.length > 0 ? (
         <>
-          {/* Top 3 Podium */}
-          {sorted.length >= 3 && (
-            <div className="podium">
-              {/* 2nd Place */}
-              <div className="podium-place second-place">
-                <div className="podium-medal">🥈</div>
-                <div className="podium-rank">2.</div>
-                <div className="podium-username">{sorted[1].username}</div>
-                <div className="podium-value">{formatValue(sorted[1], metric)}</div>
-                <div className="podium-label">{metricLabels[metric]}</div>
-              </div>
-
-              {/* 1st Place */}
-              <div className="podium-place first-place">
-                <div className="podium-medal">🥇</div>
-                <div className="podium-rank">1.</div>
-                <div className="podium-username">{sorted[0].username}</div>
-                <div className="podium-value">{formatValue(sorted[0], metric)}</div>
-                <div className="podium-label">{metricLabels[metric]}</div>
-                <div className="podium-crown">👑</div>
-              </div>
-
-              {/* 3rd Place */}
-              <div className="podium-place third-place">
-                <div className="podium-medal">🥉</div>
-                <div className="podium-rank">3.</div>
-                <div className="podium-username">{sorted[2].username}</div>
-                <div className="podium-value">{formatValue(sorted[2], metric)}</div>
-                <div className="podium-label">{metricLabels[metric]}</div>
-              </div>
+          {podiumOrder.length > 0 && (
+            <div className="rank__podium">
+              {podiumOrder.map((idx) => (
+                <div key={sorted[idx].id} className={`rank__place rank__place--${idx + 1}`}>
+                  <div className="avatar rank__avatar">
+                    {sorted[idx].username.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="rank__name">{sorted[idx].username}</div>
+                  <div className="rank__value tabular">{formatValue(sorted[idx], metric)}</div>
+                  <div className="rank__label">{metricLabels[metric]}</div>
+                  <div className="rank__step tabular">{idx + 1}</div>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Full Rankings List */}
-          <div className="rankings-list">
-            <div className="list-header">
-              <span className="list-title">Alli Rangierige</span>
-              <span className="list-count">{sorted.length} Spieler</span>
-            </div>
+          <div className="rank__head">
+            <span className="rank__head-title">Alli Rangierige</span>
+            <span className="rank__head-count">{sorted.length} Spieler</span>
+          </div>
 
-            {sorted.map((entry, idx) => (
-              <div key={entry.id} className={`ranking-item ${idx < 3 ? 'top-three' : ''}`}>
-                <div className="ranking-position">
-                  <span className="position-number">{idx + 1}</span>
-                  {idx === 0 && <span className="position-icon">🥇</span>}
-                  {idx === 1 && <span className="position-icon">🥈</span>}
-                  {idx === 2 && <span className="position-icon">🥉</span>}
-                </div>
-
-                <div className="ranking-info">
-                  <div className="ranking-username">{entry.username}</div>
-                  <div className="ranking-stats">
-                    <span>{entry.totalWins} S</span>
-                    <span className="stat-divider">•</span>
-                    <span>{entry.totalGames} G</span>
-                    <span className="stat-divider">•</span>
-                    <span>{(entry.winRate * 100).toFixed(0)}%</span>
+          <div className="list">
+            {rest.map((entry, i) => (
+              <div key={entry.id} className="row rank__row">
+                <span className="rank__pos tabular">{i + restOffset + 1}</span>
+                <div className="row__main">
+                  <div className="row__title">{entry.username}</div>
+                  <div className="row__meta tabular">
+                    {entry.totalWins} S · {entry.totalGames} G · {(entry.winRate * 100).toFixed(0)}%
                   </div>
                 </div>
-
-                <div className="ranking-value">
-                  <span className="value-number">{formatValue(entry, metric)}</span>
-                  <span className="value-label">{metricLabels[metric]}</span>
+                <div className="rank__row-value">
+                  <span className="rank__row-num tabular">{formatValue(entry, metric)}</span>
+                  <span className="rank__label">{metricLabels[metric]}</span>
                 </div>
               </div>
             ))}
@@ -164,9 +139,14 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
         </>
       ) : (
         <EmptyState
-          icon="🎯"
+          icon={<Icon name="trophy" size={44} />}
           title="Kei Rangierige"
           description="Spil en Match zum uf de Rangliste erschiene!"
+          action={
+            <button className="btn btn--primary" onClick={onBack}>
+              Zrugg
+            </button>
+          }
         />
       )}
     </div>

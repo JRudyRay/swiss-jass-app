@@ -1,4 +1,25 @@
-# Swiss Jass UX/UI Enhancement - Professional Design System
+# Swiss Jass UX/UI Design System
+
+## Current direction: Alpine Stube (supersedes the notes below)
+
+Warm printed-card look: cream pages, paper cards, wood header, red primary action, gold only for
+borders, rings and fills (never small text). Flat, soft shadows (`0 2px 6px rgb(0 0 0 / .25)`),
+radii 8/12/16. No glassmorphism, no `backdrop-filter`, no gradients, no purple. Serif
+`--font-display` for titles only, system-ui for body, `tabular-nums` for scores and ratings.
+
+- Tokens: `web/src/index.css` `:root` (`--color-primary`, `-cream`, `-paper`, `-ink`, `-wood`, `-gold`, `-muted`).
+- Shared primitives: `web/src/ui.css` (`.page`, `.card`, `.btn` + `--primary/--big/--ghost/--danger`,
+  `.input`, `.pill`, `.avatar`, `.row`, `.list`, `.skeleton`, `.empty`).
+- Icons: `components/Icon.tsx` (stroke SVG, `currentColor`). Use it instead of emoji: they render the same everywhere.
+- Loading and empty states: `components/Loading.tsx` (`Loading` skeleton rows, `EmptyState` with a CTA).
+- Header: slim wood bar; on phones (<= 700px) the online nav is a bottom tab bar. It is hidden only while a match table is on screen in phone landscape.
+- Touch targets are at least 44px (`min-height`, so long German and Romansh labels wrap). List rows are at least 56px.
+- Game screen: `GameTable.css` (scoped to `.jass-screen`). In phone landscape the match screen is exactly `100dvh` and scrolls internally.
+- Checked viewports: 360x740, 390x844, 844x390, 1280x800.
+
+---
+
+# Historical notes (stale: glassmorphism, 3D table and gradients are no longer used)
 
 ## Overview
 Complete modern redesign of the Swiss Jass application with professional-grade user experience, 3D game table visualization, smooth animations, and authentic Swiss aesthetic.

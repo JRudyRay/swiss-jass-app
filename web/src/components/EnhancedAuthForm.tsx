@@ -1,6 +1,22 @@
+import Icon from './Icon';
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config';
 import './EnhancedAuthForm.css';
+
+const ShapeGlyph: React.FC<{ id: string }> = ({ id }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    {id === 'circle' && <circle cx="12" cy="12" r="8" />}
+    {id === 'square' && <rect x="4.5" y="4.5" width="15" height="15" rx="2" />}
+    {id === 'triangle' && <path d="M12 4l9 16H3z" />}
+    {id === 'diamond' && <path d="M12 3l9 9-9 9-9-9z" />}
+    {id === 'star' && (
+      <path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" />
+    )}
+    {id === 'heart' && (
+      <path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z" />
+    )}
+  </svg>
+);
 
 interface AuthFormProps {
   onLogin: (token: string, user: any) => void;
@@ -232,18 +248,9 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
 
   return (
     <div className="auth-container">
-      <div className="auth-background">
-        <div className="auth-shape auth-shape-1"></div>
-        <div className="auth-shape auth-shape-2"></div>
-        <div className="auth-shape auth-shape-3"></div>
-      </div>
-
       <div className="auth-card">
         <div className="auth-header">
-          <h1 className="auth-title">
-            <span className="auth-flag">🇨🇭</span>
-            Swiss Jass
-          </h1>
+          <h1 className="auth-title">Swiss Jass</h1>
           <p className="auth-subtitle">Traditional Swiss Card Game</p>
         </div>
 
@@ -272,14 +279,14 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
 
         {error && (
           <div className="auth-alert auth-alert-error">
-            <span className="auth-alert-icon">⚠️</span>
+            <Icon name="warning" size={18} className="auth-alert-icon" />
             {error}
           </div>
         )}
 
         {success && (
           <div className="auth-alert auth-alert-success">
-            <span className="auth-alert-icon">✓</span>
+            <Icon name="check" size={18} className="auth-alert-icon" />
             {success}
           </div>
         )}
@@ -290,7 +297,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
               <div className="auth-input-group">
                 <label className="auth-label">Email or Username</label>
                 <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">👤</span>
+                  <Icon name="user" size={18} className="auth-input-icon" />
                   <input
                     type="text"
                     name="email"
@@ -307,7 +314,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
               <div className="auth-input-group">
                 <label className="auth-label">Password</label>
                 <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">🔒</span>
+                  <Icon name="lock" size={18} className="auth-input-icon" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
@@ -323,7 +330,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                     className="auth-toggle-password"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                    <Icon name={showPassword ? 'eyeOff' : 'eye'} size={18} />
                   </button>
                 </div>
               </div>
@@ -400,7 +407,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
               <div className="auth-input-group">
                 <label className="auth-label">Email</label>
                 <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">✉️</span>
+                  <Icon name="mail" size={18} className="auth-input-icon" />
                   <input
                     type="email"
                     name="email"
@@ -418,7 +425,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
               <div className="auth-input-group">
                 <label className="auth-label">Password</label>
                 <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">🔒</span>
+                  <Icon name="lock" size={18} className="auth-input-icon" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
@@ -434,7 +441,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                     className="auth-toggle-password"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                    <Icon name={showPassword ? 'eyeOff' : 'eye'} size={18} />
                   </button>
                 </div>
                 {fieldErrors.password && (
@@ -464,7 +471,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
               <div className="auth-input-group">
                 <label className="auth-label">Confirm Password</label>
                 <div className="auth-input-wrapper">
-                  <span className="auth-input-icon">🔒</span>
+                  <Icon name="lock" size={18} className="auth-input-icon" />
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
@@ -480,7 +487,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                     className="auth-toggle-password"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
-                    {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                    <Icon name={showConfirmPassword ? 'eyeOff' : 'eye'} size={18} />
                   </button>
                 </div>
                 {fieldErrors.confirmPassword && (
@@ -499,7 +506,7 @@ export const EnhancedAuthForm: React.FC<AuthFormProps> = ({ onLogin }) => {
                       onClick={() => setFormData({ ...formData, avatarShape: shape.id })}
                       title={shape.name}
                     >
-                      {shape.emoji}
+                      <ShapeGlyph id={shape.id} />
                     </button>
                   ))}
                 </div>

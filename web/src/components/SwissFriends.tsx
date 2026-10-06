@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../config';
 import { io, Socket } from 'socket.io-client';
 import { Loading, EmptyState } from './Loading';
+import Icon from './Icon';
 import './SwissFriends.css';
 
 interface SwissFriendsProps {
@@ -17,6 +18,7 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
   }>({ friends: [], requests: [] });
   const [friendsLoading, setFriendsLoading] = useState(true);
 
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const authToken = useRef(token);
 
@@ -126,125 +128,104 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
     return <Loading message="Lade Fründ..." />;
   }
 
-  return (
-    <div className="swiss-friends-container">
-      <div className="swiss-friends-header">
-        <div className="header-title">
-          <span className="header-icon">👥</span>
-          <h1>Fründ</h1>
-        </div>
-        <div className="header-subtitle">
-          Füeg Fründ hinzue zum zämme Jass spiele und online Status gseh.
-        </div>
-      </div>
+  const requestLabel = (status: string) =>
+    status === 'PENDING' ? 'Pendent' : status === 'ACCEPTED' ? 'Akzeptiert' : 'Abglehnt';
+  const requestPill = (status: string) =>
+    status === 'PENDING' ? 'pill--warn' : status === 'ACCEPTED' ? 'pill--ok' : 'pill--live';
 
-      <form onSubmit={handleSubmit} className="friend-request-form">
+  return (
+    <div className="page friends">
+      <h1 className="page__title friends__title">
+        <Icon name="friends" size={26} />
+        Fründ
+      </h1>
+      <p className="page__sub">Füeg Fründ hinzue zum zämme Jass spiele und online Status gseh.</p>
+
+      <form onSubmit={handleSubmit} className="friends__form">
         <input
+          ref={inputRef}
           value={friendInput}
           onChange={(e) => setFriendInput(e.target.value)}
           placeholder="Fründ Username"
-          className="form-input"
+          className="input friends__input"
         />
-        <button type="submit" className="btn-add" disabled={!friendInput.trim()}>
-          + Hinzuefüge
+        <button type="submit" className="btn btn--primary" disabled={!friendInput.trim()}>
+          <Icon name="plus" size={18} />
+          Hinzuefüge
         </button>
-        <button type="button" className="btn-refresh" onClick={fetchFriends}>
-          🔄 Aktualisiere
+        <button type="button" className="btn" onClick={fetchFriends}>
+          <Icon name="refresh" size={18} />
+          Aktualisiere
         </button>
       </form>
 
-      <div className="friends-section">
-        <h2 className="section-title">
-          <span className="title-icon">✨</span>
-          Fründ ({friendsTabData.friends.length})
-        </h2>
+      <h2 className="friends__section">Fründ ({friendsTabData.friends.length})</h2>
+      {friendsTabData.friends.length > 0 ? (
+        <div className="list friends__grid">
+          {friendsTabData.friends.map((f) => (
+            <div key={f.id} className="row">
+              <div className={`avatar${f.online ? '' : ' avatar--off'}`}>
+                {f.username.charAt(0).toUpperCase()}
+              </div>
+              <div className="row__main">
+                <div className="row__title">{f.username}</div>
+              </div>
+              <span className={`pill ${f.online ? 'pill--ok' : ''}`}>
+                {f.online ? 'Online' : 'Offline'}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon={<Icon name="friends" size={44} />}
+          title="Kei Fründ"
+          description="Füeg Fründ hinzue zum zämme spiele"
+          action={
+            <button className="btn btn--primary" onClick={() => inputRef.current?.focus()}>
+              <Icon name="plus" size={18} />
+              Hinzuefüge
+            </button>
+          }
+        />
+      )}
 
-        {friendsTabData.friends.length > 0 ? (
-          <div className="friends-grid">
-            {friendsTabData.friends.map((f) => (
-              <div key={f.id} className="friend-card">
-                <div
-                  className="friend-avatar"
-                  style={{
-                    background: f.online
-                      ? 'linear-gradient(135deg, #10b981, #059669)'
-                      : 'linear-gradient(135deg, #94a3b8, #64748b)',
-                  }}
-                >
-                  {f.username.charAt(0).toUpperCase()}
-                </div>
-                <div className="friend-info">
-                  <div className="friend-name">{f.username}</div>
-                  <div className={`friend-status ${f.online ? 'online' : 'offline'}`}>
-                    <span className="status-dot"></span>
-                    {f.online ? 'Online' : 'Offline'}
-                  </div>
+      <h2 className="friends__section">Afrage ({friendsTabData.requests.length})</h2>
+      {friendsTabData.requests.length > 0 ? (
+        <div className="list">
+          {friendsTabData.requests.map((r) => (
+            <div key={r.id} className="row friends__request">
+              <div className="row__main">
+                <div className="row__title">
+                  <span className="row__meta">{r.senderId === user?.id ? 'An:' : 'Vo:'}</span>{' '}
+                  {r.senderId === user?.id ? r.receiver?.username : r.sender?.username}
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon="👋"
-            title="Kei Fründ"
-            description="Füeg Fründ hinzue zum zämme spiele"
-          />
-        )}
-      </div>
-
-      <div className="requests-section">
-        <h2 className="section-title">
-          <span className="title-icon">📨</span>
-          Afrage ({friendsTabData.requests.length})
-        </h2>
-
-        {friendsTabData.requests.length > 0 ? (
-          <div className="requests-list">
-            {friendsTabData.requests.map((r) => (
-              <div key={r.id} className="request-card">
-                <div className="request-info">
-                  <div className="request-text">
-                    {r.senderId === user?.id ? (
-                      <>
-                        <span className="request-label">An:</span>
-                        <span className="request-username">{r.receiver?.username}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="request-label">Vo:</span>
-                        <span className="request-username">{r.sender?.username}</span>
-                      </>
-                    )}
-                  </div>
-                  <span className={`request-status status-${r.status.toLowerCase()}`}>
-                    {r.status === 'PENDING'
-                      ? 'Pendent'
-                      : r.status === 'ACCEPTED'
-                        ? 'Akzeptiert'
-                        : 'Abglehnt'}
-                  </span>
+              <span className={`pill ${requestPill(r.status)}`}>{requestLabel(r.status)}</span>
+              {r.status === 'PENDING' && r.receiverId === user?.id && (
+                <div className="friends__actions">
+                  <button
+                    className="btn btn--primary"
+                    onClick={() => respondFriendRequest(r.id, true)}
+                  >
+                    <Icon name="check" size={18} />
+                    Akzeptiere
+                  </button>
+                  <button
+                    className="btn btn--danger"
+                    onClick={() => respondFriendRequest(r.id, false)}
+                  >
+                    <Icon name="close" size={18} />
+                    Ablehne
+                  </button>
                 </div>
-
-                {r.status === 'PENDING' && r.receiverId === user?.id && (
-                  <div className="request-actions">
-                    <button className="btn-accept" onClick={() => respondFriendRequest(r.id, true)}>
-                      ✓ Akzeptiere
-                    </button>
-                    <button
-                      className="btn-decline"
-                      onClick={() => respondFriendRequest(r.id, false)}
-                    >
-                      ✕ Ablehne
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="no-requests">Kei pendenti Afrage</div>
-        )}
-      </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="friends__none">Kei pendenti Afrage</p>
+      )}
     </div>
   );
 };

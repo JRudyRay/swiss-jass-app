@@ -1,0 +1,263 @@
+/* Slim wood header. On phones the online nav becomes a bottom tab bar. */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-wood);
+  color: var(--color-cream);
+  border-bottom: 2px solid var(--color-gold);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+}
+.app-header__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  min-height: 56px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.app-brand__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--color-cream);
+}
+.app-brand__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.app-brand__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.app-brand__sub {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+.app-nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+  flex: 1;
+}
+.app-nav__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-cream);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-nav__btn:hover {
+  background: rgb(255 250 240 / 0.12);
+}
+.app-nav__btn[aria-current='page'] {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+.app-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.app-header:not([data-tabs]) .app-actions {
+  margin-left: auto;
+}
+.app-lang {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgb(255 250 240 / 0.35);
+  color: var(--color-cream);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.app-lang select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+.app-lang:focus-within {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+.app-signin {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.app-user {
+  position: relative;
+}
+.app-user__btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.app-user__avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  border: 2px solid var(--color-gold);
+  font-weight: 700;
+}
+.app-user__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 180px;
+  padding: 8px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.3);
+}
+.app-user__name {
+  padding: 8px 10px;
+  font-weight: 700;
+  border-bottom: 1px solid rgb(0 0 0 / 0.1);
+}
+.app-user__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-user__item:hover {
+  background: rgb(213 43 30 / 0.08);
+}
+.app-header button:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .app-header {
+    position: static;
+  }
+  .app-header__inner {
+    min-height: 48px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .app-brand__logo {
+    width: 32px;
+    height: 32px;
+  }
+  .app-brand__sub {
+    display: none;
+  }
+  .app-brand__title {
+    font-size: 1.05rem;
+  }
+  .app-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    margin: 0;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+    background: var(--color-wood);
+    border-top: 2px solid var(--color-gold);
+    box-shadow: 0 -2px 6px rgb(0 0 0 / 0.25);
+    gap: 2px;
+  }
+  .app-nav__btn {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 4px 2px;
+    font-size: 0.7rem;
+  }
+  .app-nav__label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-lang__code {
+    font-size: 0.8rem;
+  }
+}
+/* Tab bar needs room at the bottom of the page. */
+@media (max-width: 700px) {
+  .app:has(.app-header[data-tabs]) {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .app:has([data-jass-table]) .app-header {
+    display: none;
+  }
+  .app:has([data-jass-table]):has(.app-header[data-tabs]) {
+    padding-bottom: 0;
+  }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .app-brand__sub {
+    display: none;
+  }
+  .app-brand__title {
+    white-space: nowrap;
+  }
+}
