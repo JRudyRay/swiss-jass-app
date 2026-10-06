@@ -50,8 +50,8 @@ So every later change can be verified.
 - [ ] Auth on `/api/admin/*` (or remove it); require `JWT_SECRET` in
       production. (2026-10-06: partly done. Production refuses to start without
       `JWT_SECRET`; `DELETE /users/:id` needs `ADMIN_TOKEN`; `POST totals/sync`
-      needs a login token. Still open: `GET /users` and `/leaderboard` are
-      public, and `totals/sync` lets any user add points to any username.)
+      needs a login token. 2026-10-06: `GET /users` and `/leaderboard` now need a login token
+      (web sends it via `authFetch`). Rest is done.)
 - [ ] Input validation on all routes, helmet, CORS allowlist, rate limiting.
       (2026-10-06: helmet, rate limits (auth 30/15 min, API 300/min), 100 kb
       body cap, socket.io origin allowlist (`CORS_ORIGINS`) and `totals/sync`

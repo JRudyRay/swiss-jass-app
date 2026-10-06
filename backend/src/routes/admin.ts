@@ -30,7 +30,7 @@ const requireUser: RequestHandler = (req, res, next) => {
 };
 
 // GET /api/admin/users - list users and their totalPoints
-router.get('/users', async (req, res) => {
+router.get('/users', requireUser, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       select: {
@@ -50,7 +50,7 @@ router.get('/users', async (req, res) => {
 });
 
 // GET /api/admin/leaderboard - ranking by wins (primary), then games, then points
-router.get('/leaderboard', async (req, res) => {
+router.get('/leaderboard', requireUser, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       select: {

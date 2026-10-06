@@ -19,6 +19,7 @@ import Toast from './components/Toast';
 import { Loading, Spinner, SkeletonCard, EmptyState } from './components/Loading';
 import { generateSwissBotName } from './utils/swissBotNames';
 import { messages, type Lang } from './i18n';
+import { authFetch } from './authFetch';
 
 // Allow API override at build-time via Vite env (VITE_API_URL).
 // When the app is served from GitHub Pages (not localhost) there is no backend available,
@@ -794,7 +795,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     if (!ONLINE_ENABLED) return;
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/admin/users`);
+        const res = await authFetch(`${API_URL}/api/admin/users`);
         const data = await res.json();
         if (data?.success) setUsersList(data.users || []);
       } catch (e) {
@@ -943,7 +944,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         }
         // Refresh server user list so Rankings reflects updated totals
         try {
-          const r2 = await fetch(`${API_URL}/api/admin/users`);
+          const r2 = await authFetch(`${API_URL}/api/admin/users`);
           const d2 = await r2.json();
           if (d2?.success) setUsersList(d2.users || []);
         } catch (e) {
@@ -1421,7 +1422,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             if (j?.success) {
               // Refresh server user totals for Rankings
               try {
-                const r2 = await fetch(`${API_URL}/api/admin/users`);
+                const r2 = await authFetch(`${API_URL}/api/admin/users`);
                 const u = await r2.json();
                 if (u?.success) setUsersList(u.users || []);
               } catch (e) {
@@ -1472,7 +1473,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                     }),
                   });
                   // refresh server users after rating change
-                  const r3 = await fetch(`${API_URL}/api/admin/users`);
+                  const r3 = await authFetch(`${API_URL}/api/admin/users`);
                   const u3 = await r3.json();
                   if (u3?.success) setUsersList(u3.users || []);
                 } else {
@@ -1491,7 +1492,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                       },
                       body: JSON.stringify({ won: youWon, points: youWon ? 3 : 0, rounds: 0 }),
                     });
-                    const after = await fetch(`${API_URL}/api/admin/users`);
+                    const after = await authFetch(`${API_URL}/api/admin/users`);
                     const afterJson = await after.json();
                     if (afterJson?.success) setUsersList(afterJson.users || []);
                   } catch (fe) {

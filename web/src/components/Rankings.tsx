@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loading, EmptyState } from './Loading';
 import './Rankings.css';
+import { authFetch } from '../authFetch';
 
 export type LeaderboardEntry = {
   id: string;
@@ -31,7 +32,7 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
   const fetchLeaderboard = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/admin/leaderboard`);
+      const res = await authFetch(`${apiUrl}/api/admin/leaderboard`);
       const j = await res.json();
       if (j.success && Array.isArray(j.leaderboard)) {
         setLeaderboard(j.leaderboard);
