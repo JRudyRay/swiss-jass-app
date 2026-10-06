@@ -1,476 +1,53 @@
-# 🇨🇭 Swiss Jass# 🇨🇭 Swiss Jass - Authentic Swiss Card Game
+# En öchtä Schwizer Jass für alli
 
+An authentic Swiss Schieber Jass in the browser.
 
+**Play:** https://jrudyray.github.io/swiss-jass-app/ (single-player against
+three bots, runs entirely in your browser, installable as a PWA, works offline
+after the first visit).
 
-> An authentic Swiss Jass (Schieber) card game with multiplayer support> *"En öchtä Schwizer Jass für alli!"* - An authentic Swiss Jass experience for everyone!
+Languages: English, Swiss German, Standard German, French, Italian, Romansh.
 
+## Modes
 
+- **Single-player**: web only, no server needed. This is what the public site
+  offers.
+- **Multiplayer** (4 humans, tables, friends, TrueSkill rankings): Express +
+  Socket.IO + Prisma/SQLite backend. Not yet safe to expose publicly; today it
+  only runs on the owner's LAN. See `docs/ROADMAP.md` (M3).
 
-[![Live Demo](https://img.shields.io/badge/🎮_Live-Demo-green?style=for-the-badge)](https://jrudyray.github.io/swiss-jass-app)[![Swiss Made](https://img.shields.io/badge/Swiss-Made-red?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjRkYwMDAwIi8+CjxyZWN0IHg9IjciIHk9IjMiIHdpZHRoPSI2IiBoZWlnaHQ9IjE0IiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCB4PSIzIiB5PSI3IiB3aWR0aD0iMTQiIGhlaWdodD0iNiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+)](https://github.com/JRudyRay/swiss-jass-app)
+## Develop
 
-[![Backend](https://img.shields.io/badge/🍓_Raspberry_Pi-Deployed-green?style=for-the-badge)](https://192.168.1.141)[![Live Demo](https://img.shields.io/badge/🎮_Live-Demo-green?style=for-the-badge)](https://jrudyray.github.io/swiss-jass-app)
-
-[![Raspberry Pi Backend](https://img.shields.io/badge/🍓_Raspberry_Pi-Backend-green?style=for-the-badge)](http://your-pi-ip:3000)
-
-## 🎯 Features
-
-![Swiss Jass Game Screenshot](https://via.placeholder.com/800x400/dcfce7/16a34a?text=🇨🇭+Swiss+Jass+•+Authentic+Schieber+Experience)
-
-- ✅ **Authentic Swiss Jass Rules** - Official Schieber regulations
-
-- ✅ **Multiplayer Support** - Real-time gameplay with Socket.IO## 🏔️ About
-
-- ✅ **User Authentication** - Secure JWT-based auth system  
-
-- ✅ **Smart AI Opponents** - Intelligent bots for practice gamesSwiss Jass is the **most authentic web implementation** of the beloved Swiss card game Schieber Jass. Built with love for Swiss tradition and modern web technologies, it brings the authentic Beiz (tavern) experience to your browser.
-
-- ✅ **HTTPS Deployment** - Secure production setup on Raspberry Pi
-
-### 🎯 **Why This Implementation Stands Out**
-
-## 🚀 Quick Start
-
-- ✅ **100% Authentic Swiss Rules** - Follows official Schieber Jass regulations
-
-### Play Online- ✅ **Smart Trump Card Rules** - You can ALWAYS play trump cards (fixed!)
-
-Visit: **[https://jrudyray.github.io/swiss-jass-app](https://jrudyray.github.io/swiss-jass-app)**- ✅ **Intelligent Bot AI** - Bots make strategic trump choices and card plays
-
-- ✅ **Authentic Weis Competition** - Only winning team's Weis count (Swiss style!)
-
-### Local Development- ✅ **Professional Multiplayer** - Full backend with user accounts and rankings
-
-- ✅ **Swiss German Interface** - Toggle between English and Schwiizerdütsch
-
-**Frontend:**- ✅ **Responsive Design** - Play on desktop, tablet, or mobile
+Node 22. Two separate npm projects.
 
 ```bash
+cd web && npm ci && npm run dev          # http://localhost:3001
+cd backend && npm ci && npx prisma generate && npm run dev   # port 3000
+```
 
-cd web## 🚀 Quick Start
-
-npm install
-
-npm run dev### 🎮 **Play Now** (Instant)
-
-```Visit the live demo: **[Swiss Jass Game](https://jrudyray.github.io/swiss-jass-app)**
-
-
-
-**Backend:**### 🔧 **Local Development**
+Full check (what must pass before a push):
 
 ```bash
-
-cd backend```bash
-
-npm install# Clone the authentic Swiss experience
-
-npm run devgit clone https://github.com/JRudyRay/swiss-jass-app.git
-
-```cd swiss-jass-app
-
-
-
-## 🏗️ Tech Stack# Frontend setup (React + TypeScript)
-
-cd web
-
-**Frontend:**npm install
-
-- React + TypeScriptnpm run dev
-
-- Vite
-
-- Socket.IO Client# Backend setup (Optional - for multiplayer)
-
-- TailwindCSScd ../backend
-
-npm install
-
-**Backend:**npm run dev
-
-- Node.js + Express```
-
-- TypeScript
-
-- Socket.IO> 📂 **New to the project?** See [REPOSITORY_STRUCTURE.md](./REPOSITORY_STRUCTURE.md) for a complete guide to the codebase organization.
-
-- Prisma + SQLite
-
-- JWT Authentication## 🎪 Features
-
-
-
-**Deployment:**### 🃏 **Authentic Schieber Jass Experience**
-
-- GitHub Pages (Frontend)
-
-- Raspberry Pi + Docker (Backend)| Feature | Description |
-
-- Nginx reverse proxy with HTTPS|---------|-------------|
-
-- GitHub Actions for CI/CD| **Swiss Trump Contracts** | Eicheln, Schellen, Rosen, Schilten, Oben-abe, Unden-ufe |
-
-| **Authentic Scoring** | Proper point values with multipliers (2x, 3x, 4x) |
-
-## 📚 Documentation| **Weis Competition** | Stöck, sequences, four-of-a-kinds with Swiss rules |
-
-| **Dealer Rotation** | Proper dealer progression and trump selection order |
-
-- [Deployment Guide](./DEPLOYMENT.md) - Raspberry Pi HTTPS setup| **Last Trick Bonus** | +5 points for winning the final trick |
-
-- [Development Docs](./docs/) - Architecture and implementation details
-
-### 🤖 **Intelligent Bot Players**
-
-## 🎮 Game Rules
-
-- **Smart Trump Selection**: Bots analyze hand strength and make strategic choices
-
-Swiss Jass (Schieber) is played with 4 players in teams of 2. Key features:- **Strategic Card Play**: Bots understand Swiss Jass tactics
-
-- **Team Coordination**: Bots play cooperatively with their partner
-
-- **36 Swiss cards** (4 suits: Eicheln, Rosen, Schilten, Schellen)- **Authentic Names**: Anna, Reto, and Fritz - your Swiss Jass companions
-
-- **Trump selection** by dealer
-
-- **Weis (melds)** for bonus points### 🏆 **Professional Multiplayer System**
-
-- **Match bonus** (last trick = 5 points)
-
-- **Target:** First team to 1000 points wins- **User Accounts**: Register and track your Jass journey
-
-- **Rankings & Statistics**: See who's the best Jass player
-
-## 🔧 Development- **Game History**: Track rounds, scores, and victories
-
-- **Point System**: Earn points based on victory margins
-
-**Run tests:**
-
-```bash### 🇨🇭 **Swiss Authenticity**
-
-npm test
-
-```- **Swiss German Interface**: Play in authentic Schwiizerdütsch
-
-- **Traditional Terminology**: Stöck, Wies, Schieben, and more
-
-**Build for production:**- **Swiss Styling**: Authentic green and white color scheme
-
-```bash- **Cultural Elements**: Mountain music, Swiss emojis, traditional sayings
-
-cd web && npm run build
-
-```## 🎯 How to Play Schieber Jass
-
-
-
-**Docker deployment:**### 📚 **Basic Rules**
-
-```bash
-
-docker compose -f docker-compose.ssl.yml up -d1. **Dealing**: 9 cards per player (36-card deck)
-
-```2. **Trump Selection**: Choose from 6 contracts or "schieben" (pass to partner)
-
-3. **Playing**: Follow suit if possible, trump cards can ALWAYS be played
-
-## 📝 License4. **Weis Declaration**: Declare melds during first trick
-
-5. **Scoring**: First team to reach 1000 points wins
-
-MIT License - See [LICENSE](./LICENSE)
-
-### 🏅 **Trump Contracts & Multipliers**
-
-## 🤝 Contributing
-
-| Contract | Multiplier | Description |
-
-Contributions welcome! Please feel free to submit a Pull Request.|----------|------------|-------------|
-
-| **Eicheln** | 1x | Acorns are trump |
-
----| **Rosen** | 1x | Roses are trump |
-
-| **Schellen** | 2x | Bells are trump (higher risk/reward) |
-
-Made with ❤️ for Swiss Jass enthusiasts| **Schilten** | 2x | Shields are trump (higher risk/reward) |
-
-| **Oben-abe** | 3x | Highest cards win (no trump suit) |
-| **Unden-ufe** | 4x | Lowest cards win (everything inverted) |
-
-### 🎭 **Weis (Melds) - Swiss Competition Style**
-
-Only the team with the **best Weis** scores points:
-
-- **Sequences**: 3 cards (20), 4 cards (50), 5+ cards (100)
-- **Four of a Kind**: Jacks (200), Nines (150), Aces/Kings/Queens/Tens (100)
-- **Stöck**: King and Queen of trump (20 points)
-
-## 🛠️ Technical Architecture
-
-### 🎨 **Frontend** (React + TypeScript)
-```
-web/
-├── src/
-│   ├── JassGame.tsx          # Main game component
-│   ├── SwissCard.tsx         # Authentic card rendering
-│   ├── engine/schieber.ts    # Swiss Jass game engine
-│   ├── config.ts             # Environment configuration
-│   └── ...
-├── public/
-└── package.json
+(cd web && npm ci && npm run check) && (cd backend && npm ci && npx prisma generate && npm run check)
 ```
 
-### ⚡ **Backend** (Node.js + Express + Prisma)
-```
-backend/
-├── src/
-│   ├── index.ts              # Express server
-│   ├── gameEngine/           # Server-side game logic
-│   ├── routes/               # API endpoints
-│   ├── services/             # Business logic
-│   └── ...
-├── prisma/
-│   ├── schema.prisma         # Database schema
-│   └── swiss_jass.db         # SQLite database
-└── package.json
-```
+`web`: `npm run smoke` runs unit tests plus a 40-hand simulation; `npm run h2h`
+compares bots head to head.
 
-### 🌐 **Deployment**
+To point a web build at a backend, set `VITE_API_URL` at build time, or set
+`localStorage.jassApiUrl` in the browser.
 
-- **Frontend**: GitHub Pages with automated deployment
-- **Backend**: Self-hosted on Raspberry Pi with Docker
-- **Database**: SQLite with Prisma ORM
-- **CI/CD**: GitHub Actions for seamless updates
+## Docs
 
-## 🧪 Testing
+- `docs/RULES.md`: the rules implemented (authoritative for game logic)
+- `docs/ROADMAP.md`: plan and status
+- `STRUCTURE.md`: code layout
+- `DEPLOYMENT.md`: how it ships
+- `CLAUDE.md`: instructions for coding agents
+- `docs/archive/`: old notes, history only
 
-This project includes comprehensive tests for game rules, rankings, and multiplayer functionality:
+## Deployment note
 
-- **Game Engine Tests**: Schieben, trump multipliers, Weis scoring
-- **Rankings Tests**: Bot exclusion, multiplayer-only tracking, TrueSkill calculations
-- **Integration Tests**: Friend system, table creation, multiplayer flows
-- **Smoke Tests**: Quick verification of core functionality
+Pushing to `main` deploys the web app to GitHub Pages.
 
-**Quick Start**:
-```bash
-cd backend
-npm run smoke          # Friend & table creation tests
-npm run multi          # Multiplayer flow test
-npm run reset:smoke    # Reset DB + smoke test
-```
-
-📖 **See [docs/TESTING.md](docs/TESTING.md) for complete testing guide**, including:
-- How to run all test suites
-- Test coverage goals and current status
-- Known gaps and limitations (async engine, E2E tests)
-- CI/CD integration
-- Contributing to tests
-
-## 🚀 Deployment Guide
-
-### 📱 **Frontend Deployment (GitHub Pages)**
-
-**Status**: ✅ **Automatic deployment configured**
-
-1. **Fork the repository** on GitHub
-2. **Enable GitHub Pages** in repository settings
-   - Go to Settings → Pages
-   - Source: GitHub Actions
-3. **Automatic deployment** via GitHub Actions (`.github/workflows/deploy.yml`)
-   - Every push to `main` triggers automatic build and deployment
-   - Live in minutes at `https://yourusername.github.io/swiss-jass-app`
-4. **Manual deployment** (if needed)
-   - Go to Actions tab → "Deploy to GitHub Pages" → "Run workflow"
-
-### 🍓 **Backend Deployment (Raspberry Pi)**
-
-**Status**: ✅ **Automatic deployment via GitHub Actions self-hosted runner**
-
-Docker deployment on Raspberry Pi automatically deploys when you push to this repository:
-
-1. **Setup Self-Hosted Runner** (one-time setup)
-   - Install GitHub Actions runner on your Raspberry Pi
-   - Runner automatically pulls latest code and deploys with Docker
-   - See `DOCKER_DEPLOYMENT.md` for complete setup instructions
-
-2. **Environment Variables** (set on Pi in `.env` file)
-   ```env
-   PORT=3000
-   NODE_ENV=production
-   DATABASE_URL=file:/data/swiss_jass.db
-   JWT_SECRET=your-strong-secret-here
-   ```
-
-3. **Automatic Updates**
-   - Every push to `main` triggers automatic Pi deployment
-   - GitHub Actions runner on Pi handles Docker build and deployment
-   - Container orchestration via docker-compose
-
-4. **Check Deployment Status**
-   - GitHub Actions shows deployment logs and status
-   - Backend URL: `http://your-pi-ip:3000`
-   - Health check: `http://your-pi-ip:3000/health`
-
-### 🔗 **Connecting Frontend to Backend**
-
-Update `web/src/config.ts` with your Raspberry Pi IP address:
-
-```typescript
-export const API_BASE_URL = import.meta.env.PROD 
-  ? 'http://your-pi-ip:3000'
-  : 'http://localhost:3001';
-```
-
-Then rebuild and push to trigger GitHub Pages deployment.
-
-## 📊 Rankings & Statistics
-
-### 🏆 **How Rankings Work**
-
-The Swiss Jass app uses a sophisticated **TrueSkill ranking system** to provide fair and accurate player ratings:
-
-- **Multiplayer Games Only**: Only games played against real human opponents count toward rankings
-- **Bot Games Excluded**: Practice games against AI bots don't affect your rating (learn risk-free!)
-- **TrueSkill Algorithm**: Uses Microsoft's TrueSkill system (better than simple win/loss ratios)
-- **Team-Based**: Your rating reflects your performance as both an individual and team player
-
-### ⚙️ **What Gets Tracked**
-
-| Metric | Description | Multiplayer Only |
-|--------|-------------|------------------|
-| **TrueSkill µ (Mu)** | Your skill rating (starts at 25.0) | ✅ Yes |
-| **TrueSkill σ (Sigma)** | Rating uncertainty (lower = more confident) | ✅ Yes |
-| **Total Games** | Number of multiplayer matches played | ✅ Yes |
-| **Total Wins** | Number of multiplayer matches won | ✅ Yes |
-| **Win Rate** | Calculated as Total Wins / Total Games | ✅ Yes |
-
-### 🚫 **What Doesn't Count**
-
-- ❌ Offline games (single-player vs bots)
-- ❌ Local practice games
-- ❌ Games where all players are bots
-- ❌ Incomplete/abandoned games
-
-### 🤖 **Bot Player Handling**
-
-- **Bot Exclusion**: Bot users (`bot_1`, `bot_2`, `bot_3`) are automatically excluded from rankings
-- **Mixed Games**: In multiplayer games with bots filling empty seats, only real players get stats updates
-- **Database Schema**: Bot users have `isBot = true` flag to ensure clean separation
-
-### 🔄 **Database Management**
-
-#### Reset Database (Development)
-
-```bash
-# Full reset with seed data
-cd backend
-npm run db:reset
-
-# This will:
-# 1. Drop all tables
-# 2. Re-apply Prisma migrations
-# 3. Seed with test users (alice, bob, charlie, dave)
-# 4. Reset all rankings to defaults
-```
-
-#### Seed Test Data
-
-```bash
-# Just add test users without resetting
-cd backend
-npm run db:seed
-```
-
-#### Manual Database Inspection
-
-```bash
-# Open SQLite database
-cd backend/prisma
-sqlite3 swiss_jass.db
-
-# Example queries
-sqlite> SELECT username, totalGames, totalWins, trueSkillMu FROM User WHERE isBot = 0;
-sqlite> SELECT * FROM GameSession WHERE isMultiplayer = 1 ORDER BY createdAt DESC LIMIT 10;
-```
-
-### 📈 **Ranking Transparency**
-
-View your detailed stats:
-1. **In-Game**: Rankings page shows leaderboard with all metrics
-2. **Database**: Direct SQLite queries for power users
-3. **API**: `/api/users/rankings` endpoint returns JSON data
-
-All ranking calculations are **deterministic and reproducible** - resetting the database and replaying the same games will yield identical rankings.
-
-## 🤝 Contributing
-
-We welcome contributions to make Swiss Jass even more authentic!
-
-### 🎯 **How to Contribute**
-
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/amazing-enhancement`
-3. **Commit** your changes: `git commit -m 'Add Swiss dialect support'`
-4. **Push** to the branch: `git push origin feature/amazing-enhancement`
-5. **Open** a Pull Request
-
-### 🏔️ **Contribution Ideas**
-
-- **Swiss Dialects**: Add more regional variations
-- **Tournament Mode**: Multi-round competitions
-- **Sound Effects**: Authentic Jass table sounds
-- **Statistics**: Advanced game analytics
-- **Mobile App**: React Native version
-
-## 📊 Project Statistics
-
-- **Lines of Code**: ~2,000+ TypeScript/React
-- **Game Rules**: 100% Swiss Jass compliant
-- **Bot Intelligence**: Strategic AI with hand analysis
-- **Performance**: < 2s load time, smooth 60fps animations
-- **Browser Support**: Chrome, Firefox, Safari, Edge
-
-## 🏆 Achievements
-
-- ✅ **Authentic Swiss Rules** - Validated by Swiss Jass experts
-- ✅ **Professional Deployment** - Live and accessible worldwide
-- ✅ **Modern Technology** - React + TypeScript + Node.js
-- ✅ **Responsive Design** - Works on all devices
-- ✅ **Multiplayer Ready** - Full backend infrastructure
-
-## 📞 Support & Community
-
-- 🐛 **Issues**: [GitHub Issues](https://github.com/JRudyRay/swiss-jass-app/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/JRudyRay/swiss-jass-app/discussions)
-- 📧 **Contact**: Open an issue for questions
-- 🇨🇭 **Swiss Jass Community**: Join fellow Jass enthusiasts
-
-## 📄 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🇨🇭 Final Words
-
-> *"Jass isch nöd nur es Spiel, es isch es Stück Schwizer Kultur!"*
-> 
-> *"Jass is not just a game, it's a piece of Swiss culture!"*
-
-**Swiss Jass** brings the authentic Beiz experience to the digital world. Whether you're a seasoned Jass champion or learning your first Stöck, this implementation respects the tradition while embracing modern technology.
-
-**Merci vilmal fürs Spiele!** (Thank you very much for playing!) 🧀🏔️
-
----
-
-<div align="center">
-
-**[🎮 Play Now](https://jrudyray.github.io/swiss-jass-app)** | **[⭐ Star on GitHub](https://github.com/JRudyRay/swiss-jass-app)** | **[🍴 Fork & Contribute](https://github.com/JRudyRay/swiss-jass-app/fork)**
-
-Made with ❤️ in the spirit of Swiss tradition
-
-</div>
+License: see `LICENSE`.
