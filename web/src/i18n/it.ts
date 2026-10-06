@@ -59,6 +59,22 @@ const it: Messages = {
     takes: 'La prende',
     wonBy: (name: string) => `${name} ha fatto la presa`,
   },
+  settings: {
+    button: 'Impostazioni',
+    title: 'Impostazioni',
+    close: 'Chiudi',
+    haptics: 'Vibrazione',
+    hapticsHint: 'Una breve vibrazione quando giochi una carta',
+    speed: 'Velocità delle animazioni',
+    speeds: { normal: 'Normale', fast: 'Veloce', off: 'Nessuna' } as Record<
+      'normal' | 'fast' | 'off',
+      string
+    >,
+    leftHanded: 'Modalità mancini',
+    leftHandedHint: 'Inverte i posti laterali e il pannello laterale',
+    suitMarks: 'Forme dei semi',
+    suitMarksHint: 'Aggiunge una forma accanto al simbolo del seme',
+  },
   victory: {
     youWon: 'La vostra squadra vince la partita.',
     youLost: 'Gli avversari vincono la partita.',

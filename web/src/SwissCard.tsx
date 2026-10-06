@@ -47,6 +47,7 @@ export const SwissCard: React.FC<CardProps> = ({ card, onClick }) => {
           <div className="swiss-card__index" aria-hidden="true">
             <span className="swiss-card__rank">{card.rank}</span>
             <SuitMark trump={card.suit} size={14} />
+            <span className="swiss-card__shape" data-suit={card.suit} />
           </div>
         </>
       ) : (

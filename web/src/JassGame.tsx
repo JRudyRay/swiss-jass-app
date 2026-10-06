@@ -10,6 +10,8 @@ import InfoPanels from './components/table/InfoPanels';
 import WeisPanel from './components/table/WeisPanel';
 import TrickArea, { COLLECT_MS } from './components/table/TrickArea';
 import LastTrick from './components/table/LastTrick';
+import SettingsSheet from './components/table/SettingsSheet';
+import { useSettings } from './components/table/useSettings';
 import { useLastTrick } from './components/table/useLastTrick';
 import Hand from './components/table/Hand';
 import TrumpChooser from './components/table/TrumpChooser';
@@ -324,6 +326,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     bestWeis: null,
     declarations: [],
   });
+  const { settings, update: updateSettings, buzz, scale: speedScale } = useSettings();
   const lastTrick = useLastTrick(
     gameState?.currentTrick,
     collect,
@@ -513,7 +516,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         winner === 0 ? tr.youTake : tr.takes(st.players.find((p) => p.id === winner)?.name || ''),
       );
       setCollect({ winnerId: winner });
-      await new Promise((r) => setTimeout(r, COLLECT_MS));
+      await new Promise((r) => setTimeout(r, COLLECT_MS * speedScale()));
       const newSt = Schieber.resolveTrick(st);
       saveLocalState(newSt);
       setGameState(toGameState(newSt));
@@ -1051,7 +1054,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         setPlayers(mapPlayersWithSeats(st.players));
         setHand(st.players.find((p) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
-        await new Promise((r) => setTimeout(r, playDelayMs));
+        await new Promise((r) => setTimeout(r, playDelayMs * speedScale()));
         continue;
       } // if it's a bot's turn (0 is our south player), let bots play automatically
       if (st.currentPlayer !== 0) {
@@ -1077,7 +1080,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           }
           continue;
         }
-        await new Promise((r) => setTimeout(r, playDelayMs));
+        await new Promise((r) => setTimeout(r, playDelayMs * speedScale()));
         continue;
       }
 
@@ -2498,7 +2501,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const showPlaySurface = !optionsVisible || (mode === 'multi' && !!gameState);
 
   return (
-    <div className={`jass-screen${choosingTrump ? ' jass-screen--choosing' : ''}`}>
+    <div
+      className={`jass-screen${choosingTrump ? ' jass-screen--choosing' : ''}${settings.leftHanded ? ' jass-screen--lefty' : ''}${settings.suitMarks ? ' jass-screen--marks' : ''}${settings.speed === 'off' ? ' jass-screen--noanim' : ''}`}
+    >
       <div className="jass-screen__area">
         {/* Game-only HUD: slim score bar with trump pill */}
         {showPlaySurface && (
@@ -2649,6 +2654,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               {mode === 'single' && (
                 <LastTrick lang={lang} last={lastTrick} players={players as any} />
               )}
+              {mode === 'single' && (
+                <SettingsSheet lang={lang} settings={settings} onChange={updateSettings} />
+              )}
 
               {/* Trick: cards nudged toward the player who played them */}
               <div className="trick-zone">
@@ -2670,6 +2678,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                       : null
                   }
                   emptyLabel={uiPendingResolve || isAnimating ? null : t.noCardsPlayed}
+                  scale={speedScale()}
+                  still={settings.speed === 'off'}
                 />
               </div>
             </div>
@@ -2748,8 +2758,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               return;
             }
             setSelectedCard(null);
-            if (isLocal) playLocalCard(card.id);
-            else playCard(card.id);
+            if (isLocal) {
+              buzz();
+              playLocalCard(card.id);
+            } else playCard(card.id);
           }}
         />
 

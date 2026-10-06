@@ -59,6 +59,22 @@ const ch: Messages = {
     takes: 'Macht ne',
     wonBy: (name: string) => `${name} het dä Stich gmacht`,
   },
+  settings: {
+    button: 'Iistellige',
+    title: 'Iistellige',
+    close: 'Zuemache',
+    haptics: 'Vibration',
+    hapticsHint: 'Churzes Vibriere, wenn du e Charte spielsch',
+    speed: 'Animations-Tempo',
+    speeds: { normal: 'Normal', fast: 'Schnäll', off: 'Us' } as Record<
+      'normal' | 'fast' | 'off',
+      string
+    >,
+    leftHanded: 'Linkshänder-Modus',
+    leftHandedHint: 'Spiegled d Siitesitz und d Siitelisten',
+    suitMarks: 'Farb-Form uf de Charte',
+    suitMarksHint: 'Zeigt e Form näbed em Farbsymbol',
+  },
   victory: {
     youWon: 'Eues Team gwünnt dä Match.',
     youLost: 'D Gägner gwünned dä Match.',

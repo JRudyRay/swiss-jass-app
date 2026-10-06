@@ -57,6 +57,22 @@ const en = {
     takes: 'Takes it',
     wonBy: (name: string) => `${name} took this trick`,
   },
+  settings: {
+    button: 'Settings',
+    title: 'Settings',
+    close: 'Close',
+    haptics: 'Vibration',
+    hapticsHint: 'A short buzz when you play a card',
+    speed: 'Animation speed',
+    speeds: { normal: 'Normal', fast: 'Fast', off: 'Off' } as Record<
+      'normal' | 'fast' | 'off',
+      string
+    >,
+    leftHanded: 'Left-handed mode',
+    leftHandedHint: 'Mirrors the side seats and the side panel',
+    suitMarks: 'Suit shapes on cards',
+    suitMarksHint: 'Adds a shape next to the suit symbol',
+  },
   victory: {
     youWon: 'Your team wins the match.',
     youLost: 'The opponents win the match.',

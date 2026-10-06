@@ -1589,3 +1589,203 @@
     animation: none;
   }
 }
+
+/* ---------- Settings sheet ---------- */
+
+.lt-btn.set-btn {
+  left: 56px;
+}
+.set-sheet {
+  max-width: 400px;
+}
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 0;
+  border-top: 1px solid #e0d2b3;
+}
+.set-row--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.set-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.set-row__label {
+  font-size: 15px;
+  font-weight: 700;
+}
+.set-row__hint {
+  font-size: 12px;
+  color: var(--wood);
+}
+.set-switch {
+  position: relative;
+  flex: none;
+  width: 56px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.set-switch::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 56px;
+  height: 28px;
+  margin-top: -14px;
+  background: #cdbb98;
+  border-radius: 14px;
+}
+.set-switch[aria-checked='true']::before {
+  background: var(--green, #1f5a3d);
+}
+.set-switch__knob {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  background: var(--cream);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+.set-switch[aria-checked='true'] .set-switch__knob {
+  transform: translateX(28px);
+}
+.set-switch:focus-visible,
+.set-seg__opt:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+.set-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.set-seg__opt {
+  min-height: 44px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px solid #cdbb98;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.set-seg__opt[aria-checked='true'] {
+  color: var(--cream);
+  background: var(--green, #1f5a3d);
+  border-color: var(--green, #1f5a3d);
+}
+
+/* Left-handed mode: side seats and controls swap sides, the rail moves to the right. */
+.jass-screen--lefty .seat-slot--west {
+  left: auto;
+  right: 6px;
+}
+.jass-screen--lefty .seat-slot--east {
+  right: auto;
+  left: 6px;
+}
+.jass-screen--lefty .lt-btn {
+  left: auto;
+  right: 6px;
+}
+.jass-screen--lefty .lt-btn.set-btn {
+  left: auto;
+  right: 56px;
+}
+
+/* High-contrast suit shapes in the card corner. */
+.swiss-card__shape {
+  display: none;
+}
+.jass-screen--marks .swiss-card__shape {
+  display: block;
+  width: 9px;
+  height: 9px;
+  margin-top: 1px;
+  background: #1c1c1c;
+}
+.jass-screen--marks .swiss-card__shape[data-suit='eicheln'] {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.jass-screen--marks .swiss-card__shape[data-suit='schellen'] {
+  border-radius: 50%;
+}
+.jass-screen--marks .swiss-card__shape[data-suit='rosen'] {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+/* Animation speed "off". */
+.jass-screen--noanim *,
+.jass-screen--noanim *::before,
+.jass-screen--noanim *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .lt-btn.set-btn {
+    left: 54px;
+  }
+  .set-sheet {
+    max-width: 460px;
+  }
+  .set-row {
+    min-height: 44px;
+    padding: 2px 0;
+  }
+  .set-row__hint {
+    display: none;
+  }
+  .jass-screen--lefty .seat-slot--west {
+    right: 4px;
+  }
+  .jass-screen--lefty .seat-slot--east {
+    left: 4px;
+  }
+  .jass-screen--lefty .lt-btn {
+    right: 4px;
+  }
+  .jass-screen--lefty .lt-btn.set-btn {
+    right: 54px;
+  }
+  .jass-screen--lefty .weis-panel {
+    justify-self: start;
+    margin: 0 0 7px 8px;
+  }
+  .jass-screen--lefty .jass-screen__area:has(> .weis-panel) .trick-card--east {
+    top: 50%;
+  }
+  .jass-screen--lefty .jass-screen__area:has(> .weis-panel) .trick-card--west {
+    top: calc(var(--g-trick-h) / 2);
+  }
+  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area {
+    grid-template-columns: minmax(0, 1fr) var(--g-rail);
+  }
+  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .score-bar,
+  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .jass-status {
+    grid-column: 2;
+  }
+  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .jass-stage,
+  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .hand-dock,
+  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .weis-panel {
+    grid-column: 1;
+  }
+}

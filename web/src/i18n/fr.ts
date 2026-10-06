@@ -59,6 +59,22 @@ const fr: Messages = {
     takes: 'Le remporte',
     wonBy: (name: string) => `${name} a remporté le pli`,
   },
+  settings: {
+    button: 'Réglages',
+    title: 'Réglages',
+    close: 'Fermer',
+    haptics: 'Vibration',
+    hapticsHint: 'Courte vibration quand vous jouez une carte',
+    speed: "Vitesse d'animation",
+    speeds: { normal: 'Normale', fast: 'Rapide', off: 'Aucune' } as Record<
+      'normal' | 'fast' | 'off',
+      string
+    >,
+    leftHanded: 'Mode gaucher',
+    leftHandedHint: 'Inverse les places latérales et la colonne de gauche',
+    suitMarks: 'Formes des couleurs',
+    suitMarksHint: 'Ajoute une forme à côté du symbole de la couleur',
+  },
   victory: {
     youWon: 'Votre équipe remporte la partie.',
     youLost: 'Les adversaires remportent la partie.',

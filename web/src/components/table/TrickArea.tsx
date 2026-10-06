@@ -16,6 +16,9 @@ type Props = {
   cards: TrickCard[];
   collect: Collect;
   emptyLabel?: string | null;
+  // Animation speed settings: timing multiplier, and `still` for no sliding at all.
+  scale?: number;
+  still?: boolean;
 };
 
 const reducedMotion = () => {
@@ -28,7 +31,13 @@ const reducedMotion = () => {
 
 // The cards in the middle of the felt. While `collect` is set, the winning card is ringed in gold,
 // then every card slides and fades toward the winner's name plate (found via `data-seat` on the table).
-export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
+export const TrickArea: React.FC<Props> = ({
+  cards,
+  collect,
+  emptyLabel,
+  scale = 1,
+  still: forceStill = false,
+}) => {
   const boxRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [sliding, setSliding] = useState(false);
@@ -36,7 +45,7 @@ export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
   useEffect(() => {
     setSliding(false);
     if (!collect) return;
-    const id = setTimeout(() => setSliding(true), HIGHLIGHT_MS);
+    const id = setTimeout(() => setSliding(true), HIGHLIGHT_MS * scale);
     return () => clearTimeout(id);
   }, [collect?.winnerSeat, collect?.winningCardId]);
 
@@ -50,7 +59,7 @@ export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
     if (!target) return;
     const center = (r: DOMRect) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
     const t = center(target);
-    const still = reducedMotion();
+    const still = forceStill || reducedMotion();
     const anims: Animation[] = [];
     Object.entries(cardRefs.current).forEach(([id, el]) => {
       if (!el || typeof el.animate !== 'function') return;
@@ -72,7 +81,11 @@ export const TrickArea: React.FC<Props> = ({ cards, collect, emptyLabel }) => {
             { transform: tr(0, 0, win ? 0 : rot, win ? 1.08 : 1), opacity: 1 },
             { transform: tr(t.x - c.x, t.y - c.y, 0, 0.45), opacity: 0 },
           ],
-          { duration: SLIDE_MS, easing: 'cubic-bezier(0.4, 0, 0.8, 0.6)', fill: 'forwards' },
+          {
+            duration: SLIDE_MS * scale,
+            easing: 'cubic-bezier(0.4, 0, 0.8, 0.6)',
+            fill: 'forwards',
+          },
         ),
       );
     });

@@ -60,6 +60,22 @@ const rm: Messages = {
     takes: 'Til fa',
     wonBy: (name: string) => `${name} ha fatg il stich`,
   },
+  settings: {
+    button: 'Parameters',
+    title: 'Parameters',
+    close: 'Serrar',
+    haptics: 'Vibraziun',
+    hapticsHint: 'Curta vibraziun cur che ti giegas ina carta',
+    speed: "Svelteza da l'animaziun",
+    speeds: { normal: 'Normala', fast: 'Svelta', off: 'Nagina' } as Record<
+      'normal' | 'fast' | 'off',
+      string
+    >,
+    leftHanded: 'Modus per mantschinis',
+    leftHandedHint: 'Spleglia las plazzas laterala e la colonna laterala',
+    suitMarks: 'Furmas per las colurs',
+    suitMarksHint: 'Mussa ina furma sper il simbol da la colur',
+  },
   victory: {
     youWon: 'Vossa equipa gudogna la partida.',
     youLost: 'Ils adversaris gudognan la partida.',

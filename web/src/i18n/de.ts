@@ -59,6 +59,22 @@ const de: Messages = {
     takes: 'Macht ihn',
     wonBy: (name: string) => `${name} hat den Stich gemacht`,
   },
+  settings: {
+    button: 'Einstellungen',
+    title: 'Einstellungen',
+    close: 'Schliessen',
+    haptics: 'Vibration',
+    hapticsHint: 'Kurzes Vibrieren beim Ausspielen einer Karte',
+    speed: 'Animationstempo',
+    speeds: { normal: 'Normal', fast: 'Schnell', off: 'Aus' } as Record<
+      'normal' | 'fast' | 'off',
+      string
+    >,
+    leftHanded: 'Linkshänder-Modus',
+    leftHandedHint: 'Spiegelt die seitlichen Plätze und die Seitenleiste',
+    suitMarks: 'Formen für die Farben',
+    suitMarksHint: 'Zeigt neben dem Farbsymbol eine Form an',
+  },
   victory: {
     youWon: 'Euer Team gewinnt die Partie.',
     youLost: 'Die Gegner gewinnen die Partie.',
