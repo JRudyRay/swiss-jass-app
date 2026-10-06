@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import gameRoutes from './routes/games';
 import adminRoutes from './routes/admin';
+import { JWT_SECRET } from './secrets';
 import tableRoutes from './routes/tables';
 import friendRoutes from './routes/friends';
 
@@ -222,7 +223,7 @@ io.on('connection', (socket: any) => {
   let userId: string | undefined;
   if (token) {
     try {
-      const decoded: any = require('jsonwebtoken').verify(token, process.env.JWT_SECRET || 'swiss-jass-development-secret');
+      const decoded: any = require('jsonwebtoken').verify(token, JWT_SECRET);
       userId = decoded.userId;
   setUserOnline(userId, socket.id, decoded.username);
     } catch {}

@@ -1,8 +1,31 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../secrets';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const router = Router();
+
+// Destructive routes need ADMIN_TOKEN (header x-admin-token); disabled when unset.
+const requireAdmin: RequestHandler = (req, res, next) => {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected || req.header('x-admin-token') !== expected) {
+    return res.status(403).json({ success: false, message: 'Admin token required' });
+  }
+  next();
+};
+
+// Totals sync needs a logged-in user's bearer token.
+const requireUser: RequestHandler = (req, res, next) => {
+  const m = /^Bearer (.+)$/.exec(req.header('authorization') || '');
+  if (!m) return res.status(401).json({ success: false, message: 'Login required' });
+  try {
+    jwt.verify(m[1], JWT_SECRET);
+  } catch {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+  next();
+};
 
 // GET /api/admin/users - list users and their totalPoints
 router.get('/users', async (req, res) => {
@@ -43,7 +66,7 @@ router.get('/leaderboard', async (req, res) => {
 });
 
 // DELETE /api/admin/users/:id - delete a user
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const user = await prisma.user.findUnique({ where: { id } });
@@ -56,7 +79,7 @@ router.delete('/users/:id', async (req, res) => {
 });
 
 // POST /api/admin/totals/sync - accept totals map { username: points }
-router.post('/totals/sync', async (req, res) => {
+router.post('/totals/sync', requireUser, async (req, res) => {
   try {
     const { totals } = req.body || {};
     if (!totals || typeof totals !== 'object') return res.status(400).json({ success: false, message: 'Invalid totals payload' });

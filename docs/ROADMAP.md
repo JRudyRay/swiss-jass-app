@@ -48,7 +48,10 @@ So every later change can be verified.
 ## M3: Backend safe to expose
 
 - [ ] Auth on `/api/admin/*` (or remove it); require `JWT_SECRET` in
-      production.
+      production. (2026-10-06: partly done. Production refuses to start without
+      `JWT_SECRET`; `DELETE /users/:id` needs `ADMIN_TOKEN`; `POST totals/sync`
+      needs a login token. Still open: `GET /users` and `/leaderboard` are
+      public, and `totals/sync` lets any user add points to any username.)
 - [ ] Input validation on all routes, helmet, CORS allowlist, rate limiting.
 - [ ] Decide hosting with the owner (e.g. Cloudflare Tunnel to the Pi) and use
       a `VITE_API_URL` build variable instead of the hardcoded LAN IP. Until
