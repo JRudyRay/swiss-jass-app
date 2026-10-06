@@ -25,7 +25,7 @@ So every later change can be verified.
 
 - [x] (2026-10-06) Delete dead files. Kept `multiGameManager.ts`: `npm run multi` uses it.
 - [x] (2026-10-06) Move `docs/ai-sessions/` and `docs/audit/` to `docs/archive/`.
-- [ ] Rewrite `README.md` (currently two READMEs interleaved), `STRUCTURE.md`
+- [x] (2026-10-06) Rewrite `README.md` (currently two READMEs interleaved), `STRUCTURE.md`
       and `DEPLOYMENT.md` to match reality, briefly.
 - [ ] Add ESLint + Prettier (one shared config), format once in its own commit.
 - [ ] Untrack `web/dist/` and decide on `swiss_jass.db` (prefer seed script).
