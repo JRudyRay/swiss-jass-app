@@ -53,6 +53,11 @@ So every later change can be verified.
       needs a login token. Still open: `GET /users` and `/leaderboard` are
       public, and `totals/sync` lets any user add points to any username.)
 - [ ] Input validation on all routes, helmet, CORS allowlist, rate limiting.
+      (2026-10-06: helmet, rate limits (auth 30/15 min, API 300/min), 100 kb
+      body cap, socket.io origin allowlist (`CORS_ORIGINS`) and `totals/sync`
+      restricted to the caller's own account (0-5000 points) done. Still open:
+      express-validator on every route; `GET /api/admin/users` and
+      `/leaderboard` still public.)
 - [ ] Decide hosting with the owner (e.g. Cloudflare Tunnel to the Pi) and use
       a `VITE_API_URL` build variable instead of the hardcoded LAN IP. Until
       then the Pages build should present itself as single-player and hide

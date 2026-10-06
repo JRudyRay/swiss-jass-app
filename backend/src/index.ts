@@ -5,6 +5,8 @@ import { Server } from 'socket.io';
 import prisma from './prismaClient';
 import { onlineUsers, setUserOnline, setUserOffline, getOnlineCount } from './presence';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -18,14 +20,26 @@ dotenv.config();
 
 const app = express();
 const server = createServer(app);
+// Browser origins allowed to open sockets (comma-separated CORS_ORIGINS overrides).
+const ALLOWED_ORIGINS = (
+  process.env.CORS_ORIGINS ||
+  'http://localhost:3000,http://localhost:5173,https://jrudyray.github.io'
+)
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: ALLOWED_ORIGINS,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
 
 const PORT = process.env.PORT || 3000;
+
+// Behind nginx in production: use the real client IP (rate limiting).
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
 // Middleware - CORS handled by nginx reverse proxy in production
 // Only enable CORS for local development
@@ -48,7 +62,14 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(express.json({ limit: '100kb' }));
+
+// Brute-force protection on login/register; general cap on the rest of the API.
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true });
+const apiLimiter = rateLimit({ windowMs: 60 * 1000, limit: 300, standardHeaders: true });
+app.use('/api/auth', authLimiter);
+app.use('/api', apiLimiter);
 app.use(express.static('public'));
 
 // Add request logging

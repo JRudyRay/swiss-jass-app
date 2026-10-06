@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const router = Router();
+const MAX_POINTS_PER_SYNC = 5000;
 
 // Destructive routes need ADMIN_TOKEN (header x-admin-token); disabled when unset.
 const requireAdmin: RequestHandler = (req, res, next) => {
@@ -20,7 +21,8 @@ const requireUser: RequestHandler = (req, res, next) => {
   const m = /^Bearer (.+)$/.exec(req.header('authorization') || '');
   if (!m) return res.status(401).json({ success: false, message: 'Login required' });
   try {
-    jwt.verify(m[1], JWT_SECRET);
+    const payload = jwt.verify(m[1], JWT_SECRET) as { username?: string };
+    res.locals.username = payload.username;
   } catch {
     return res.status(401).json({ success: false, message: 'Invalid or expired token' });
   }
@@ -97,14 +99,24 @@ router.post('/totals/sync', requireUser, async (req, res) => {
 
     const results: any[] = [];
 
-    for (const [username, pts] of Object.entries(totals)) {
+    for (const [username, rawPts] of Object.entries(totals)) {
+      // A user may only add points to their own account, within a sane per-match range.
+      if (username !== res.locals.username) {
+        results.push({ username, updated: false, reason: 'not your account' });
+        continue;
+      }
+      const pts = Number(rawPts);
+      if (!Number.isFinite(pts) || pts < 0 || pts > MAX_POINTS_PER_SYNC) {
+        results.push({ username, updated: false, reason: 'invalid points' });
+        continue;
+      }
       try {
         const user = await prisma.user.findFirst({ where: { username } });
         if (!user) {
           results.push({ username, updated: false, reason: 'user not found' });
           continue;
         }
-        const newPoints = (user.totalPoints || 0) + Number(pts || 0);
+        const newPoints = (user.totalPoints || 0) + pts;
         await prisma.user.update({ where: { id: user.id }, data: { totalPoints: newPoints } });
         // Optionally record a GameSession entry
         await prisma.gameSession.create({
@@ -112,7 +124,7 @@ router.post('/totals/sync', requireUser, async (req, res) => {
             userId: user.id,
             gameType: 'schieber',
             result: 'played',
-            points: Number(pts || 0),
+            points: pts,
             duration: 0,
           },
         });
