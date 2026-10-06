@@ -35,6 +35,27 @@ jobs:
           cd web
           npm run smoke
 
+  backend:
+    name: Backend check (typecheck + engine tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Check backend
+        run: |
+          cd backend
+          npm ci
+          npx prisma generate
+          npm run check
+
   build:
     name: Build Frontend
     needs: smoke

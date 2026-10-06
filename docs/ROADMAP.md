@@ -18,7 +18,7 @@ So every later change can be verified.
       way, and the outdated comments at `schieber.ts` ~318 and ~696.
 - [x] (2026-10-06) `typecheck` and `check` scripts in `web` and `backend`.
 - [x] (2026-10-06) CI and deploy use Node 22; `deploy.yml` runs web `check`
-      before building. (Backend `check` is not in CI yet.)
+      before building. Backend `check` added to `ci.yml` 2026-10-06.
 - [x] (2026-10-06) Commands section of `CLAUDE.md` uses the `check` scripts.
 
 ## M1: Clean foundation
