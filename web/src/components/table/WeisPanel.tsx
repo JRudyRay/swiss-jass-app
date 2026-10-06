@@ -26,12 +26,12 @@ export const WeisPanel: React.FC<Props> = ({ lang, weis, players, weisWinner }) 
           const player = players.find(p => p.id === parseInt(pid));
           const counts = !weisWinner || weisWinner.teamId === player?.team;
           return arr.map((w: any, i: number) => (
-            <div key={`${pid}-${i}`} style={{ display: 'flex', gap: 8, alignItems: 'baseline', fontSize: 13, opacity: counts ? 1 : 0.55 }}>
+            <div key={`${pid}-${i}`} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap', fontSize: 14, opacity: counts ? 1 : 0.55 }}>
               <span style={{ width: 8, height: 8, borderRadius: 4, flex: '0 0 8px', background: TEAM_COLORS[(player?.team as 1 | 2) || 1] }} />
-              <span style={{ fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{player?.name || `#${pid}`}</span>
-              <span style={{ fontWeight: 700, color: counts ? '#047857' : '#6b7280' }}>{w.points} {t.points}</span>
+              <span style={{ fontWeight: 600, minWidth: 0 }}>{player?.name || `#${pid}`}</span>
+              <span style={{ fontWeight: 700, color: counts ? '#047857' : '#6b7280', whiteSpace: 'nowrap' }}>{w.points} {t.points}</span>
               <span style={{ color: '#4b5563' }}>{w.description}</span>
-              {!counts && <span style={{ color: '#b91c1c', fontSize: 11 }}>{t.notCounted}</span>}
+              {!counts && <span style={{ color: '#b91c1c', fontSize: 12, whiteSpace: 'nowrap' }}>{t.notCounted}</span>}
             </div>
           ));
         })}

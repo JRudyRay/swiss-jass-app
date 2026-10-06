@@ -380,11 +380,12 @@ html {
   :root {
     --card-w: 50px;
     --card-h: 76px;
-    --table-h: 230px;
+    --table-h: 210px;
     --trick-w: min(190px, 50%);
     --trick-h: 150px;
   }
-  .app-header { position: static !important; }
-  .app-subtitle { display: none !important; }
-  .trump-grid > button { min-height: 48px !important; }
+  .app-header { display: none !important; }
+  .trump-grid { grid-template-columns: repeat(6, 1fr); }
+  .trump-grid > button { min-height: 48px !important; min-width: 0 !important; }
+  .trump-grid > button[data-trump="schieben"] { grid-column: auto; }
 }

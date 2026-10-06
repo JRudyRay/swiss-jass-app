@@ -45,7 +45,7 @@ const PlayerSeat: React.FC<Props> = ({ lang, name, team, cardsLeft, tricks, isDe
       <div style={{ fontSize: 10, fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 1, lineHeight: '12px', height: 12, visibility: isTurn ? 'visible' : 'hidden' }}>{t.turn}</div>
       {isDealer && (
         <span title={t.dealer} style={{
-          position: 'absolute', top: -9, left: -6, padding: '1px 6px', borderRadius: 8,
+          position: 'absolute', top: -12, left: -6, padding: '1px 6px', borderRadius: 8,
           background: '#fde68a', color: '#7c2d12', fontSize: 10, fontWeight: 800, boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
         }}>
           {t.dealer}
