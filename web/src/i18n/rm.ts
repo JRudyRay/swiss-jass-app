@@ -53,6 +53,13 @@ const rm: Messages = {
     body: 'Cartas da jass svizras tudestgas, litografia colurada a maun da Hasle bei Burgdorf, fin dal 19avel tschientaner. Scans: British Museum, domena publica:',
   },
   trick: { takes: (name: string) => `${name} fa il stich`, youTake: 'Ti fas il stich' },
+  lastTrick: {
+    title: 'Ultim stich',
+    button: "Mussar l'ultim stich",
+    close: 'Serrar',
+    takes: 'Til fa',
+    wonBy: (name: string) => `${name} ha fatg il stich`,
+  },
   victory: {
     youWon: 'Vossa equipa gudogna la partida.',
     youLost: 'Ils adversaris gudognan la partida.',

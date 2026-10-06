@@ -52,6 +52,13 @@ const fr: Messages = {
     body: 'Jeu de cartes suisse allemand, lithographie coloriée à la main, Hasle bei Burgdorf, fin du XIXe siècle. Numérisation : British Museum, domaine public :',
   },
   trick: { takes: (name: string) => `${name} remporte le pli`, youTake: 'Vous remportez le pli' },
+  lastTrick: {
+    title: 'Dernier pli',
+    button: 'Afficher le dernier pli',
+    close: 'Fermer',
+    takes: 'Le remporte',
+    wonBy: (name: string) => `${name} a remporté le pli`,
+  },
   victory: {
     youWon: 'Votre équipe remporte la partie.',
     youLost: 'Les adversaires remportent la partie.',

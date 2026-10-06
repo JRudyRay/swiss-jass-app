@@ -9,6 +9,8 @@ import * as Bot from './engine/bot';
 import InfoPanels from './components/table/InfoPanels';
 import WeisPanel from './components/table/WeisPanel';
 import TrickArea, { COLLECT_MS } from './components/table/TrickArea';
+import LastTrick from './components/table/LastTrick';
+import { useLastTrick } from './components/table/useLastTrick';
 import Hand from './components/table/Hand';
 import TrumpChooser from './components/table/TrumpChooser';
 import { API_URL, ONLINE_ENABLED } from './config';
@@ -322,6 +324,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     bestWeis: null,
     declarations: [],
   });
+  const lastTrick = useLastTrick(
+    gameState?.currentTrick,
+    collect,
+    !gameState || gameState.phase === 'trump_selection',
+  );
   // helper: map engine player id to a seat around the table
   const seatForId = (id: number) => {
     const seats = ['south', 'west', 'north', 'east'];
@@ -2639,6 +2646,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               <div className="seat-slot seat-slot--west">{renderSeat('west', true)}</div>
               <div className="seat-slot seat-slot--east">{renderSeat('east', true)}</div>
               <div className="seat-slot seat-slot--south">{renderSeat('south')}</div>
+              {mode === 'single' && (
+                <LastTrick lang={lang} last={lastTrick} players={players as any} />
+              )}
 
               {/* Trick: cards nudged toward the player who played them */}
               <div className="trick-zone">

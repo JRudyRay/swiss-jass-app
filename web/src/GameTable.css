@@ -1449,3 +1449,143 @@
 .jass-status:empty {
   display: none;
 }
+
+/* ==========================================================================
+   Last trick: corner button on the felt and the review dialog.
+   ========================================================================== */
+.lt-btn {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--cream);
+  background: rgba(20, 63, 42, 0.85);
+  border: 1.5px solid var(--gold);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.lt-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.lt-btn:focus-visible,
+.lt-sheet__close:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+.lt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px max(12px, env(safe-area-inset-right, 0px)) 12px
+    max(12px, env(safe-area-inset-left, 0px));
+  background: rgba(24, 18, 10, 0.55);
+  animation: fadeIn 160ms ease;
+}
+.lt-sheet {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 420px;
+  max-height: 96dvh;
+  overflow-y: auto;
+  padding: 10px 14px 14px;
+  color: var(--ink);
+  background: var(--paper);
+  border-top: 5px solid var(--gold);
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+.lt-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lt-sheet__title {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 20px;
+}
+.lt-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px solid #cdbb98;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.lt-sheet__cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.lt-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.lt-play .swiss-card {
+  --cw: min(72px, 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.lt-play--won .swiss-card {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.lt-play__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--team, var(--muted));
+}
+.lt-play__won {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wood);
+  text-align: center;
+}
+.lt-sheet__winner {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .lt-btn {
+    top: 4px;
+    left: 4px;
+  }
+  .lt-sheet {
+    max-width: 460px;
+    padding: 6px 12px 8px;
+  }
+  .lt-sheet__winner {
+    margin-top: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lt-overlay {
+    animation: none;
+  }
+}

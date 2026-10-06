@@ -52,6 +52,13 @@ const ch: Messages = {
     body: 'Dütschschwizer Jasscharte, handkoloriert Lithografie us Hasle bi Burgdorf, spaats 19. Jahrhundert. Scans: British Museum, gmeinfrei:',
   },
   trick: { takes: (name: string) => `${name} macht dä Stich`, youTake: 'Du machsch dä Stich' },
+  lastTrick: {
+    title: 'Letschte Stich',
+    button: 'Letschte Stich aaluege',
+    close: 'Zuemache',
+    takes: 'Macht ne',
+    wonBy: (name: string) => `${name} het dä Stich gmacht`,
+  },
   victory: {
     youWon: 'Eues Team gwünnt dä Match.',
     youLost: 'D Gägner gwünned dä Match.',

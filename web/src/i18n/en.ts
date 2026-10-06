@@ -50,6 +50,13 @@ const en = {
     body: 'Swiss-German deck, hand-coloured lithograph from Hasle bei Burgdorf, late 19th century. Scans: British Museum, public domain:',
   },
   trick: { takes: (name: string) => `${name} takes the trick`, youTake: 'You take the trick' },
+  lastTrick: {
+    title: 'Last trick',
+    button: 'Show last trick',
+    close: 'Close',
+    takes: 'Takes it',
+    wonBy: (name: string) => `${name} took this trick`,
+  },
   victory: {
     youWon: 'Your team wins the match.',
     youLost: 'The opponents win the match.',

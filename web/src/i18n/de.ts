@@ -52,6 +52,13 @@ const de: Messages = {
     body: 'Deutschschweizer Jasskarten, handkolorierte Lithografie aus Hasle bei Burgdorf, spätes 19. Jahrhundert. Scans: British Museum, gemeinfrei:',
   },
   trick: { takes: (name: string) => `${name} macht den Stich`, youTake: 'Du machst den Stich' },
+  lastTrick: {
+    title: 'Letzter Stich',
+    button: 'Letzten Stich anzeigen',
+    close: 'Schliessen',
+    takes: 'Macht ihn',
+    wonBy: (name: string) => `${name} hat den Stich gemacht`,
+  },
   victory: {
     youWon: 'Euer Team gewinnt die Partie.',
     youLost: 'Die Gegner gewinnen die Partie.',

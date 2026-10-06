@@ -52,6 +52,13 @@ const it: Messages = {
     body: 'Mazzo svizzero tedesco, litografia colorata a mano, Hasle bei Burgdorf, fine del XIX secolo. Scansioni: British Museum, pubblico dominio:',
   },
   trick: { takes: (name: string) => `${name} fa la presa`, youTake: 'Fai la presa' },
+  lastTrick: {
+    title: 'Ultima presa',
+    button: "Mostra l'ultima presa",
+    close: 'Chiudi',
+    takes: 'La prende',
+    wonBy: (name: string) => `${name} ha fatto la presa`,
+  },
   victory: {
     youWon: 'La vostra squadra vince la partita.',
     youLost: 'Gli avversari vincono la partita.',
