@@ -2,7 +2,7 @@ import React from 'react';
 import { SuitIcon, trumpName } from './SuitBadge';
 import { messages, type Lang } from '../../i18n';
 
-export const TEAM_COLORS: Record<number, string> = { 1: '#d8473f', 2: '#2f74d0' };
+export const TEAM_COLORS: Record<number, string> = { 1: '#c8372d', 2: '#2f5f8f' };
 
 type Props = {
   lang: Lang;
@@ -13,119 +13,51 @@ type Props = {
   myTeam?: number;
 };
 
-// Compact match header: both teams with progress to the target and the trump in between.
+// Slim match bar: both team totals with a thin progress line, and the trump pill in between.
 const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myTeam }) => {
   const t = messages(lang).scoreBar;
   const team = (n: 1 | 2) => {
     const score = n === 1 ? scores.team1 : scores.team2;
-    const pct = Math.max(0, Math.min(100, (score / (target || 1)) * 100));
+    const pct = Math.max(0, Math.min(1, score / (target || 1)));
     return (
-      <div style={{ flex: 1, minWidth: 0, textAlign: n === 1 ? 'left' : 'right' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: 6,
-            justifyContent: n === 1 ? 'flex-start' : 'flex-end',
-          }}
-        >
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 5,
-              background: TEAM_COLORS[n],
-              flexShrink: 0,
-              alignSelf: 'center',
-              order: n === 1 ? 0 : 2,
-            }}
-          />
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: '#3a2e20',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              order: 1,
-            }}
-          >
+      <div
+        className={`score-team score-team--${n}`}
+        style={{ '--team': TEAM_COLORS[n], '--pct': pct } as React.CSSProperties}
+      >
+        <div className="score-team__name">
+          <span className="score-team__dot" />
+          <span>
             {teamNames[n] || `Team ${n}`}
-            {myTeam === n && <span style={{ fontWeight: 500, color: '#8a7a62' }}> ({t.us})</span>}
+            {myTeam === n && <span className="score-team__us"> ({t.us})</span>}
           </span>
         </div>
-        <div
-          style={{
-            fontSize: 24,
-            fontWeight: 900,
-            lineHeight: 1.05,
-            color: TEAM_COLORS[n],
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
+        <div className="score-team__points">
           {score}
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#8a7a62' }}> / {target}</span>
+          <span className="score-team__target"> / {target}</span>
         </div>
-        <div
-          style={{
-            height: 8,
-            background: '#e8dfcc',
-            borderRadius: 4,
-            overflow: 'hidden',
-            marginTop: 3,
-            direction: n === 1 ? 'ltr' : 'rtl',
-          }}
-        >
-          <div
-            style={{
-              width: `${score > 0 ? Math.max(pct, 3) : 0}%`,
-              height: '100%',
-              background: TEAM_COLORS[n],
-              transition: 'width 600ms ease',
-            }}
-          />
+        <div className="score-team__track">
+          <div className="score-team__fill" />
         </div>
       </div>
     );
   };
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        maxWidth: 700,
-        margin: '0 auto 10px',
-        padding: '8px 12px',
-        background: '#fffaf0',
-        border: '1px solid #e3d7bf',
-        borderRadius: 14,
-        boxShadow: '0 2px 8px rgba(60,40,10,0.08)',
-      }}
-    >
+    <div className="score-bar">
       {team(1)}
-      <div data-testid="trump" style={{ flexShrink: 0, textAlign: 'center', minWidth: 64 }}>
-        <div
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: 0.5,
-            textTransform: 'uppercase',
-            color: '#8a7a62',
-          }}
-        >
-          {t.trump}
-        </div>
+      <div
+        data-testid="trump"
+        className={`trump-pill${trump ? '' : ' trump-pill--none'}`}
+        aria-label={`${t.trump}: ${trump ? trumpName(trump, lang) : t.none}`}
+      >
         {trump ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <SuitIcon trump={trump} size={26} />
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#3a2e20' }}>
-              {trumpName(trump, lang)}
-            </div>
-          </div>
+          <>
+            <SuitIcon trump={trump} size={24} />
+            <span>{trumpName(trump, lang)}</span>
+          </>
         ) : (
-          <div style={{ fontSize: 12, color: '#8a7a62', marginTop: 8 }}>{t.none}</div>
+          <span>
+            {t.trump}: {t.none}
+          </span>
         )}
       </div>
       {team(2)}

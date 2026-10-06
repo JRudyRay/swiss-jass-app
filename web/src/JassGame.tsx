@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import logo from './assets/logo.png';
-import { SwissCard } from './SwissCard';
 import CardCredits from './components/CardCredits';
 import ScoreBar, { TEAM_COLORS } from './components/table/ScoreBar';
 import { SuitIcon, trumpName } from './components/table/SuitBadge';
@@ -10,6 +9,8 @@ import * as Bot from './engine/bot';
 import InfoPanels from './components/table/InfoPanels';
 import WeisPanel from './components/table/WeisPanel';
 import TrickArea, { COLLECT_MS } from './components/table/TrickArea';
+import Hand from './components/table/Hand';
+import TrumpChooser from './components/table/TrumpChooser';
 import { API_URL, ONLINE_ENABLED } from './config';
 import { io, Socket } from 'socket.io-client';
 import Rankings from './components/Rankings';
@@ -43,9 +44,9 @@ type Player = { id: number; name: string; hand: any[]; team: number; position: s
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     fontFamily: '"Helvetica Neue", "Arial", sans-serif',
-    minHeight: '100vh',
-    background: '#f5f2e8',
-    paddingBottom: 40,
+    minHeight: '100dvh',
+    background: 'var(--color-cream, #f6efe0)',
+    paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
   },
   header: {
     background: '#D42E2C',
@@ -56,13 +57,8 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   gameArea: {
     maxWidth: 960,
-    margin: '12px auto',
-    background: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 20,
-    padding: 'clamp(8px, 3vw, 24px)',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(0,0,0,0.05)',
+    margin: '8px auto',
+    padding: 'clamp(8px, 2.5vw, 20px)',
   },
   controls: {
     display: 'flex',
@@ -82,31 +78,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: 14,
     boxShadow: '0 2px 8px rgba(26, 122, 76, 0.3)',
     transition: 'all 0.2s ease',
-  },
-  message: {
-    flex: 1,
-    textAlign: 'center' as const,
-    fontSize: 15,
-    fontWeight: 600,
-    color: '#3a2e20',
-    padding: '8px 12px',
-    background: 'rgba(255,255,255,0.7)',
-    borderRadius: 10,
-    border: '1px solid rgba(0,0,0,0.05)',
-  },
-  hand: {
-    display: 'flex',
-    justifyContent: 'center',
-    padding: '22px 4px 10px',
-    maxWidth: 940,
-    margin: '0 auto',
-  },
-  table: {
-    padding: 14,
-    background: 'rgba(25, 122, 76, 0.1)',
-    borderRadius: 10,
-    minHeight: 140,
-    marginBottom: 12,
   },
 };
 
@@ -634,6 +605,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         isDealer={gameState?.dealer === p.id}
         isTurn={active && gameState?.currentPlayer === p.id}
         taking={collect?.winnerId === p.id}
+        thinking={active && gameState?.currentPlayer === p.id && pos !== 'south'}
         seat={pos}
         narrow={narrow}
       />
@@ -2521,65 +2493,56 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     }
   }, [multiGameState]);
 
+  const choosingTrump =
+    gameState?.phase === 'trump_selection' &&
+    (mode === 'multi'
+      ? mySeat !== null && gameState.currentPlayer === mySeat
+      : gameState.currentPlayer === 0);
   const showPlaySurface = !optionsVisible || (mode === 'multi' && !!gameState);
 
   return (
-    <div style={styles.container}>
+    <div
+      className={`jass-screen${choosingTrump ? ' jass-screen--choosing' : ''}`}
+      style={styles.container}
+    >
       <div style={styles.gameArea}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 12,
-          }}
-        >
-          {showPlaySurface && <div style={styles.message}>{message}</div>}
+        {/* Game-only HUD: slim score bar with trump pill */}
+        {showPlaySurface && (
+          <ScoreBar
+            lang={lang}
+            teamNames={teamNames}
+            scores={gameState?.scores || { team1: 0, team2: 0 }}
+            target={maxPoints}
+            trump={currentTrump}
+            myTeam={players.find((p) => p.position === 'south')?.team}
+          />
+        )}
+
+        <div className="jass-status">
+          {showPlaySurface && (
+            <div className="jass-status__msg" role="status" aria-live="polite">
+              {message}
+            </div>
+          )}
 
           {/* Quick action buttons - always available when not on welcome screen */}
-          {(showPlaySurface || setupChoice !== 'welcome') && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              {gameState && (
-                <button
-                  onClick={() => {
-                    if (confirm(t.confirmNewGame)) {
-                      resetToWelcome();
-                    }
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    minHeight: 40,
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#ef4444',
-                    color: 'white',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseOver={(e) => (e.currentTarget.style.background = '#dc2626')}
-                  onMouseOut={(e) => (e.currentTarget.style.background = '#ef4444')}
-                >
-                  {t.newGame || 'New Game'}
-                </button>
-              )}
-            </div>
+          {(showPlaySurface || setupChoice !== 'welcome') && gameState && (
+            <button
+              className="jass-btn-ghost"
+              onClick={() => {
+                if (confirm(t.confirmNewGame)) {
+                  resetToWelcome();
+                }
+              }}
+            >
+              {t.newGame || 'New Game'}
+            </button>
           )}
         </div>
 
         {/* Game-only HUD (scores, trump, history) */}
         {showPlaySurface && (
           <>
-            <ScoreBar
-              lang={lang}
-              teamNames={teamNames}
-              scores={gameState?.scores || { team1: 0, team2: 0 }}
-              target={maxPoints}
-              trump={currentTrump}
-              myTeam={players.find((p) => p.position === 'south')?.team}
-            />
             {mode === 'multi' && multiGameState && (
               <div
                 style={{
@@ -2682,79 +2645,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         )}
 
         {showPlaySurface && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <div
-              data-jass-table
-              style={{
-                width: '100%',
-                maxWidth: 760,
-                height: 'var(--table-h)',
-                position: 'relative',
-                background:
-                  'radial-gradient(ellipse at center, #22875a 0%, #17683f 60%, #0f4c2d 100%)',
-                borderRadius: 18,
-                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.45), 0 8px 25px rgba(0,0,0,0.2)',
-                border: '6px solid #6b4423',
-                boxSizing: 'border-box',
-              }}
-            >
+          <div className="jass-stage">
+            <div className="jass-table" data-jass-table>
               {/* Seats: north/south centred, west/east on the sides */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 8,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  zIndex: 5,
-                }}
-              >
-                {renderSeat('north')}
-              </div>
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '24%',
-                  left: 6,
-                  transform: 'translateY(-50%)',
-                  zIndex: 5,
-                }}
-              >
-                {renderSeat('west', true)}
-              </div>
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '24%',
-                  right: 6,
-                  transform: 'translateY(-50%)',
-                  zIndex: 5,
-                }}
-              >
-                {renderSeat('east', true)}
-              </div>
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 8,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  zIndex: 5,
-                }}
-              >
-                {renderSeat('south')}
-              </div>
+              <div className="seat-slot seat-slot--north">{renderSeat('north')}</div>
+              <div className="seat-slot seat-slot--west">{renderSeat('west', true)}</div>
+              <div className="seat-slot seat-slot--east">{renderSeat('east', true)}</div>
+              <div className="seat-slot seat-slot--south">{renderSeat('south')}</div>
 
-              {/* Trick: cards upright, nudged toward the player who played them */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%,-50%)',
-                  width: 'var(--trick-w)',
-                  height: 'var(--trick-h)',
-                }}
-              >
+              {/* Trick: cards nudged toward the player who played them */}
+              <div className="trick-zone">
                 <TrickArea
                   cards={(gameState?.currentTrick || []).map((c: any, i: number) => ({
                     card: c,
@@ -2776,6 +2676,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                 />
               </div>
             </div>
+
+            {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
+            {choosingTrump && gameState && (
+              <TrumpChooser
+                lang={lang}
+                dealerName={
+                  players.find((p) => p.id === gameState.dealer)?.name ||
+                  `Player ${gameState.dealer}`
+                }
+                canSchieben={isLocal && gameState.forehand === 0}
+                partnerMustChoose={isLocal && gameState.forehand !== 0}
+                onPick={submitTrump}
+              />
+            )}
           </div>
         )}
 
@@ -3101,123 +3015,26 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           </div>
         )}
 
-        {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
-        {gameState?.phase === 'trump_selection' &&
-          (mode === 'multi'
-            ? mySeat !== null && gameState.currentPlayer === mySeat
-            : gameState.currentPlayer === 0) && (
-            <div style={{ marginTop: 12 }}>
-              <h4 style={{ margin: '0 0 4px' }}>{t.selectTrump}</h4>
-              <div
-                className="trump-dealer"
-                style={{ marginBottom: 8, fontSize: 14, color: '#374151' }}
-              >
-                {t.dealer}:{' '}
-                {players.find((p) => p.id === gameState.dealer)?.name ||
-                  `Player ${gameState.dealer}`}
-              </div>
-              <div className="trump-grid">
-                {['eicheln', 'schellen', 'rosen', 'schilten', 'oben-abe', 'unden-ufe'].map((t) => (
-                  <button
-                    key={t}
-                    data-trump={t}
-                    onClick={() => submitTrump(t)}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 2,
-                      minWidth: 76,
-                      minHeight: 64,
-                      padding: '6px 8px',
-                      background: '#fffaf0',
-                      border: '2px solid #d9c9a8',
-                      borderRadius: 12,
-                      cursor: 'pointer',
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: '#3a2e20',
-                    }}
-                  >
-                    <SuitIcon trump={t} size={34} />
-                    {trumpName(t, lang)}
-                  </button>
-                ))}
-                {/* Only the original chooser (forehand) may schieben; the partner can't push it back. */}
-                {isLocal && gameState.forehand === 0 && (
-                  <button
-                    data-trump="schieben"
-                    style={{ ...styles.button, background: '#6b7280', minHeight: 44 }}
-                    onClick={() => submitTrump('schieben')}
-                  >
-                    ↻ {t.schieben}
-                  </button>
-                )}
-              </div>
-              <div className="trump-hint" style={{ marginTop: 8, fontSize: 13, color: '#6b7280' }}>
-                {gameState.forehand === 0 || !isLocal ? t.trumpHintChooser : t.trumpHintPartner}
-              </div>
-            </div>
-          )}
-
-        {/* Hand */}
-        <div>
-          {/* Fanned hand: wrappers shrink so cards overlap on narrow screens, corner index stays visible. */}
-          <div style={styles.hand}>
-            {hand.length
-              ? sortHandForDisplay(hand, chosenTrump).map((card, i, arr) => {
-                  const playable = legalCards.some((c: any) => c.id === card.id);
-                  const reason = !playable ? notPlayableReason(card) : null;
-                  return (
-                    <div
-                      key={card.id}
-                      style={{
-                        position: 'relative',
-                        flex:
-                          i === arr.length - 1
-                            ? '0 0 calc(var(--card-w) + 4px)'
-                            : '0 1 calc(var(--card-w) + 10px)',
-                        minWidth: 0,
-                      }}
-                    >
-                      {/* Tap to select, tap again to play (dblclick never fires reliably on touch). */}
-                      <div
-                        data-card-id={card.id}
-                        data-playable={playable ? 'true' : 'false'}
-                        title={reason || undefined}
-                        onClick={() => {
-                          if (!playable) {
-                            if (reason) setMessage(reason);
-                            return;
-                          }
-                          if (selectedCard !== card.id) {
-                            setSelectedCard(card.id);
-                            return;
-                          }
-                          setSelectedCard(null);
-                          if (isLocal) playLocalCard(card.id);
-                          else playCard(card.id);
-                        }}
-                      >
-                        {/* Only mark playability while it's our turn, so the hand isn't dimmed while waiting. */}
-                        <SwissCard
-                          card={card}
-                          isSelected={selectedCard === card.id}
-                          isPlayable={
-                            gameState?.phase === 'trump_selection'
-                              ? undefined
-                              : legalCards.length
-                                ? playable
-                                : undefined
-                          }
-                        />
-                      </div>
-                    </div>
-                  );
-                })
-              : null}
-          </div>
-        </div>
+        <Hand
+          cards={sortHandForDisplay(hand, chosenTrump)}
+          legalCards={legalCards}
+          selectedCard={selectedCard}
+          markPlayability={gameState?.phase !== 'trump_selection'}
+          reasonFor={notPlayableReason}
+          onCardTap={(card, playable, reason) => {
+            if (!playable) {
+              if (reason) setMessage(reason);
+              return;
+            }
+            if (selectedCard !== card.id) {
+              setSelectedCard(card.id);
+              return;
+            }
+            setSelectedCard(null);
+            if (isLocal) playLocalCard(card.id);
+            else playCard(card.id);
+          }}
+        />
 
         <WeisPanel
           lang={lang}

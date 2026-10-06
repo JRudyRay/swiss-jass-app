@@ -10,13 +10,16 @@ type Props = {
   tricks: number;
   isDealer?: boolean;
   isTurn?: boolean;
+  // Somebody else is deciding: show the three-dot indicator.
+  thinking?: boolean;
   // This player just won the trick: the pile slides here.
   taking?: boolean;
   seat?: string;
+  // West/east: a stacked chip so the trick keeps its room.
   narrow?: boolean;
 };
 
-// Name plate on the felt: light text on a dark plate so it reads on green.
+// Compact chip on the felt: initial avatar, name, cards left. The gold ring marks whose turn it is.
 const PlayerSeat: React.FC<Props> = ({
   lang,
   name,
@@ -25,105 +28,45 @@ const PlayerSeat: React.FC<Props> = ({
   tricks,
   isDealer,
   isTurn,
+  thinking,
   taking,
   seat,
   narrow,
 }) => {
   const t = messages(lang).seat;
   const base: string = (import.meta as any).env?.BASE_URL || '/';
+  const cls = ['seat', narrow && 'seat--side', isTurn && 'seat--turn', taking && 'seat--taking']
+    .filter(Boolean)
+    .join(' ');
+  const initial = (Array.from(name.trim())[0] || '?').toUpperCase();
   return (
     <div
+      className={cls}
       data-seat={seat}
       data-seat-turn={isTurn ? 'true' : 'false'}
-      style={{
-        position: 'relative',
-        display: 'inline-block',
-        maxWidth: narrow ? 84 : 170,
-        padding: '5px 10px 6px',
-        background: 'rgba(12, 28, 20, 0.82)',
-        borderRadius: 10,
-        textAlign: 'center',
-        borderTop: `3px solid ${TEAM_COLORS[team ?? 0] || '#9ca3af'}`,
-        boxShadow: taking
-          ? '0 0 0 2px #fffaf0, 0 0 18px 4px rgba(255,250,240,0.55)'
-          : isTurn
-            ? '0 0 0 2px #fbbf24, 0 0 16px 3px rgba(251,191,36,0.65)'
-            : '0 2px 6px rgba(0,0,0,0.35)',
-        transform: taking ? 'scale(1.05)' : 'none',
-        transition: 'box-shadow 250ms ease, transform 250ms ease',
-      }}
+      style={{ '--team': TEAM_COLORS[team ?? 0] } as React.CSSProperties}
+      aria-label={isTurn ? `${name}: ${t.turn}` : undefined}
     >
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: '#fffaf0',
-          lineHeight: 1.2,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {name}
-      </div>
-      <div
-        className={narrow ? undefined : 'seat-stats'}
-        style={{
-          display: 'flex',
-          gap: 6,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: 2,
-          fontSize: 12,
-          color: '#e9dfc8',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <span title={t.cards} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-          <img
-            src={`${base}assets/cards/back.webp`}
-            alt=""
-            width={8}
-            height={12}
-            style={{ borderRadius: 1 }}
-          />
+      <span className="seat__avatar" aria-hidden="true">
+        {initial}
+      </span>
+      <span className="seat__name">{name}</span>
+      <span className="seat__meta">
+        <span className="seat__count" title={`${cardsLeft} ${t.cards} · ${t.tricks(tricks)}`}>
+          <img src={`${base}assets/cards/back.webp`} alt="" width={8} height={12} />
           {cardsLeft}
         </span>
-        <span>{t.tricks(tricks)}</span>
-      </div>
-      {/* Always reserve this line so seats don't change height when the turn moves. */}
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 800,
-          color: '#fbbf24',
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-          marginTop: 1,
-          lineHeight: '12px',
-          height: 12,
-          visibility: isTurn ? 'visible' : 'hidden',
-        }}
-      >
-        {t.turn}
-      </div>
+        {thinking && (
+          <span className="seat__thinking" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
+      </span>
       {isDealer && (
-        <span
-          title={t.dealer}
-          style={{
-            position: 'absolute',
-            top: -12,
-            left: -6,
-            padding: '1px 6px',
-            borderRadius: 8,
-            background: '#fde68a',
-            color: '#7c2d12',
-            fontSize: 10,
-            fontWeight: 800,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
-          }}
-        >
-          {t.dealer}
+        <span className="seat__dealer" title={t.dealer} aria-label={t.dealer}>
+          D
         </span>
       )}
     </div>

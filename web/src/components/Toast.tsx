@@ -18,7 +18,11 @@ const Toast: React.FC<ToastProps> = ({ message, type = 'default', duration = 300
     }
   }, [duration, onClose]);
 
-  return <div className={`toast ${type}`}>{message}</div>;
+  return (
+    <div className={`jass-toast jass-toast--${type}`} role="status">
+      {message}
+    </div>
+  );
 };
 
 export default Toast;

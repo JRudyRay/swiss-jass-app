@@ -20,64 +20,26 @@ export const WeisPanel: React.FC<Props> = ({ lang, weis, players, weisWinner }) 
     ? players.find((p) => p.id === weisWinner.playerId)?.name
     : undefined;
   return (
-    <div
-      style={{
-        marginTop: 16,
-        padding: '10px 12px',
-        background: '#fffaf0',
-        border: '1px solid #fde2b6',
-        borderRadius: 10,
-      }}
-    >
-      <div style={{ fontWeight: 700, fontSize: 14, color: '#3b2a14', marginBottom: 6 }}>
-        {t.title}
-      </div>
-      {winnerName && (
-        <div style={{ fontSize: 13, color: '#065f46', marginBottom: 6 }}>
-          {t.winner(winnerName)}
-        </div>
-      )}
-      <div style={{ display: 'grid', gap: 4 }}>
+    <div className="weis-panel">
+      <div className="weis-panel__title">{t.title}</div>
+      {winnerName && <div className="weis-panel__winner">{t.winner(winnerName)}</div>}
+      <div className="weis-panel__list">
         {entries.flatMap(([pid, arr]) => {
           const player = players.find((p) => p.id === parseInt(pid));
           const counts = !weisWinner || weisWinner.teamId === player?.team;
           return arr.map((w: any, i: number) => (
             <div
               key={`${pid}-${i}`}
-              style={{
-                display: 'flex',
-                gap: 8,
-                alignItems: 'baseline',
-                flexWrap: 'wrap',
-                fontSize: 14,
-                opacity: counts ? 1 : 0.55,
-              }}
+              className={`weis-row${counts ? '' : ' weis-row--off'}`}
+              style={{ '--team': TEAM_COLORS[(player?.team as 1 | 2) || 1] } as React.CSSProperties}
             >
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  flex: '0 0 8px',
-                  background: TEAM_COLORS[(player?.team as 1 | 2) || 1],
-                }}
-              />
-              <span style={{ fontWeight: 600, minWidth: 0 }}>{player?.name || `#${pid}`}</span>
-              <span
-                style={{
-                  fontWeight: 700,
-                  color: counts ? '#047857' : '#6b7280',
-                  whiteSpace: 'nowrap',
-                }}
-              >
+              <span className="weis-row__dot" />
+              <span className="weis-row__name">{player?.name || `#${pid}`}</span>
+              <span className="weis-row__pts">
                 {w.points} {t.points}
               </span>
-              <span style={{ color: '#4b5563' }}>{w.description}</span>
-              {!counts && (
-                <span style={{ color: '#b91c1c', fontSize: 12, whiteSpace: 'nowrap' }}>
-                  {t.notCounted}
-                </span>
-              )}
+              <span className="weis-row__desc">{w.description}</span>
+              {!counts && <span className="weis-row__off">{t.notCounted}</span>}
             </div>
           ));
         })}
