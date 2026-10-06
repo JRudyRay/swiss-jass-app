@@ -75,8 +75,8 @@ before roadmap M3 is done. Never log passwords or tokens.
 - **Pushing to `main` deploys the web app to GitHub Pages**
   (https://jrudyray.github.io/swiss-jass-app/). Say so in summaries. Don't
   push changes that break single-player.
-- `deploy-backend-pi.yml` targets a self-hosted runner that doesn't exist;
-  backend pushes queue a job that never runs. Don't set up a runner or deploy
+- `deploy-backend-pi.yml` targets a self-hosted runner that doesn't exist, so it
+  is manual-only (`workflow_dispatch`). Don't set up a runner or deploy
   the backend without the owner.
 - `backend/prisma/swiss_jass.db` is tracked. Don't commit changes to it unless
   the task is about seed data. `npm run db:reset` and `npm run deploy` are

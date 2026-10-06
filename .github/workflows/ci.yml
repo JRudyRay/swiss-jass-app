@@ -2,84 +2,60 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
-  contents: write
-  pages: write
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  smoke:
-    name: Smoke (bundles, unit tests, simulator)
+  web:
+    name: Web check (lint, format, typecheck, tests, simulation, build)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: Install web dependencies
-        run: |
-          cd web
-          npm ci
+      - name: Install
+        run: npm ci
+        working-directory: web
 
-      - name: Run smoke (build bundles + tests + simulate)
-        run: |
-          cd web
-          npm run smoke
+      - name: Check
+        run: npm run check
+        working-directory: web
 
   backend:
-    name: Backend check (typecheck + engine tests)
+    name: Backend check (lint, format, typecheck, engine tests)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: backend/package-lock.json
 
-      - name: Check backend
-        run: |
-          cd backend
-          npm ci
-          npx prisma generate
-          npm run check
+      - name: Install
+        run: npm ci
+        working-directory: backend
 
-  build:
-    name: Build Frontend
-    needs: smoke
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Prisma client
+        run: npx prisma generate
+        working-directory: backend
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install web dependencies
-        run: |
-          cd web
-          npm ci
-
-      - name: Run production build
-        run: |
-          cd web
-          npm run build
-      
-      - name: Build successful
-        run: echo "✅ Frontend build successful! GitHub Pages deployment handled by deploy.yml"
+      - name: Check
+        run: npm run check
+        working-directory: backend

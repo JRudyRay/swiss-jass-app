@@ -1,14 +1,6 @@
 name: Deploy backend to Raspberry Pi
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend-pi.yml'
-      - 'deploy/raspberry-pi/**'
-      - 'docker-compose.yml'
-      - 'Dockerfile'
   workflow_dispatch:  # This allows manual triggering
   workflow_call:
     secrets:

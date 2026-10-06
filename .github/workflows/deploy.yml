@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,7 +34,7 @@ jobs:
           cd web
           npm ci
       
-      - name: Build
+      - name: Check and build
         run: |
           cd web
           npm run check
