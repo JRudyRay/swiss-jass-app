@@ -1,0 +1,8 @@
+dist/
+dist_scripts/
+node_modules/
+docs/
+*.md
+*.json
+*.css
+*.db

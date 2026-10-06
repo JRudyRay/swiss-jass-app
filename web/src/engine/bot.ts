@@ -241,7 +241,7 @@ function voidProb(cx: Ctx, x: number, s: Suit): number {
 function beatProb(cx: Ctx, x: number, c: Card, leadSuit: Suit): number {
   const stronger = cx.mem.unseen.filter(u => u.suit === c.suit && strOf(cx, u) < strOf(cx, c)).length;
   if (isT(cx, c)) return holdsAny(cx, x, c.suit, stronger);
-  let p1 = c.suit === leadSuit ? holdsAny(cx, x, c.suit, stronger) : 0;
+  const p1 = c.suit === leadSuit ? holdsAny(cx, x, c.suit, stronger) : 0;
   let p2 = 0;
   if (cx.trump && leadSuit !== cx.trump && cx.mem.trumpsLeft > 0) {
     p2 = voidProb(cx, x, leadSuit) * holdsAny(cx, x, cx.trump, cx.mem.trumpsLeft);

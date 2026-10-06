@@ -139,7 +139,7 @@ export class TableService {
     }
     
     // Determine seating: ensure two human players (if exactly 2) are opposite (0 & 2)
-    let players = [...table.players];
+    const players = [...table.players];
     const humanPlayers = players.filter(p => !p.userId.startsWith('BOT_'));
     // Assign seatIndex baseline
     if (humanPlayers.length === 2) {

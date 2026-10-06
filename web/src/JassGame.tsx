@@ -1451,7 +1451,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         }
       });
       // If we joined late and haven't received state after 1500ms, request it explicitly
-      let lateTimer = setTimeout(() => {
+      const lateTimer = setTimeout(() => {
         if (mode === 'multi' && activeTableIdRef.current && !gameState) {
           console.debug('[multiplayer] Late join fallback requesting state');
           s.emit('table:requestState', { tableId: activeTableIdRef.current });

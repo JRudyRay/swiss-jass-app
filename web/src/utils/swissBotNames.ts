@@ -26,7 +26,7 @@ const swissLastNames = [
   'Jäggi', 'Fuchs', 'Zbinden', 'Burri', 'Lüthi', 'Aebischer', 'Aebi'
 ];
 
-let usedNames: Set<string> = new Set();
+const usedNames: Set<string> = new Set();
 
 /**
  * Generates a unique Swiss bot name

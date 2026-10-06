@@ -384,7 +384,7 @@ export function compareCards(a: Card, b: Card, trumpContract?: TrumpContract | n
 }
 
 function winnerOfTrick(cards: Card[], trump?: string | null, leadSuit?: Suit | null) {
-  let winnerIndex = 0;
+  const winnerIndex = 0;
   for (let i=1;i<cards.length;i++) {
     const cmp = compareCards(cards[i], cards[winnerIndex], trump as TrumpContract | null | undefined, leadSuit);
     if (cmp < 0) {
