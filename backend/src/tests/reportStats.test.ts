@@ -36,7 +36,18 @@ import { PrismaClient } from '@prisma/client';
     console.log('Reporting match...');
     const res = await request(app)
       .post('/api/games/report')
-      .send({ teamA: [userA, userB], teamB: [userC, userD], scoreA: 100, scoreB: 50 });
+      .set('Authorization', `Bearer ${regA.body.token}`)
+      .send({
+        teamA: [userA, userB],
+        teamB: [userC, userD],
+        scoreA: 100,
+        scoreB: 50,
+        isMultiplayer: true,
+      });
+    const anon = await request(app)
+      .post('/api/games/report')
+      .send({ teamA: [userA], teamB: [userC], scoreA: 1, scoreB: 0, isMultiplayer: true });
+    if (anon.status !== 401) throw new Error('Anonymous report should be 401');
     if (!res.body.success) throw new Error('Report API failed: ' + JSON.stringify(res.body));
 
     console.log('Verifying database updates...');

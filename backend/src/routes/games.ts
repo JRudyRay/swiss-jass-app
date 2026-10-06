@@ -42,10 +42,31 @@ router.post('/create', (req, res) => {
  */
 router.post('/report', async (req, res) => {
   try {
+    const authHeader = (req.headers && (req.headers as any).authorization) || null;
+    const token = authHeader ? String(authHeader).split(' ')[1] : null;
+    if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
+    let callerId: string | undefined;
+    try {
+      callerId = (AuthService.verifyToken(token) as any)?.userId;
+    } catch {
+      return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+
     const { teamA, teamB, scoreA, scoreB, rounds, isMultiplayer } = req.body || {};
 
-    if (!Array.isArray(teamA) || !Array.isArray(teamB)) {
+    const validTeam = (t: any) =>
+      Array.isArray(t) && t.length >= 1 && t.length <= 2 && t.every((x) => typeof x === 'string');
+    if (!validTeam(teamA) || !validTeam(teamB)) {
       return res.status(400).json({ success: false, message: 'Invalid teams' });
+    }
+    // Only a player in the match may report it.
+    if (!callerId || ![...teamA, ...teamB].includes(callerId)) {
+      return res.status(403).json({ success: false, message: 'Not a player in this match' });
+    }
+    const inRange = (n: any, max: number) =>
+      Number.isFinite(Number(n)) && Number(n) >= 0 && Number(n) <= max;
+    if (!inRange(scoreA ?? 0, 5000) || !inRange(scoreB ?? 0, 5000) || !inRange(rounds ?? 0, 1000)) {
+      return res.status(400).json({ success: false, message: 'Invalid scores' });
     }
 
     // ✅ Validate isMultiplayer flag (default to false for safety)
