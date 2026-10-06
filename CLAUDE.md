@@ -3,7 +3,7 @@
 Project rules for agents. They override `~/.claude/CLAUDE.md` where they
 differ. Read `docs/ROADMAP.md` before starting work and `docs/RULES.md` before
 touching game logic. `README.md`, `STRUCTURE.md`, `DEPLOYMENT.md` and
-everything in `docs/ai-sessions/` and `docs/audit/` are stale or garbled:
+everything in `docs/archive/` are stale or garbled:
 history, not specs. Trust the code, then this file.
 
 ## Product

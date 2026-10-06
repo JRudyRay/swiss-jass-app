@@ -24,7 +24,7 @@ So every later change can be verified.
 ## M1: Clean foundation
 
 - [x] (2026-10-06) Delete dead files. Kept `multiGameManager.ts`: `npm run multi` uses it.
-- [ ] Move `docs/ai-sessions/` and `docs/audit/` to `docs/archive/`.
+- [x] (2026-10-06) Move `docs/ai-sessions/` and `docs/audit/` to `docs/archive/`.
 - [ ] Rewrite `README.md` (currently two READMEs interleaved), `STRUCTURE.md`
       and `DEPLOYMENT.md` to match reality, briefly.
 - [ ] Add ESLint + Prettier (one shared config), format once in its own commit.
@@ -69,7 +69,7 @@ So every later change can be verified.
       target not reached. The trump/schieben model gives most of the gain; the
       new lead logic lost points, so leading still uses the old bot
       (`TUNE.oldLead`). Single-player only.
-- [ ] PWA: installable, playable offline.
+- [x] (2026-10-06) PWA: manifest + `public/sw.js` (network-first shell, cache-first assets filled on first use). Not yet verified on a real phone; cards are cached only once seen.
 - [ ] Multiplayer: reconnect, spectate, rankings/TrueSkill from human games
       only.
 
