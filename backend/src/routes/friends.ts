@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { body } from 'express-validator';
+import { validate } from '../validate';
 import { FriendService } from '../services/friendService';
 import { AuthService } from '../services/authService';
 
@@ -17,16 +19,22 @@ const authenticate = (req: any, res: any, next: any) => {
 };
 
 // Send friend request
-router.post('/request', authenticate, async (req: any, res) => {
-  try {
-    const fr = await FriendService.sendRequest(req.user.userId, req.body.username);
-    const io = req.app.get('io');
-    io?.to(fr.receiverId).emit('friends:update');
-    res.status(201).json({ success: true, request: fr });
-  } catch (e: any) {
-    res.status(400).json({ success: false, message: e.message });
-  }
-});
+router.post(
+  '/request',
+  authenticate,
+  body('username').isString().isLength({ min: 1, max: 60 }).withMessage('required'),
+  validate,
+  async (req: any, res) => {
+    try {
+      const fr = await FriendService.sendRequest(req.user.userId, req.body.username);
+      const io = req.app.get('io');
+      io?.to(fr.receiverId).emit('friends:update');
+      res.status(201).json({ success: true, request: fr });
+    } catch (e: any) {
+      res.status(400).json({ success: false, message: e.message });
+    }
+  },
+);
 
 // List friend requests
 router.get('/requests', authenticate, async (req: any, res) => {
@@ -39,16 +47,26 @@ router.get('/requests', authenticate, async (req: any, res) => {
 });
 
 // Respond to request
-router.post('/requests/:id/respond', authenticate, async (req: any, res) => {
-  try {
-    const updated = await FriendService.respond(req.params.id, req.user.userId, !!req.body.accept);
-    const io = req.app.get('io');
-    io?.emit('friends:update');
-    res.json({ success: true, request: updated });
-  } catch (e: any) {
-    res.status(400).json({ success: false, message: e.message });
-  }
-});
+router.post(
+  '/requests/:id/respond',
+  authenticate,
+  body('accept').optional().isBoolean().withMessage('must be true or false'),
+  validate,
+  async (req: any, res) => {
+    try {
+      const updated = await FriendService.respond(
+        req.params.id,
+        req.user.userId,
+        !!req.body.accept,
+      );
+      const io = req.app.get('io');
+      io?.emit('friends:update');
+      res.json({ success: true, request: updated });
+    } catch (e: any) {
+      res.status(400).json({ success: false, message: e.message });
+    }
+  },
+);
 
 // List friends (now includes online flag)
 router.get('/', authenticate, async (req: any, res) => {

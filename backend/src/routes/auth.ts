@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { body } from 'express-validator';
 import { AuthService } from '../services/authService';
+import { validate } from '../validate';
 
 const router = Router();
 
@@ -28,38 +30,65 @@ const authenticateToken = async (req: any, res: any, next: any) => {
 };
 
 // Register new user
-router.post('/register', async (req, res) => {
-  try {
-    const result = await AuthService.register(req.body);
-    res.status(201).json({
-      success: true,
-      message: 'Account created successfully! Welcome to Swiss Jass!',
-      ...result,
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
+const optText = (f: string, max = 60) =>
+  body(f)
+    .optional({ nullable: true })
+    .isString()
+    .withMessage('must be text')
+    .isLength({ max })
+    .withMessage('too long');
+
+router.post(
+  '/register',
+  body('email').isString().trim().isEmail().isLength({ max: 254 }).withMessage('must be an email'),
+  body('username').isString().trim().isLength({ min: 2, max: 30 }).withMessage('2-30 characters'),
+  body('password').isString().isLength({ min: 6, max: 200 }).withMessage('6-200 characters'),
+  optText('firstName'),
+  optText('lastName'),
+  optText('avatarShape'),
+  optText('avatarColor'),
+  optText('country'),
+  optText('city'),
+  validate,
+  async (req, res) => {
+    try {
+      const result = await AuthService.register(req.body);
+      res.status(201).json({
+        success: true,
+        message: 'Account created successfully! Welcome to Swiss Jass!',
+        ...result,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  },
+);
 
 // Login user
-router.post('/login', async (req, res) => {
-  try {
-    const result = await AuthService.login(req.body);
-    res.json({
-      success: true,
-      message: 'Login successful! Welcome back!',
-      ...result,
-    });
-  } catch (error: any) {
-    res.status(401).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
+router.post(
+  '/login',
+  body('emailOrUsername').isString().isLength({ min: 1, max: 254 }).withMessage('required'),
+  body('password').isString().isLength({ min: 1, max: 200 }).withMessage('required'),
+  validate,
+  async (req, res) => {
+    try {
+      const result = await AuthService.login(req.body);
+      res.json({
+        success: true,
+        message: 'Login successful! Welcome back!',
+        ...result,
+      });
+    } catch (error: any) {
+      res.status(401).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  },
+);
 
 // Get current user profile
 router.get('/profile', authenticateToken, async (req: any, res) => {
@@ -78,21 +107,31 @@ router.get('/profile', authenticateToken, async (req: any, res) => {
 });
 
 // Update user profile
-router.put('/profile', authenticateToken, async (req: any, res) => {
-  try {
-    const user = await AuthService.updateProfile(req.user.userId, req.body);
-    res.json({
-      success: true,
-      message: 'Profile updated successfully!',
-      user,
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
+router.put(
+  '/profile',
+  authenticateToken,
+  optText('firstName'),
+  optText('lastName'),
+  optText('avatarShape'),
+  optText('avatarColor'),
+  optText('city'),
+  validate,
+  async (req: any, res) => {
+    try {
+      const user = await AuthService.updateProfile(req.user.userId, req.body);
+      res.json({
+        success: true,
+        message: 'Profile updated successfully!',
+        user,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  },
+);
 
 // Get available avatar options
 router.get('/avatars', (req, res) => {
@@ -111,24 +150,29 @@ router.get('/avatars', (req, res) => {
 });
 
 // Verify token endpoint
-router.post('/verify', async (req, res) => {
-  try {
-    const { token } = req.body;
-    const decoded = AuthService.verifyToken(token);
-    const user = await AuthService.getUserProfile(decoded.userId);
+router.post(
+  '/verify',
+  body('token').isString().isLength({ min: 1, max: 2000 }).withMessage('required'),
+  validate,
+  async (req, res) => {
+    try {
+      const { token } = req.body;
+      const decoded = AuthService.verifyToken(token);
+      const user = await AuthService.getUserProfile(decoded.userId);
 
-    res.json({
-      success: true,
-      valid: true,
-      user,
-    });
-  } catch (error: any) {
-    res.status(401).json({
-      success: false,
-      valid: false,
-      message: error.message,
-    });
-  }
-});
+      res.json({
+        success: true,
+        valid: true,
+        user,
+      });
+    } catch (error: any) {
+      res.status(401).json({
+        success: false,
+        valid: false,
+        message: error.message,
+      });
+    }
+  },
+);
 
 export default router;

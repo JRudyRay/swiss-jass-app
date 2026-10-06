@@ -55,9 +55,9 @@ So every later change can be verified.
 - [ ] Input validation on all routes, helmet, CORS allowlist, rate limiting.
       (2026-10-06: helmet, rate limits (auth 30/15 min, API 300/min), 100 kb
       body cap, socket.io origin allowlist (`CORS_ORIGINS`) and `totals/sync`
-      restricted to the caller's own account (0-5000 points) done. 2026-10-06: `POST /api/games/report` needs a login token, the caller must be a player in it, scores bounded. Still open:
-      express-validator on every route; `GET /api/admin/users` and
-      `/leaderboard` still public.)
+      restricted to the caller's own account (0-5000 points) done. 2026-10-06: `POST /api/games/report` needs a login token, the caller must be a player in it, scores bounded. 2026-10-06: express-validator on auth, friends and
+      tables routes (`backend/src/validate.ts`); admin and games routes still
+      unvalidated.)
 - [ ] Decide hosting with the owner (e.g. Cloudflare Tunnel to the Pi) and use
       a `VITE_API_URL` build variable instead of the hardcoded LAN IP. Until
       then the Pages build should present itself as single-player and hide

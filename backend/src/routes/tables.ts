@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { body } from 'express-validator';
+import { validate } from '../validate';
 import { TableService } from '../services/tableService';
 import { gameHub } from '../gameHub';
 import { AuthService } from '../services/authService';
@@ -19,16 +21,29 @@ const authenticate = (req: any, res: any, next: any) => {
 };
 
 // Create table
-router.post('/', authenticate, async (req: any, res) => {
-  try {
-    const table = await TableService.createTable(req.user.userId, req.body || {});
-    const io = req.app.get('io');
-    io?.emit('tables:updated');
-    res.status(201).json({ success: true, table });
-  } catch (e: any) {
-    res.status(400).json({ success: false, message: e.message });
-  }
-});
+router.post(
+  '/',
+  authenticate,
+  body('name').optional().isString().isLength({ max: 60 }).withMessage('max 60 characters'),
+  body('maxPlayers').optional().isInt({ min: 2, max: 4 }).withMessage('2-4'),
+  body('gameType').optional().isString().isLength({ max: 30 }),
+  body('team1Name').optional().isString().isLength({ max: 40 }),
+  body('team2Name').optional().isString().isLength({ max: 40 }),
+  body('targetPoints').optional().isInt({ min: 1, max: 5000 }).withMessage('1-5000'),
+  body('isPrivate').optional().isBoolean(),
+  body('password').optional({ nullable: true }).isString().isLength({ max: 100 }),
+  validate,
+  async (req: any, res) => {
+    try {
+      const table = await TableService.createTable(req.user.userId, req.body || {});
+      const io = req.app.get('io');
+      io?.emit('tables:updated');
+      res.status(201).json({ success: true, table });
+    } catch (e: any) {
+      res.status(400).json({ success: false, message: e.message });
+    }
+  },
+);
 
 // List open tables
 router.get('/', authenticate, async (req: any, res) => {
@@ -74,16 +89,26 @@ router.get('/:id/state', authenticate, async (req: any, res) => {
 });
 
 // Join table
-router.post('/:id/join', authenticate, async (req: any, res) => {
-  try {
-    const table = await TableService.joinTable(req.params.id, req.user.userId, req.body?.password);
-    const io = req.app.get('io');
-    io?.emit('tables:updated');
-    res.json({ success: true, table });
-  } catch (e: any) {
-    res.status(400).json({ success: false, message: e.message });
-  }
-});
+router.post(
+  '/:id/join',
+  authenticate,
+  body('password').optional({ nullable: true }).isString().isLength({ max: 100 }),
+  validate,
+  async (req: any, res) => {
+    try {
+      const table = await TableService.joinTable(
+        req.params.id,
+        req.user.userId,
+        req.body?.password,
+      );
+      const io = req.app.get('io');
+      io?.emit('tables:updated');
+      res.json({ success: true, table });
+    } catch (e: any) {
+      res.status(400).json({ success: false, message: e.message });
+    }
+  },
+);
 
 // Start table and initialize game engine
 router.post('/:id/start', authenticate, async (req: any, res: any) => {
