@@ -1087,47 +1087,174 @@
   }
 }
 
-/* Phone landscape: very little height, so everything shrinks and the trump chooser floats on the felt. */
+/* ==========================================================================
+   Phone landscape (short and wide): a left rail (score, trump, message, menu), the table on
+   top of the hand in the right column. The hand's card height comes from the viewport height,
+   the table takes what is left, and nothing scrolls the page. Sizes depend only on dvh.
+   ========================================================================== */
 @media (orientation: landscape) and (max-height: 500px) {
   .jass-screen {
-    --g-card-w: 42px;
-    --g-trick-w: 40px;
-    --g-table-h: 170px;
-    --g-seat-v: 38px;
-    --g-seat-h: 84px;
-    /* Exactly one screen tall: no page scroll. Weis, rules and credits scroll inside. */
+    /* Exactly one screen tall: no page scroll. Rules, credits and history scroll inside. */
     height: 100dvh;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: 0;
   }
   .jass-screen__area {
     margin: 0 auto;
     padding: 4px 12px 8px;
   }
+  .jass-btn-ghost {
+    min-height: 44px;
+  }
+
+  /* ----- Game layout (welcome and setup keep the normal page flow) ----- */
+  .jass-screen:has([data-jass-table]) {
+    --g-card-h: clamp(90px, 33dvh, 160px);
+    --g-card-w: calc(var(--g-card-h) * 74 / 112);
+    --g-trick-h: clamp(84px, 30dvh, 150px);
+    --g-trick-w: calc(var(--g-trick-h) * 74 / 112);
+    --g-seat-h: 70px;
+    --g-hand-h: calc(var(--g-card-h) + 28px + env(safe-area-inset-bottom, 0px));
+    --g-top: 6px;
+    --g-rail: clamp(112px, 15vw, 148px);
+  }
+  .jass-screen:has([data-jass-table]) .jass-screen__area {
+    display: grid;
+    grid-template-columns: var(--g-rail) minmax(0, 1fr);
+    grid-template-rows:
+      calc(100dvh - var(--g-top) - var(--g-hand-h)) var(--g-hand-h)
+      auto auto auto auto;
+    column-gap: 8px;
+    max-width: none;
+    margin: 0;
+    padding: var(--g-top) max(10px, env(safe-area-inset-right, 0px)) 0
+      max(10px, env(safe-area-inset-left, 0px));
+  }
+  /* Everything that is not part of the one-screen game sits below it, reached by inner scroll. */
+  .jass-screen:has([data-jass-table]) .jass-screen__area > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .jass-screen:has([data-jass-table]) .jass-screen__area > .score-bar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .jass-screen:has([data-jass-table]) .jass-screen__area > .jass-status {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .jass-screen:has([data-jass-table]) .jass-screen__area > .jass-stage {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .jass-screen:has([data-jass-table]) .jass-screen__area > .hand-dock {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .jass-screen:has([data-jass-table]) .jass-screen__area > .weis-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  /* Rail: score and trump on top, message and menu button beside the hand. */
   .score-bar {
-    padding: 4px 10px 5px;
-    margin-bottom: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    max-width: none;
+    margin: 0;
+    padding: 6px 8px 7px;
+    border-radius: 12px;
+    align-self: start;
+  }
+  .score-team--2 {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .score-team--2 .score-team__name {
+    flex-direction: row;
+  }
+  .score-team--2 .score-team__fill {
+    transform-origin: left center;
+  }
+  .score-team__name {
+    font-size: 11px;
   }
   .score-team__points {
     font-size: 20px;
   }
-  .trump-pill {
+  .score-bar .trump-pill {
+    order: 3;
+    min-width: 0;
     min-height: 32px;
+    padding-right: 8px;
+    font-size: 12px;
+  }
+  .score-bar .trump-pill--none {
+    padding: 3px 6px;
+    font-size: 11px;
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
   }
   .jass-status {
-    margin-bottom: 4px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    gap: 4px;
+    max-width: none;
+    margin: 0;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    min-height: 0;
   }
   .jass-status__msg {
-    padding: 2px 4px;
-    font-size: 13px;
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 2px 2px;
+    font-size: 12px;
+    line-height: 1.25;
+    text-align: left;
   }
-  .jass-btn-ghost {
-    min-height: 44px;
+  .jass-status .jass-btn-ghost {
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  /* Table fills its grid cell. */
+  .jass-stage {
+    max-width: none;
+    margin: 0;
+    min-height: 0;
+  }
+  .jass-table {
+    height: 100%;
+    border-width: 2px;
+    border-radius: 14px;
+  }
+  .seat-slot--north {
+    top: 4px;
+  }
+  .seat-slot--south {
+    left: 6px;
+    bottom: 5px;
+    transform: none;
+  }
+  .seat-slot--west {
+    left: 4px;
+  }
+  .seat-slot--east {
+    right: 4px;
+  }
+  .seat {
+    padding: 3px 9px 3px 3px;
+    max-width: 150px;
   }
   .seat--side {
-    width: 62px;
+    width: 58px;
     padding: 4px 3px;
   }
   .seat__avatar {
@@ -1135,10 +1262,106 @@
     height: 24px;
     font-size: 12px;
   }
-  .hand {
-    min-height: calc(var(--g-card-w) * 1.52 + 18px);
-    padding-top: 14px;
+  .seat__name {
+    font-size: 12px;
   }
+  .seat--side .seat__name {
+    font-size: 11px;
+  }
+
+  /* Trick: north card on the top edge, south on the bottom edge, west and east on the sides. */
+  .trick-zone {
+    inset: 38px var(--g-seat-h) 5px;
+  }
+  .trick-card .swiss-card {
+    --cw: var(--g-trick-w);
+  }
+  .trick-card--north {
+    left: 42%;
+    top: calc(var(--g-trick-h) / 2);
+  }
+  .trick-card--south {
+    left: 58%;
+    top: calc(100% - var(--g-trick-h) / 2);
+  }
+  .trick-card--west {
+    left: 22%;
+  }
+  .trick-card--east {
+    left: 78%;
+  }
+
+  /* Hand: as tall as the viewport allows, fanned to fit the width. */
+  .hand-dock {
+    position: relative;
+    z-index: 3;
+    max-width: none;
+    margin: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .hand {
+    align-items: flex-end;
+    height: calc(var(--g-card-h) + 28px);
+    min-height: 0;
+    padding: 18px 4px 6px;
+    box-sizing: border-box;
+  }
+  .hand-card {
+    border-radius: 8px;
+  }
+  /* Opaque dimming: the cards overlap, so fading them would show the neighbour through. */
+  .hand-card[aria-disabled='true'] {
+    opacity: 1;
+  }
+  .hand-card[aria-disabled='true'] .swiss-card {
+    filter: brightness(0.62) saturate(0.55);
+  }
+  .hand-card--sel,
+  .hand-card--sel:active {
+    transform: translateY(-12px) scale(1.04);
+  }
+
+  /* Weis: small floating note in the table's bottom-right corner; the east card moves up. */
+  .weis-panel {
+    z-index: 7;
+    align-self: end;
+    justify-self: end;
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 8px;
+    width: max-content;
+    max-width: min(300px, calc(50% - 70px));
+    max-height: 84px;
+    margin: 0 8px 7px 0;
+    padding: 4px 8px;
+    overflow-y: auto;
+    background: rgba(255, 250, 240, 0.95);
+    border-radius: 10px;
+  }
+  .weis-panel__title,
+  .weis-panel__winner {
+    margin-bottom: 1px;
+    font-size: 11px;
+  }
+  .weis-panel__list {
+    flex: 1 1 100%;
+    gap: 1px;
+  }
+  .weis-row {
+    gap: 0 6px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+  .jass-screen__area:has(> .weis-panel) .trick-card--east {
+    top: calc(var(--g-trick-h) / 2);
+  }
+  .jass-screen__area:has(> .weis-panel) .seat-slot--east {
+    top: 38%;
+  }
+
+  /* Trump chooser floats on the felt. */
   .trump-sheet {
     position: absolute;
     left: 50%;
@@ -1170,22 +1393,56 @@
     min-height: 44px;
     margin-top: 6px;
   }
+
+  /* Victory dialog: centred card that fits the short height. */
   .victory {
     align-items: center;
-    padding: 8px;
+    padding: 6px max(8px, env(safe-area-inset-right, 0px)) 6px
+      max(8px, env(safe-area-inset-left, 0px));
   }
   .victory__card {
-    max-width: 520px;
+    max-width: 560px;
     max-height: 96dvh;
     border-radius: 16px;
-    padding-top: 12px;
-    padding-bottom: 12px;
+    padding: 10px 16px 10px;
+  }
+  .victory__title {
+    font-size: 20px;
+  }
+  .victory__sub {
+    margin-top: 2px;
+    font-size: 13px;
   }
   .victory__scores {
-    margin-top: 8px;
+    margin: 6px 0 2px;
+  }
+  .victory__team {
+    padding: 4px 6px 4px;
   }
   .victory__team-score {
-    font-size: 32px;
+    font-size: 30px;
+  }
+  .victory__details {
+    margin-top: 6px;
+    padding-top: 4px;
+  }
+  .victory__actions {
+    flex-wrap: nowrap;
+    margin-top: 8px;
+  }
+  .victory__btn {
+    flex: 1 1 0;
+    min-height: 44px;
+    padding: 6px 12px;
+    font-size: 15px;
+  }
+
+  /* Toast: slim, top centre. */
+  .jass-toast {
+    top: calc(6px + env(safe-area-inset-top, 0px));
+    max-width: min(70vw, 420px);
+    padding: 6px 12px;
+    font-size: 13px;
   }
 }
 
