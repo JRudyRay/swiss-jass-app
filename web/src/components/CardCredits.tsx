@@ -12,7 +12,7 @@ const CardCredits: React.FC<{ lang: Lang }> = ({ lang }) => {
         borderRadius: 8,
         border: '1px solid #d1d5db',
         fontSize: 11,
-        color: '#6b7280',
+        color: '#4b5563',
         lineHeight: 1.6,
         textAlign: 'center',
       }}
