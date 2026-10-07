@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export type LastTrickData = {
   // Cards in the order they were played; `card.playerId` says who played each.
@@ -16,15 +16,28 @@ export function useLastTrick(
 ): LastTrickData | null {
   const [last, setLast] = useState<LastTrickData | null>(null);
 
+  // The collection that was already snapshotted, so each trick is captured exactly once.
+  const snapped = useRef<unknown>(null);
+  const count = currentTrick?.length ?? 0;
+
+  // Re-runs when the trick fills up as well as when a collection starts, so a `collect` that
+  // arrives before the fourth card is visible is still picked up as soon as it is.
   useEffect(() => {
-    if (!collect || !currentTrick || currentTrick.length !== 4) return;
+    if (!collect) {
+      snapped.current = null;
+      return;
+    }
+    if (snapped.current === collect || !currentTrick || currentTrick.length !== 4) return;
+    snapped.current = collect;
     setLast({ cards: currentTrick.map((c) => ({ ...c })), winnerId: collect.winnerId });
-    // Only a new collection starts a new snapshot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collect]);
+  }, [collect, count]);
 
   useEffect(() => {
-    if (reset) setLast(null);
+    if (reset) {
+      setLast(null);
+      snapped.current = null;
+    }
   }, [reset]);
 
   return last;

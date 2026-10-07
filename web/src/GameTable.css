@@ -1487,7 +1487,7 @@
 /* ==========================================================================
    Last trick: corner button on the felt and the review dialog.
    ========================================================================== */
-.lt-btn {
+.sheet-btn {
   position: absolute;
   top: 6px;
   left: 6px;
@@ -1504,16 +1504,16 @@
   border-radius: 12px;
   cursor: pointer;
 }
-.lt-btn:disabled {
+.sheet-btn:disabled {
   opacity: 0.4;
   cursor: default;
 }
-.lt-btn:focus-visible,
-.lt-sheet__close:focus-visible {
+.sheet-btn:focus-visible,
+.sheet__close:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: 2px;
 }
-.lt-overlay {
+.sheet-overlay {
   position: fixed;
   inset: 0;
   z-index: 2000;
@@ -1525,7 +1525,7 @@
   background: rgba(24, 18, 10, 0.55);
   animation: fadeIn 160ms ease;
 }
-.lt-sheet {
+.sheet {
   box-sizing: border-box;
   width: 100%;
   max-width: 420px;
@@ -1538,18 +1538,18 @@
   border-radius: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
-.lt-sheet__head {
+.sheet__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
-.lt-sheet__title {
+.sheet__title {
   margin: 0;
   font-family: var(--font-display, Georgia, serif);
   font-size: 20px;
 }
-.lt-sheet__close {
+.sheet__close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1562,7 +1562,7 @@
   border-radius: 10px;
   cursor: pointer;
 }
-.lt-sheet__cards {
+.sheet__cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
@@ -1599,34 +1599,34 @@
   color: var(--wood);
   text-align: center;
 }
-.lt-sheet__winner {
+.sheet__winner {
   margin: 10px 0 0;
   font-size: 14px;
   font-weight: 600;
   text-align: center;
 }
 @media (orientation: landscape) and (max-height: 500px) {
-  .lt-btn {
+  .sheet-btn {
     top: 4px;
     left: 4px;
   }
-  .lt-sheet {
+  .sheet {
     max-width: 460px;
     padding: 6px 12px 8px;
   }
-  .lt-sheet__winner {
+  .sheet__winner {
     margin-top: 6px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lt-overlay {
+  .sheet-overlay {
     animation: none;
   }
 }
 
 /* ---------- Settings sheet ---------- */
 
-.lt-btn.set-btn {
+.sheet-btn.set-btn {
   left: 56px;
 }
 .set-sheet {
@@ -1736,11 +1736,11 @@
   right: auto;
   left: 6px;
 }
-.jass-screen--lefty .lt-btn {
+.jass-screen--lefty .sheet-btn {
   left: auto;
   right: 6px;
 }
-.jass-screen--lefty .lt-btn.set-btn {
+.jass-screen--lefty .sheet-btn.set-btn {
   left: auto;
   right: 56px;
 }
@@ -1775,7 +1775,7 @@
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .lt-btn.set-btn {
+  .sheet-btn.set-btn {
     left: 54px;
   }
   .set-sheet {
@@ -1794,10 +1794,10 @@
   .jass-screen--lefty .seat-slot--east {
     left: 4px;
   }
-  .jass-screen--lefty .lt-btn {
+  .jass-screen--lefty .sheet-btn {
     right: 4px;
   }
-  .jass-screen--lefty .lt-btn.set-btn {
+  .jass-screen--lefty .sheet-btn.set-btn {
     right: 54px;
   }
   .jass-screen--lefty .weis-panel {
@@ -1826,7 +1826,7 @@
 
 /* ---------- Rules sheet ---------- */
 
-.lt-btn.rules-btn {
+.sheet-btn.rules-btn {
   left: 106px;
 }
 .rules-sheet {
@@ -1863,15 +1863,15 @@
 .rules-sec li + li {
   margin-top: 5px;
 }
-.jass-screen--lefty .lt-btn.rules-btn {
+.jass-screen--lefty .sheet-btn.rules-btn {
   left: auto;
   right: 106px;
 }
 @media (orientation: landscape) and (max-height: 500px) {
-  .lt-btn.rules-btn {
+  .sheet-btn.rules-btn {
     left: 104px;
   }
-  .jass-screen--lefty .lt-btn.rules-btn {
+  .jass-screen--lefty .sheet-btn.rules-btn {
     left: auto;
     right: 104px;
   }
@@ -1985,7 +1985,7 @@
     margin: 2px 0 6px;
   }
 }
-.rules-sheet .lt-sheet__head {
+.rules-sheet .sheet__head {
   position: sticky;
   top: 0;
   z-index: 1;

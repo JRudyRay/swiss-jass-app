@@ -13,6 +13,9 @@ interface SwissTablesProps {
   onJoinGame?: (tableId: string) => void;
 }
 
+// Same limits as backend/src/routes/tables.ts.
+const clampTarget = (n: number) => Math.min(5000, Math.max(1, Math.round(n) || 1000));
+
 const SwissTables: React.FC<SwissTablesProps> = ({ lang, user, token, onJoinGame }) => {
   const t = messages(lang).tables;
   const [tables, setTables] = useState<any[]>([]);
@@ -22,6 +25,7 @@ const SwissTables: React.FC<SwissTablesProps> = ({ lang, user, token, onJoinGame
   const [newTeam2, setNewTeam2] = useState(t.defaultTeam2);
   const [newTargetPoints, setNewTargetPoints] = useState(1000);
   const [creatingTable, setCreatingTable] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [joiningTableId, setJoiningTableId] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,6 +87,7 @@ const SwissTables: React.FC<SwissTablesProps> = ({ lang, user, token, onJoinGame
   const createTable = async (nameOverride?: string) => {
     if (!API_URL) return;
     setCreatingTable(true);
+    setCreateError('');
     try {
       const res = await fetch(`${API_URL}/api/tables`, {
         method: 'POST',
@@ -91,21 +96,24 @@ const SwissTables: React.FC<SwissTablesProps> = ({ lang, user, token, onJoinGame
           Authorization: `Bearer ${authToken.current}`,
         },
         body: JSON.stringify({
-          name: nameOverride || tableName || 'Table',
+          name: (nameOverride || tableName || 'Table').slice(0, 60),
           maxPlayers: 4,
           gameType: newTableGameType,
-          team1Name: newTeam1,
-          team2Name: newTeam2,
-          targetPoints: newTargetPoints,
+          team1Name: newTeam1.slice(0, 40),
+          team2Name: newTeam2.slice(0, 40),
+          targetPoints: clampTarget(newTargetPoints),
         }),
       });
       const data = await res.json();
       if (data.success) {
         setTableName('');
         fetchTables();
+      } else {
+        setCreateError(t.tableCreateFailed);
       }
     } catch (err) {
       console.error('Failed to create table:', err);
+      setCreateError(t.tableCreateFailed);
     } finally {
       setCreatingTable(false);
     }
@@ -183,6 +191,7 @@ const SwissTables: React.FC<SwissTablesProps> = ({ lang, user, token, onJoinGame
           onChange={(e) => setTableName(e.target.value)}
           placeholder={t.namePh}
           aria-label={t.namePh}
+          maxLength={60}
           className="input tables__name"
         />
         <select
@@ -198,6 +207,7 @@ const SwissTables: React.FC<SwissTablesProps> = ({ lang, user, token, onJoinGame
           onChange={(e) => setNewTeam1(e.target.value)}
           placeholder={t.team1Ph}
           aria-label={t.team1Ph}
+          maxLength={40}
           className="input"
         />
         <input
@@ -205,12 +215,15 @@ const SwissTables: React.FC<SwissTablesProps> = ({ lang, user, token, onJoinGame
           onChange={(e) => setNewTeam2(e.target.value)}
           placeholder={t.team2Ph}
           aria-label={t.team2Ph}
+          maxLength={40}
           className="input"
         />
         <input
           type="number"
           inputMode="numeric"
           value={newTargetPoints}
+          min={1}
+          max={5000}
           onChange={(e) => setNewTargetPoints(parseInt(e.target.value) || 1000)}
           placeholder={t.targetPh}
           aria-label={t.targetPh}
@@ -227,6 +240,11 @@ const SwissTables: React.FC<SwissTablesProps> = ({ lang, user, token, onJoinGame
             </>
           )}
         </button>
+        {createError && (
+          <p className="tables__error" role="alert">
+            {createError}
+          </p>
+        )}
       </form>
 
       <div className="tables__bar">

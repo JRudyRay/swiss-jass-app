@@ -925,6 +925,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     setSavedGame(null);
     setMode('single');
     let st = loadLocalState();
+    // The match keeps its own target, whatever the setup screen says now.
+    if (st && Number.isFinite(Number(st.target)) && Number(st.target) > 0)
+      setMaxPoints(Number(st.target));
     // A trick that was waiting for its resolve animation when the page closed
     if (st && !st.target) st.target = maxPoints; // games saved before the target lived in the state
     // Old saves have no rounds: the table then starts empty and fills from here on.
@@ -1008,10 +1011,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     setSetupChoice(ONLINE_ENABLED ? 'welcome' : 'single');
     setIsLocal(false);
 
-    // Clear localStorage
+    // Clear localStorage (and the Continue card that mirrors it)
     try {
       localStorage.removeItem('jassLocalState');
     } catch {}
+    setSavedGame(null);
 
     setMessage(t.welcome);
   };
@@ -2031,12 +2035,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           Authorization: `Bearer ${authToken.current}`,
         },
         body: JSON.stringify({
-          name: nameOverride || 'Table',
+          name: (nameOverride || 'Table').slice(0, 60),
           maxPlayers: 4,
           gameType: newTableGameType,
-          team1Name: newTeam1,
-          team2Name: newTeam2,
-          targetPoints: newTargetPoints,
+          team1Name: newTeam1.slice(0, 40),
+          team2Name: newTeam2.slice(0, 40),
+          targetPoints: Math.min(5000, Math.max(1, Math.round(newTargetPoints) || 1000)),
         }),
       });
       const data = await res.json();
@@ -2169,6 +2173,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             value={tableName}
             onChange={(e) => setTableName(e.target.value)}
             placeholder="Table name"
+            maxLength={60}
             style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, minWidth: 180 }}
           />
           <select
@@ -2180,12 +2185,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           </select>
           <input
             value={newTeam1}
+            maxLength={40}
             onChange={(e) => setNewTeam1(e.target.value)}
             placeholder="Team 1 name"
             style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 140 }}
           />
           <input
             value={newTeam2}
+            maxLength={40}
             onChange={(e) => setNewTeam2(e.target.value)}
             placeholder="Team 2 name"
             style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 140 }}
@@ -2193,7 +2200,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           <input
             type="number"
             value={newTargetPoints}
-            onChange={(e) => setNewTargetPoints(parseInt(e.target.value) || 1000)}
+            onChange={(e) =>
+              setNewTargetPoints(Math.min(5000, Math.max(1, parseInt(e.target.value) || 1000)))
+            }
+            min={1}
+            max={5000}
             placeholder="Target"
             style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 110 }}
           />
@@ -2796,6 +2807,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         )}
 
         <Hand
+          lang={lang}
           cards={sortHandForDisplay(hand, chosenTrump)}
           legalCards={legalCards}
           selectedCard={selectedCard}

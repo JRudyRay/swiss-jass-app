@@ -6,8 +6,15 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+.tables__error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #b42318;
+  font-size: 0.9rem;
+}
 .tables__name,
-.tables__create {
+.tables__create,
+.tables__error {
   grid-column: 1 / -1;
 }
 .tables__bar {

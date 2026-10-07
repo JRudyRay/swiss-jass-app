@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type Speed = 'normal' | 'fast' | 'off';
 export type Settings = {
@@ -10,18 +10,23 @@ export type Settings = {
 
 const KEY = 'jassSettings';
 const DEFAULTS: Settings = { haptics: true, speed: 'normal', leftHanded: false, suitMarks: false };
-// Multiplier for the trick and bot pauses. "Off" also switches the CSS animations off.
-export const SPEED_SCALE: Record<Speed, number> = { normal: 1, fast: 0.5, off: 0.5 };
+// Multiplier for the trick and bot pauses. "Off" switches the CSS animations off and shrinks the
+// pauses to 10% (never 0: the bot loop and trick collection still need a tick to let React render
+// each play, and a 0 or NaN delay would make the bots play all at once).
+export const SPEED_SCALE: Record<Speed, number> = { normal: 1, fast: 0.5, off: 0.1 };
+const isSpeed = (v: unknown): v is Speed =>
+  typeof v === 'string' && Object.prototype.hasOwnProperty.call(SPEED_SCALE, v);
 
 export const hapticsSupported = (): boolean =>
   typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
 
 function load(): Settings {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || '{}');
+    const parsed = JSON.parse(localStorage.getItem(KEY) || '{}');
+    const raw = parsed && typeof parsed === 'object' ? parsed : {};
     return {
       haptics: typeof raw.haptics === 'boolean' ? raw.haptics : DEFAULTS.haptics,
-      speed: raw.speed in SPEED_SCALE ? raw.speed : DEFAULTS.speed,
+      speed: isSpeed(raw.speed) ? raw.speed : DEFAULTS.speed,
       leftHanded: raw.leftHanded === true,
       suitMarks: raw.suitMarks === true,
     };
@@ -38,16 +43,22 @@ export function useSettings() {
   ref.current = settings;
 
   const update = useCallback((patch: Partial<Settings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...patch };
-      try {
-        localStorage.setItem(KEY, JSON.stringify(next));
-      } catch {
-        /* storage blocked: the choice lasts for this visit only */
-      }
-      return next;
-    });
+    setSettings((prev) => ({ ...prev, ...patch }));
   }, []);
+
+  // Persist outside the state updater (updaters must stay pure).
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem(KEY, JSON.stringify(settings));
+    } catch {
+      /* storage blocked: the choice lasts for this visit only */
+    }
+  }, [settings]);
 
   const buzz = useCallback(() => {
     if (!ref.current.haptics || !hapticsSupported()) return;
@@ -58,7 +69,7 @@ export function useSettings() {
     }
   }, []);
 
-  const scale = useCallback(() => SPEED_SCALE[ref.current.speed], []);
+  const scale = useCallback(() => SPEED_SCALE[ref.current.speed] ?? 1, []);
 
   return { settings, update, buzz, scale };
 }
