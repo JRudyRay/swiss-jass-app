@@ -76,7 +76,85 @@ const rm: Messages = {
     suitMarks: 'Furmas per las colurs',
     suitMarksHint: 'Mussa ina furma sper il simbol da la colur',
   },
+  rules: {
+    button: 'Reglas',
+    title: 'Reglas dal Schieber',
+    close: 'Serrar',
+    intro: 'In resum curt da las reglas che quest gieu duvra.',
+    sections: [
+      {
+        title: 'Il gieu',
+        items: [
+          '4 giugaders en 2 equipas. Ils partenaris sesan in encunter l’auter.',
+          '36 cartas: Eichle, Schelle, Rose, Schilte; 6, 7, 8, 9, 10, Under, Ober, Retg, Ass. Mintgin survegn 9 cartas, uschia ha ina runda 9 stichs.',
+          'Ins giua encunter la direcziun da l’ura.',
+          'L’emprima equipa che cuntanscha il total da puncts (da standard 1000, regulabel en la configuraziun) gudogna immediat, er a mesa runda.',
+        ],
+      },
+      {
+        title: 'Tscherner il contract',
+        items: [
+          'Il contract è ina da las quatter colurs sco trumf, Obenabe (l’Ass è il pli aut) u Undenufe (il 6 è il pli aut). Ils ultims dus n’han nagin trumf.',
+          'L’emprima maun (a dretga dal dat) tscherna il contract u al schiebescha al partenari. Lura sto il partenari tscherner.',
+          'L’emprima maun cumenza adina l’emprim stich.',
+        ],
+      },
+      {
+        title: 'Giuvar in stich',
+        items: [
+          'Ins sto servir la colur, sche ins po.',
+          'Trumf po ins adina giuvar, ma stuschar n’è mai obligatoric.',
+          'Sutatrumfar (giuvar in trumf pli bass che quel ch’è gia en il stich) n’è betg lubì, ubain che ins haja mo trumfs.',
+          'Il Under (Puur) na dastga mai esser obligà da servir trumf. Sch’il trumf vegn menà e tes sulet trumf è il Under nid, pos ti giuvar tge che ti vuls.',
+        ],
+      },
+      {
+        title: 'Puncts da las cartas',
+        items: [
+          'Colur da trumf: Under (Puur) 20, Nov (Nell) 14, Ass 11, Diesch 10, Retg 4, Ober 3, il rest 0.',
+          'Autras colurs: Ass 11, Diesch 10, Retg 4, Ober 3, Under 2, il rest 0.',
+          'Obenabe: Ass 11, Diesch 10, Otg 8, Retg 4, Ober 3, Under 2, Sis 0.',
+          'Undenufe: Sis 11, Diesch 10, Otg 8, Retg 4, Ober 3, Under 2, Ass 0.',
+          'L’ultim stich vala 5 dapli. Ina runda ha 157 puncts da cartas.',
+        ],
+      },
+      {
+        title: 'Weis (annunzias)',
+        items: [
+          'Suita en ina colur (ordinaziun 6 7 8 9 10 Under Ober Retg Ass): 3 cartas 20, 4 cartas 50, 5 cartas 100, 6 cartas 150, 7 cartas 200, 8 cartas 250, 9 cartas 300.',
+          'Quatter listess: quatter Under 200, quatter Nov 150, quatter Ass, Retgs, Obers u Diesch 100. Quatter 6, 7 u 8 na valan nagut.',
+          'Mo l’equipa cun il meglier Weis quinta, e lura tut ses Weis. Il meglier ha il pli blers puncts. Sch’igl è igual: la suita pli lunga, lura la pli auta (la pli bassa tar Undenufe), lura quella en trumf. Sch’igl è anc igual, gudogna quel che è il emprim a la retscha a partir da l’emprima maun.',
+        ],
+      },
+      {
+        title: 'Stöck e Match',
+        items: [
+          'Stöck: Retg ed Ober dal trumf en ina maun valan 20, uschespert che omadus èn giuvads. Mo tar contracts da colur. Vala independentamain dal Weis.',
+          'Match: tgi che fa tut ils 9 stichs survegn 100 dapli (257 per la runda).',
+        ],
+      },
+      {
+        title: 'Multiplicaturs',
+        items: [
+          'Eichle e Rose valan x1, Schelle e Schilte x2, Obenabe ed Undenufe x3.',
+          'Il multiplicatur vala per ils puncts da omadus equipas: cartas, ultim stich, Weis, Stöck e Match.',
+        ],
+      },
+    ] as { title: string; items: string[] }[],
+  },
+  resume: {
+    title: 'Partida en curs',
+    yourTeam: 'Tia equipa',
+    opponents: 'Adversaris',
+    target: (n: number) => `L’emprim a ${n}`,
+    continue: 'Cuntinuar',
+    newGame: 'Nova partida',
+    aria: 'Partida memorisada',
+  },
   victory: {
+    colRound: 'Runda',
+    colContract: 'Contract',
+    roundNote: 'Puncts per runda, multiplicatur, Weis, Stöck e Match gia endamain.',
     youWon: 'Vossa equipa gudogna la partida.',
     youLost: 'Ils adversaris gudognan la partida.',
     rounds: 'Rundas',

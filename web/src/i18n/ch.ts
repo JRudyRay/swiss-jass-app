@@ -75,7 +75,85 @@ const ch: Messages = {
     suitMarks: 'Farb-Form uf de Charte',
     suitMarksHint: 'Zeigt e Form näbed em Farbsymbol',
   },
+  rules: {
+    button: 'Regle',
+    title: 'Schieber-Regle',
+    close: 'Zue',
+    intro: 'Churzfassig vo de Regle, nach dene das Spiel louft.',
+    sections: [
+      {
+        title: 'S Spiel',
+        items: [
+          '4 Spieler i 2 Teams. D Partner sitzed enand gägenüber.',
+          '36 Charte: Eichle, Schelle, Rose, Schilte; 6, 7, 8, 9, 10, Under, Ober, Chönig, Ass. Jede überchunnt 9 Charte, so het e Rundi 9 Stich.',
+          'Gspillt wird gäge dä Uhrzeigersinn.',
+          'S erschte Team, wo d Zielpunkt erreicht (standardmässig 1000, im Setup iistellbar), gwünnt sofort, au mitts i de Rundi.',
+        ],
+      },
+      {
+        title: 'D Spielart wähle',
+        items: [
+          'Gspillt wird mit ere vo de vier Farbe als Trumpf, Obenabe (s Ass isch am höchschte) oder Undenufe (d 6 isch am höchschte). Die letschte zwei hend kei Trumpf.',
+          'D Vorhand (rechts vom Geber) wählt d Spielart oder schiebt si em Partner zue. Dä muess denn wähle.',
+          'D Vorhand spillt uf jede Fall dä erscht Stich us.',
+        ],
+      },
+      {
+        title: 'En Stich spiele',
+        items: [
+          'Wer cha, bedient d Farb.',
+          'Trumpf dörf mer immer spiele, aber stäche muess mer nie.',
+          'Undertrumpfe (e chlineri Trumpf spiele als e scho liegendi) isch nöd erlaubt, usser mer het nume na Trümpf.',
+          'Dä Under (Buur) muess mer nie zuegäh, wenn Trumpf usgspillt isch. Isch Trumpf usgspillt und dä blutt Under din einzig Trumpf, dörfsch spiele was du wetsch.',
+        ],
+      },
+      {
+        title: 'Chartepünkt',
+        items: [
+          'Trumpffarb: Under (Buur) 20, Nüni (Näll) 14, Ass 11, Zäh 10, Chönig 4, Ober 3, de Rest 0.',
+          'Anderi Farbe: Ass 11, Zäh 10, Chönig 4, Ober 3, Under 2, de Rest 0.',
+          'Obenabe: Ass 11, Zäh 10, Acht 8, Chönig 4, Ober 3, Under 2, Sächs 0.',
+          'Undenufe: Sächs 11, Zäh 10, Acht 8, Chönig 4, Ober 3, Under 2, Ass 0.',
+          'De letscht Stich zellt 5 extra. E Rundi het 157 Chartepünkt.',
+        ],
+      },
+      {
+        title: 'Wiis (Aasage)',
+        items: [
+          'Folg i einere Farb (Reihefolg 6 7 8 9 10 Under Ober Chönig Ass): 3 Charte 20, 4 Charte 50, 5 Charte 100, 6 Charte 150, 7 Charte 200, 8 Charte 250, 9 Charte 300.',
+          'Vier Glichi: vier Under 200, vier Nüni 150, vier Ass, Chönig, Ober oder Zäh 100. Vier Sächser, Siebni oder Achti zelled nüt.',
+          'Nume s Team mit em eine beschte Wiis schribt, denn aber alli sini Wiis. Dä beschti het am meischte Pünkt. Bi Glichstand: d längeri Folg, denn die höcheri (bi Undenufe die tüüferi), denn die im Trumpf. Isch es immer na glich, gwünnt dä, wo ab de Vorhand zerscht draa isch.',
+        ],
+      },
+      {
+        title: 'Stöck und Match',
+        items: [
+          'Stöck: Chönig und Ober vom Trumpf i eire Hand zelled 20, sobald beidi gspillt sind. Nume bi Farbspiel. Zellt unabhängig vom Wiis.',
+          'Match: Wer alli 9 Stich macht, überchunnt 100 dezue (257 für d Rundi).',
+        ],
+      },
+      {
+        title: 'Multiplikator',
+        items: [
+          'Eichle und Rose zelled x1, Schelle und Schilte x2, Obenabe und Undenufe x3.',
+          'De Multiplikator gilt für d Pünkt vo beide Teams: Charte, letscht Stich, Wiis, Stöck und Match.',
+        ],
+      },
+    ] as { title: string; items: string[] }[],
+  },
+  resume: {
+    title: 'Spiel lauft na',
+    yourTeam: 'Eues Team',
+    opponents: 'Gägner',
+    target: (n: number) => `Erschte bis ${n}`,
+    continue: 'Wiiterspile',
+    newGame: 'Neus Spiel',
+    aria: 'Gspeicherets Spiel',
+  },
   victory: {
+    colRound: 'Rundi',
+    colContract: 'Spielart',
+    roundNote: 'Pünkt pro Rundi, Multiplikator, Wiis, Stöck und Match sind scho iigrächnet.',
     youWon: 'Eues Team gwünnt dä Match.',
     youLost: 'D Gägner gwünned dä Match.',
     rounds: 'Runde',

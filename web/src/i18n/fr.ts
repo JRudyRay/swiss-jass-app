@@ -75,7 +75,85 @@ const fr: Messages = {
     suitMarks: 'Formes des couleurs',
     suitMarksHint: 'Ajoute une forme à côté du symbole de la couleur',
   },
+  rules: {
+    button: 'Règles',
+    title: 'Règles du Schieber',
+    close: 'Fermer',
+    intro: 'Résumé des règles utilisées dans ce jeu.',
+    sections: [
+      {
+        title: 'Le jeu',
+        items: [
+          '4 joueurs en 2 équipes. Les partenaires sont assis face à face.',
+          '36 cartes : Glands, Grelots, Roses, Écus ; 6, 7, 8, 9, 10, Under, Ober, Roi, As. Chacun reçoit 9 cartes, une donne compte donc 9 plis.',
+          'Le jeu tourne dans le sens inverse des aiguilles d’une montre.',
+          'La première équipe qui atteint le score cible (1000 par défaut, réglable dans la configuration) gagne aussitôt, même au milieu d’une donne.',
+        ],
+      },
+      {
+        title: 'Choisir le contrat',
+        items: [
+          'Le contrat est l’une des quatre couleurs comme atout, Obenabe (l’As est le plus fort) ou Undenufe (le 6 est le plus fort). Ces deux derniers n’ont pas d’atout.',
+          'Le joueur de première main (à droite du donneur) choisit le contrat ou le chibre (le passe à son partenaire). Le partenaire doit alors choisir.',
+          'Dans tous les cas, la première main entame le premier pli.',
+        ],
+      },
+      {
+        title: 'Jouer un pli',
+        items: [
+          'Il faut fournir la couleur demandée si on le peut.',
+          'On peut toujours jouer atout, mais couper n’est jamais obligatoire.',
+          'Sous-couper (jouer un atout plus faible que celui déjà dans le pli) est interdit, sauf si on n’a que des atouts.',
+          'Le Under (Bour) n’est jamais obligé de suivre à l’atout. Si on entame à l’atout et que votre seul atout est le Under sec, vous pouvez jouer n’importe quelle carte.',
+        ],
+      },
+      {
+        title: 'Points des cartes',
+        items: [
+          'Couleur d’atout : Under (Bour) 20, Neuf (Nell) 14, As 11, Dix 10, Roi 4, Ober 3, le reste 0.',
+          'Autres couleurs : As 11, Dix 10, Roi 4, Ober 3, Under 2, le reste 0.',
+          'Obenabe : As 11, Dix 10, Huit 8, Roi 4, Ober 3, Under 2, Six 0.',
+          'Undenufe : Six 11, Dix 10, Huit 8, Roi 4, Ober 3, Under 2, As 0.',
+          'Le dernier pli vaut 5 de plus. Une donne vaut 157 points de cartes.',
+        ],
+      },
+      {
+        title: 'Annonces (Weis)',
+        items: [
+          'Suite dans une couleur (ordre 6 7 8 9 10 Under Ober Roi As) : 3 cartes 20, 4 cartes 50, 5 cartes 100, 6 cartes 150, 7 cartes 200, 8 cartes 250, 9 cartes 300.',
+          'Quatre cartes identiques : quatre Under 200, quatre Neuf 150, quatre As, Rois, Ober ou Dix 100. Quatre 6, 7 ou 8 ne comptent pas.',
+          'Seule l’équipe qui a la meilleure annonce marque, et alors toutes ses annonces. La meilleure a le plus de points. À égalité : la suite la plus longue, puis la plus haute (la plus basse à Undenufe), puis celle à l’atout. Si c’est encore égal, gagne le joueur qui est le premier à jouer à partir de la première main.',
+        ],
+      },
+      {
+        title: 'Stöck et Match',
+        items: [
+          'Stöck : le Roi et l’Ober d’atout dans une même main valent 20 dès que les deux sont joués. Seulement aux contrats de couleur. Il compte indépendamment des annonces.',
+          'Match : faire les 9 plis ajoute 100 (257 pour la donne).',
+        ],
+      },
+      {
+        title: 'Multiplicateurs',
+        items: [
+          'Glands et Roses comptent x1, Grelots et Écus x2, Obenabe et Undenufe x3.',
+          'Le multiplicateur s’applique aux points des deux équipes : cartes, dernier pli, annonces, Stöck et Match.',
+        ],
+      },
+    ] as { title: string; items: string[] }[],
+  },
+  resume: {
+    title: 'Partie en cours',
+    yourTeam: 'Votre équipe',
+    opponents: 'Adversaires',
+    target: (n: number) => `Premier à ${n}`,
+    continue: 'Continuer',
+    newGame: 'Nouvelle partie',
+    aria: 'Partie sauvegardée',
+  },
   victory: {
+    colRound: 'Donne',
+    colContract: 'Contrat',
+    roundNote: 'Points par donne, multiplicateur, annonces, Stöck et Match déjà inclus.',
     youWon: 'Votre équipe remporte la partie.',
     youLost: 'Les adversaires remportent la partie.',
     rounds: 'Manches',

@@ -75,7 +75,85 @@ const de: Messages = {
     suitMarks: 'Formen für die Farben',
     suitMarksHint: 'Zeigt neben dem Farbsymbol eine Form an',
   },
+  rules: {
+    button: 'Regeln',
+    title: 'Schieber-Regeln',
+    close: 'Schliessen',
+    intro: 'Kurzfassung der Regeln, nach denen dieses Spiel läuft.',
+    sections: [
+      {
+        title: 'Das Spiel',
+        items: [
+          '4 Spieler in 2 Teams. Partner sitzen sich gegenüber.',
+          '36 Karten: Eicheln, Schellen, Rosen, Schilten; 6, 7, 8, 9, 10, Under, Ober, König, Ass. Jeder erhält 9 Karten, eine Runde hat also 9 Stiche.',
+          'Gespielt wird gegen den Uhrzeigersinn.',
+          'Das erste Team, das die Zielpunktzahl erreicht (standardmässig 1000, im Setup einstellbar), gewinnt sofort, auch mitten in einer Runde.',
+        ],
+      },
+      {
+        title: 'Spielart wählen',
+        items: [
+          'Gespielt wird mit einer der vier Farben als Trumpf, Obenabe (Ass ist am höchsten) oder Undenufe (die 6 ist am höchsten). Die letzten beiden haben keinen Trumpf.',
+          'Die Vorhand (rechts vom Geber) wählt die Spielart oder schiebt die Wahl an ihren Partner. Der Partner muss dann wählen.',
+          'Die Vorhand spielt in jedem Fall den ersten Stich aus.',
+        ],
+      },
+      {
+        title: 'Einen Stich spielen',
+        items: [
+          'Wer kann, bedient die ausgespielte Farbe.',
+          'Trumpf darf immer gespielt werden, ein Stechen ist aber nie Pflicht.',
+          'Untertrumpfen (einen kleineren Trumpf als einen schon liegenden spielen) ist nicht erlaubt, ausser man hat nur noch Trümpfe.',
+          'Der Under (Puur) muss nie zugegeben werden, wenn Trumpf ausgespielt ist. Ist Trumpf ausgespielt und der nackte Under dein einziger Trumpf, darfst du beliebig spielen.',
+        ],
+      },
+      {
+        title: 'Kartenpunkte',
+        items: [
+          'Trumpffarbe: Under (Puur) 20, Neun (Nell) 14, Ass 11, Zehn 10, König 4, Ober 3, der Rest 0.',
+          'Andere Farben: Ass 11, Zehn 10, König 4, Ober 3, Under 2, der Rest 0.',
+          'Obenabe: Ass 11, Zehn 10, Acht 8, König 4, Ober 3, Under 2, Sechs 0.',
+          'Undenufe: Sechs 11, Zehn 10, Acht 8, König 4, Ober 3, Under 2, Ass 0.',
+          'Der letzte Stich zählt 5 extra. Eine Runde hat 157 Kartenpunkte.',
+        ],
+      },
+      {
+        title: 'Weis (Ansagen)',
+        items: [
+          'Folge in einer Farbe (Reihenfolge 6 7 8 9 10 Under Ober König Ass): 3 Karten 20, 4 Karten 50, 5 Karten 100, 6 Karten 150, 7 Karten 200, 8 Karten 250, 9 Karten 300.',
+          'Vier Gleiche: vier Under 200, vier Neuner 150, vier Asse, Könige, Ober oder Zehner 100. Vier Sechser, Siebner oder Achter zählen nichts.',
+          'Nur das Team mit dem einen besten Weis schreibt, dann aber alle seine Weis. Der beste hat die meisten Punkte. Bei Gleichstand: die längere Folge, dann die höhere (bei Undenufe die tiefere), dann die im Trumpf. Ist es immer noch gleich, gewinnt, wer von der Vorhand aus zuerst an der Reihe ist.',
+        ],
+      },
+      {
+        title: 'Stöck und Match',
+        items: [
+          'Stöck: König und Ober des Trumpfs in einer Hand zählen 20, sobald beide gespielt sind. Nur bei Farbspielen. Zählt unabhängig vom Weis.',
+          'Match: Wer alle 9 Stiche macht, erhält 100 dazu (257 für die Runde).',
+        ],
+      },
+      {
+        title: 'Multiplikatoren',
+        items: [
+          'Eicheln und Rosen zählen x1, Schellen und Schilten x2, Obenabe und Undenufe x3.',
+          'Der Multiplikator gilt für die Punkte beider Teams: Karten, letzter Stich, Weis, Stöck und Match.',
+        ],
+      },
+    ] as { title: string; items: string[] }[],
+  },
+  resume: {
+    title: 'Spiel läuft noch',
+    yourTeam: 'Dein Team',
+    opponents: 'Gegner',
+    target: (n: number) => `Erster bis ${n}`,
+    continue: 'Weiterspielen',
+    newGame: 'Neues Spiel',
+    aria: 'Gespeichertes Spiel',
+  },
   victory: {
+    colRound: 'Runde',
+    colContract: 'Spielart',
+    roundNote: 'Punkte pro Runde, Multiplikator, Weis, Stöck und Match sind schon eingerechnet.',
     youWon: 'Euer Team gewinnt die Partie.',
     youLost: 'Die Gegner gewinnen die Partie.',
     rounds: 'Runden',

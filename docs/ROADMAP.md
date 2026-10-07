@@ -31,7 +31,7 @@ So every later change can be verified.
 - [ ] Decide on `swiss_jass.db` (prefer seed script). (`web/dist/` untracked 2026-10-06.)
 - [x] (2026-10-05) Move translations out of `JassGame.tsx` into `web/src/i18n/`:
       en, ch, de, fr, it, rm. Romansh (`rm.ts`) needs a native speaker's
-      review (incl. the `lastTrick` and `settings` strings added 2026-10-07). Still untranslated: the welcome hero (only shown with a
+      review (incl. the `lastTrick`, `settings`, `rules` (rules sheet), `resume` and new `victory` strings added 2026-10-07). Still untranslated: the welcome hero (only shown with a
       backend) and multiplayer status messages in `JassGame.tsx`.
 
 ## M2: One rules engine

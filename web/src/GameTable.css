@@ -831,13 +831,21 @@
   width: 100%;
   max-width: 460px;
   max-height: 92dvh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 20px 20px calc(18px + env(safe-area-inset-bottom, 0px));
   background: var(--paper);
   border-top: 6px solid var(--gold);
   border-radius: 20px 20px 0 0;
   color: var(--ink);
   animation: sheetIn 260ms var(--ease-out);
+}
+.victory__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .victory__title {
   margin: 0;
@@ -869,6 +877,7 @@
 .victory__team--win {
   background: #fbf0d4;
   border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200, 150, 46, 0.28);
 }
 .victory__team-name {
   overflow: hidden;
@@ -921,6 +930,23 @@
 .victory__table tr {
   border-bottom: 1px solid #f1e8d6;
 }
+.victory__table th {
+  position: sticky;
+  top: 0;
+  padding: 4px 0;
+  overflow: hidden;
+  max-width: 90px;
+  font-size: 12px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--paper);
+  border-bottom: 2px solid #eadfc9;
+}
+.victory__table th:nth-child(-n + 2) {
+  text-align: left;
+  color: var(--muted);
+}
 .victory__table td {
   padding: 4px 0;
 }
@@ -932,6 +958,14 @@
   text-align: right;
   font-weight: 700;
   padding-left: 12px;
+}
+.victory__table th:nth-child(n + 3) {
+  padding-left: 12px;
+}
+.victory__note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
 }
 .victory__actions {
   display: flex;
@@ -1788,4 +1822,172 @@
   .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .weis-panel {
     grid-column: 1;
   }
+}
+
+/* ---------- Rules sheet ---------- */
+
+.lt-btn.rules-btn {
+  left: 106px;
+}
+.rules-sheet {
+  max-width: 480px;
+  text-align: left;
+  font-weight: 500;
+}
+.rules-sheet__intro {
+  margin: 6px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.rules-sec {
+  border-top: 1px solid #e0d2b3;
+}
+.rules-sec summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rules-sec summary:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.rules-sec ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.rules-sec li + li {
+  margin-top: 5px;
+}
+.jass-screen--lefty .lt-btn.rules-btn {
+  left: auto;
+  right: 106px;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .lt-btn.rules-btn {
+    left: 104px;
+  }
+  .jass-screen--lefty .lt-btn.rules-btn {
+    left: auto;
+    right: 104px;
+  }
+  .rules-sec summary {
+    min-height: 40px;
+  }
+  .rules-sec ul {
+    font-size: 13px;
+  }
+}
+
+/* Rules link on the welcome and setup screens. */
+.rules-row {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0;
+}
+.rules-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 14px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  background: transparent;
+  border: 1.5px solid #cdbb98;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.rules-link:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---------- Resume card ---------- */
+
+.resume {
+  width: calc(100% - 32px);
+  max-width: 560px;
+  box-sizing: border-box;
+  margin: 12px auto 0;
+  padding: 16px 18px;
+  text-align: center;
+  border-top: 5px solid var(--gold);
+}
+.resume__title {
+  margin: 0 0 8px;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 20px;
+}
+.resume__score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.resume__team {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-bottom: 4px;
+  border-bottom: 4px solid var(--team);
+}
+.resume__name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5b4a33;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.resume__pts {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.resume__colon {
+  font-size: 22px;
+  color: #a8957a;
+}
+.resume__target {
+  margin: 6px 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.resume__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.resume__actions .btn {
+  flex: 1 1 140px;
+  min-height: 48px;
+  justify-content: center;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .resume {
+    padding: 8px 14px;
+  }
+  .resume__title {
+    margin-bottom: 2px;
+    font-size: 17px;
+  }
+  .resume__pts {
+    font-size: 26px;
+  }
+  .resume__target {
+    margin: 2px 0 6px;
+  }
+}
+.rules-sheet .lt-sheet__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--paper);
 }

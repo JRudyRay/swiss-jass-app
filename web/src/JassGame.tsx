@@ -11,6 +11,9 @@ import WeisPanel from './components/table/WeisPanel';
 import TrickArea, { COLLECT_MS } from './components/table/TrickArea';
 import LastTrick from './components/table/LastTrick';
 import SettingsSheet from './components/table/SettingsSheet';
+import RulesSheet from './components/table/RulesSheet';
+import ResumeCard from './components/setup/ResumeCard';
+import { readSavedGame, type SavedGameSummary } from './components/setup/savedGame';
 import { useSettings } from './components/table/useSettings';
 import { useLastTrick } from './components/table/useLastTrick';
 import Hand from './components/table/Hand';
@@ -204,6 +207,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   // multiplayer state
   const [mode, setMode] = useState<'single' | 'multi'>('single');
+  const [savedGame, setSavedGame] = useState<SavedGameSummary | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [tables, setTables] = useState<any[]>([]);
@@ -627,46 +631,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       return;
     }
 
-    // Try to resume a local game from localStorage
-    let st = loadLocalState();
-    // A trick that was waiting for its resolve animation when the page closed
-    if (st && !st.target) st.target = maxPoints; // games saved before the target lived in the state
-    if (st?.pendingResolve) {
-      st = Schieber.resolveTrick(st);
-      saveLocalState(st);
-    }
-    if (st) {
-      // If the stored local game already finished, start a fresh hand instead of resuming finished state
-      const matchOver =
-        st.phase === 'finished' &&
-        (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
-      if (st.phase === 'finished' && !matchOver) {
-        const fresh = Schieber.startNewHand(st);
-        saveLocalState(fresh);
-        setPlayers(mapPlayersWithSeats(fresh.players));
-        setGameState(toGameState(fresh));
-        setHand(fresh.players.find((p: any) => p.id === 0)?.hand || []);
-        setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
-        setOptionsVisible(false);
-        setIsLocal(true);
-        setMessage(t.newRoundStarted);
-        if (fresh.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
-        return;
-      }
-
-      if (!matchOver) {
-        setGameState(toGameState(st));
-        setPlayers(mapPlayersWithSeats(st.players));
-        setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
-        setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
-        setOptionsVisible(false);
-        setIsLocal(true);
-        setMessage(t.resumed);
-        // bots don't wait for a click, so restart their loop if it's their turn
-        if (st.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
-        return;
-      }
-    }
+    // A saved, unfinished local match is offered on the welcome screen (Continue / New game).
+    const saved = readSavedGame(maxPoints);
+    if (saved) setSavedGame(saved);
 
     // No active game: show options to start a new one and clear transient UI state
     setOptionsVisible(true);
@@ -942,6 +909,61 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     saveLocalState(st);
   };
 
+  // Resume the saved local match chosen on the welcome screen.
+  const continueSavedGame = () => {
+    setSavedGame(null);
+    setMode('single');
+    let st = loadLocalState();
+    // A trick that was waiting for its resolve animation when the page closed
+    if (st && !st.target) st.target = maxPoints; // games saved before the target lived in the state
+    if (st?.pendingResolve) {
+      st = Schieber.resolveTrick(st);
+      saveLocalState(st);
+    }
+    if (st) {
+      // If the stored local game already finished, start a fresh hand instead of resuming finished state
+      const matchOver =
+        st.phase === 'finished' &&
+        (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
+      if (st.phase === 'finished' && !matchOver) {
+        const fresh = Schieber.startNewHand(st);
+        saveLocalState(fresh);
+        setPlayers(mapPlayersWithSeats(fresh.players));
+        setGameState(toGameState(fresh));
+        setHand(fresh.players.find((p: any) => p.id === 0)?.hand || []);
+        setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
+        setOptionsVisible(false);
+        setIsLocal(true);
+        setMessage(t.newRoundStarted);
+        if (fresh.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
+        return;
+      }
+
+      if (!matchOver) {
+        setGameState(toGameState(st));
+        setPlayers(mapPlayersWithSeats(st.players));
+        setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
+        setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
+        setOptionsVisible(false);
+        setIsLocal(true);
+        setMessage(t.resumed);
+        // bots don't wait for a click, so restart their loop if it's their turn
+        if (st.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
+        return;
+      }
+    }
+
+    // Damaged save: fall back to a fresh match setup.
+    clearSavedGame();
+  };
+
+  const clearSavedGame = () => {
+    try {
+      localStorage.removeItem('jassLocalState');
+    } catch {}
+    setSavedGame(null);
+  };
+
   // Reset game to initial welcome screen state
   const resetToWelcome = () => {
     // Clear all game state
@@ -987,6 +1009,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     // if a previous match finished, starting a new local game clears it
     setMatchFinished(false);
     setRoundHistory([]);
+    setSavedGame(null);
     setIsLocal(true);
     startLocalGame();
     // let bots take over (they will auto-select trump if needed)
@@ -2657,6 +2680,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               {mode === 'single' && (
                 <SettingsSheet lang={lang} settings={settings} onChange={updateSettings} />
               )}
+              {mode === 'single' && <RulesSheet lang={lang} />}
 
               {/* Trick: cards nudged toward the player who played them */}
               <div className="trick-zone">
@@ -2697,6 +2721,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                 onPick={submitTrump}
               />
             )}
+          </div>
+        )}
+
+        {optionsVisible && savedGame && (setupChoice === 'welcome' || setupChoice === 'single') && (
+          <ResumeCard
+            lang={lang}
+            saved={savedGame}
+            onContinue={continueSavedGame}
+            onNewGame={clearSavedGame}
+          />
+        )}
+        {optionsVisible && (setupChoice === 'welcome' || setupChoice === 'single') && (
+          <div className="rules-row">
+            <RulesSheet lang={lang} variant="inline" />
           </div>
         )}
 

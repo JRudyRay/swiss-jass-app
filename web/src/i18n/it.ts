@@ -75,7 +75,85 @@ const it: Messages = {
     suitMarks: 'Forme dei semi',
     suitMarksHint: 'Aggiunge una forma accanto al simbolo del seme',
   },
+  rules: {
+    button: 'Regole',
+    title: 'Regole dello Schieber',
+    close: 'Chiudi',
+    intro: 'Un breve riassunto delle regole usate in questo gioco.',
+    sections: [
+      {
+        title: 'Il gioco',
+        items: [
+          '4 giocatori in 2 squadre. I compagni siedono uno di fronte all’altro.',
+          '36 carte: Ghiande, Sonagli, Rose, Scudi; 6, 7, 8, 9, 10, Under, Ober, Re, Asso. Ognuno riceve 9 carte, quindi una mano ha 9 prese.',
+          'Si gioca in senso antiorario.',
+          'La prima squadra che raggiunge il punteggio obiettivo (di norma 1000, modificabile nell’impostazione) vince subito, anche a metà mano.',
+        ],
+      },
+      {
+        title: 'Scegliere il contratto',
+        items: [
+          'Il contratto è uno dei quattro semi come briscola, Obenabe (l’Asso è la carta più alta) o Undenufe (il 6 è la più alta). Gli ultimi due non hanno briscola.',
+          'Il giocatore di mano (alla destra di chi ha dato) sceglie il contratto oppure lo passa ("schieben") al compagno. Il compagno deve allora scegliere.',
+          'In ogni caso il giocatore di mano apre la prima presa.',
+        ],
+      },
+      {
+        title: 'Giocare una presa',
+        items: [
+          'Si deve rispondere al seme, se si può.',
+          'La briscola si può sempre giocare, ma tagliare non è mai obbligatorio.',
+          'Non è permesso sottotagliare (giocare una briscola più bassa di quella già nella presa), a meno di avere solo briscole.',
+          'L’Under (Puur) non è mai obbligato a rispondere alla briscola. Se si apre di briscola e la tua unica briscola è l’Under solo, puoi giocare qualsiasi carta.',
+        ],
+      },
+      {
+        title: 'Punti delle carte',
+        items: [
+          'Seme di briscola: Under (Puur) 20, Nove (Nell) 14, Asso 11, Dieci 10, Re 4, Ober 3, il resto 0.',
+          'Altri semi: Asso 11, Dieci 10, Re 4, Ober 3, Under 2, il resto 0.',
+          'Obenabe: Asso 11, Dieci 10, Otto 8, Re 4, Ober 3, Under 2, Sei 0.',
+          'Undenufe: Sei 11, Dieci 10, Otto 8, Re 4, Ober 3, Under 2, Asso 0.',
+          'L’ultima presa vale 5 in più. Una mano vale 157 punti di carte.',
+        ],
+      },
+      {
+        title: 'Annunci (Weis)',
+        items: [
+          'Sequenza nello stesso seme (ordine 6 7 8 9 10 Under Ober Re Asso): 3 carte 20, 4 carte 50, 5 carte 100, 6 carte 150, 7 carte 200, 8 carte 250, 9 carte 300.',
+          'Quattro uguali: quattro Under 200, quattro Nove 150, quattro Assi, Re, Ober o Dieci 100. Quattro 6, 7 o 8 non valgono nulla.',
+          'Segna solo la squadra con il miglior annuncio, e allora tutti i suoi annunci. Il migliore ha più punti. A parità: la sequenza più lunga, poi la più alta (la più bassa a Undenufe), poi quella di briscola. Se è ancora pari, vince il giocatore che gioca per primo a partire dal giocatore di mano.',
+        ],
+      },
+      {
+        title: 'Stöck e Match',
+        items: [
+          'Stöck: Re e Ober di briscola nella stessa mano valgono 20 quando entrambi sono stati giocati. Solo nei contratti a seme. Conta a prescindere dagli annunci.',
+          'Match: fare tutte e 9 le prese aggiunge 100 (257 per la mano).',
+        ],
+      },
+      {
+        title: 'Moltiplicatori',
+        items: [
+          'Ghiande e Rose contano x1, Sonagli e Scudi x2, Obenabe e Undenufe x3.',
+          'Il moltiplicatore vale per i punti di entrambe le squadre: carte, ultima presa, annunci, Stöck e Match.',
+        ],
+      },
+    ] as { title: string; items: string[] }[],
+  },
+  resume: {
+    title: 'Partita in corso',
+    yourTeam: 'La tua squadra',
+    opponents: 'Avversari',
+    target: (n: number) => `Primi a ${n}`,
+    continue: 'Continua',
+    newGame: 'Nuova partita',
+    aria: 'Partita salvata',
+  },
   victory: {
+    colRound: 'Mano',
+    colContract: 'Contratto',
+    roundNote: 'Punti per mano, moltiplicatore, annunci, Stöck e Match già inclusi.',
     youWon: 'La vostra squadra vince la partita.',
     youLost: 'Gli avversari vincono la partita.',
     rounds: 'Mani',

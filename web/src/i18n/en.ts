@@ -73,7 +73,85 @@ const en = {
     suitMarks: 'Suit shapes on cards',
     suitMarksHint: 'Adds a shape next to the suit symbol',
   },
+  rules: {
+    button: 'Rules',
+    title: 'Rules of Schieber',
+    close: 'Close',
+    intro: 'A short summary of the rules this game uses.',
+    sections: [
+      {
+        title: 'The game',
+        items: [
+          '4 players in 2 teams. Partners sit opposite each other.',
+          '36 cards: Acorns, Bells, Roses, Shields; 6, 7, 8, 9, 10, Under, Ober, King, Ace. Everyone gets 9 cards, so a hand has 9 tricks.',
+          'Play runs counter-clockwise.',
+          'The first team to reach the target score (1000 by default, adjustable in the setup) wins at once, even in the middle of a hand.',
+        ],
+      },
+      {
+        title: 'Choosing the contract',
+        items: [
+          'The contract is one of the four suits as trump, Top down (Obenabe, Ace is highest) or Bottom up (Undenufe, 6 is highest). The last two have no trump.',
+          'The forehand (the dealer’s right) chooses the contract or pushes it ("schieben") to their partner. The partner must then choose.',
+          'The forehand leads the first trick either way.',
+        ],
+      },
+      {
+        title: 'Playing a trick',
+        items: [
+          'Follow suit if you can.',
+          'Trump may always be played, but trumping is never forced.',
+          'Undertrumping (playing a lower trump than one already in the trick) is not allowed, unless you hold nothing but trumps.',
+          'The Under (Puur) never has to be played to follow trump. If trump is led and your only trump is the bare Under, you may play anything.',
+        ],
+      },
+      {
+        title: 'Card points',
+        items: [
+          'Trump suit: Under (Puur) 20, Nine (Nell) 14, Ace 11, Ten 10, King 4, Ober 3, the rest 0.',
+          'Other suits: Ace 11, Ten 10, King 4, Ober 3, Under 2, the rest 0.',
+          'Top down: Ace 11, Ten 10, Eight 8, King 4, Ober 3, Under 2, Six 0.',
+          'Bottom up: Six 11, Ten 10, Eight 8, King 4, Ober 3, Under 2, Ace 0.',
+          'The last trick is worth 5 more. A hand holds 157 card points.',
+        ],
+      },
+      {
+        title: 'Weis (declarations)',
+        items: [
+          'Sequence in one suit (order 6 7 8 9 10 Under Ober King Ace): 3 cards 20, 4 cards 50, 5 cards 100, 6 cards 150, 7 cards 200, 8 cards 250, 9 cards 300.',
+          'Four of a kind: four Unders 200, four Nines 150, four Aces, Kings, Obers or Tens 100. Four 6s, 7s or 8s count nothing.',
+          'Only the team with the single best Weis scores, and then all of its Weis. The best has the most points. If equal: the longer sequence, then the higher one (the lower in Bottom up), then the one in trump. If still equal, the player who comes first in turn from the forehand wins.',
+        ],
+      },
+      {
+        title: 'Stöck and Match',
+        items: [
+          'Stöck: King and Ober of trump in one hand are worth 20 once both are played. Suit contracts only. It counts regardless of Weis.',
+          'Match: taking all 9 tricks adds 100 (257 for the hand).',
+        ],
+      },
+      {
+        title: 'Multipliers',
+        items: [
+          'Acorns and Roses count x1, Bells and Shields x2, Top down and Bottom up x3.',
+          'The multiplier applies to both teams’ points: cards, last trick, Weis, Stöck and Match.',
+        ],
+      },
+    ] as { title: string; items: string[] }[],
+  },
+  resume: {
+    title: 'Match in progress',
+    yourTeam: 'Your team',
+    opponents: 'Opponents',
+    target: (n: number) => `First to ${n}`,
+    continue: 'Continue',
+    newGame: 'New game',
+    aria: 'Saved match',
+  },
   victory: {
+    colRound: 'Round',
+    colContract: 'Contract',
+    roundNote: 'Points per round, with multiplier, Weis, Stöck and Match already included.',
     youWon: 'Your team wins the match.',
     youLost: 'The opponents win the match.',
     rounds: 'Rounds',

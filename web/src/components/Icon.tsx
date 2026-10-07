@@ -123,6 +123,13 @@ const PATHS: Record<string, React.ReactNode> = {
       <circle cx="12" cy="12" r="6.4" />
     </>
   ),
+  help: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9" />
+      <path d="M12 16.8v.2" />
+    </>
+  ),
   mail2: (
     <>
       <path d="M4 12l16-7-6 15-3-6-7-2z" />
