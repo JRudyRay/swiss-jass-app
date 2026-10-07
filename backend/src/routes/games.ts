@@ -38,7 +38,8 @@ router.post('/create', (req, res) => {
 /**
  * POST /api/games/report
  * Accepts a match report and updates stats for both teams using TrueSkill
- * body: { teamA: string[] (userIds), teamB: string[] (userIds), scoreA: number, scoreB: number, rounds?: number, isMultiplayer?: boolean }
+ * body: { teamA: string[] (userIds), teamB: string[] (userIds), scoreA: number, scoreB: number, rounds?: number }
+ * Never changes ratings: those are only updated server-side from finished table games.
  */
 router.post('/report', async (req, res) => {
   try {
@@ -52,7 +53,7 @@ router.post('/report', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid token' });
     }
 
-    const { teamA, teamB, scoreA, scoreB, rounds, isMultiplayer } = req.body || {};
+    const { teamA, teamB, scoreA, scoreB, rounds } = req.body || {};
 
     const validTeam = (t: any) =>
       Array.isArray(t) && t.length >= 1 && t.length <= 2 && t.every((x) => typeof x === 'string');
@@ -69,8 +70,10 @@ router.post('/report', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid scores' });
     }
 
-    // ✅ Validate isMultiplayer flag (default to false for safety)
-    const isMultiplayerGame = isMultiplayer === true;
+    // Rated (multiplayer) results are recorded by the server when a table game
+    // finishes (gameHub). A client report is never trusted for ratings, so the
+    // client-sent isMultiplayer flag is ignored.
+    const isMultiplayerGame = false;
 
     const { updateStatsForMatch } = require('../services/gameService');
     await updateStatsForMatch(
@@ -109,18 +112,19 @@ router.post('/user-result', async (req, res) => {
     if (!userId) return res.status(401).json({ success: false, message: 'Invalid token user' });
 
     const { won, points = 0, rounds = 0 } = req.body || {};
+    const clamp = (n: any, max: number) => Math.min(Math.max(Number(n) || 0, 0), max);
     const { updateUserStats } = require('../services/gameService');
     await updateUserStats(
       userId,
       {
         gamesPlayed: 1,
-        gamesWon: won ? 1 : 0,
-        totalPoints: Number(points || 0),
-        totalRounds: Number(rounds || 0),
+        gamesWon: won === true ? 1 : 0,
+        totalPoints: clamp(points, 5000),
+        totalRounds: clamp(rounds, 1000),
       },
       false,
     ); // ✅ Explicitly mark as offline (single-user endpoint is for offline games)
-    return res.json({ success: true, message: 'User stats updated', won: !!won });
+    return res.json({ success: true, message: 'User stats updated', won: won === true });
   } catch (e: any) {
     console.error('Error in user-result:', e);
     return res.status(500).json({ success: false, message: 'Failed to update user stats' });

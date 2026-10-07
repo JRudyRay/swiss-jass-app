@@ -50,14 +50,14 @@ router.get('/requests', authenticate, async (req: any, res) => {
 router.post(
   '/requests/:id/respond',
   authenticate,
-  body('accept').optional().isBoolean().withMessage('must be true or false'),
+  body('accept').isBoolean({ strict: true }).withMessage('must be true or false'),
   validate,
   async (req: any, res) => {
     try {
       const updated = await FriendService.respond(
         req.params.id,
         req.user.userId,
-        !!req.body.accept,
+        req.body.accept === true,
       );
       const io = req.app.get('io');
       io?.emit('friends:update');

@@ -38,6 +38,12 @@ const optText = (f: string, max = 60) =>
     .isLength({ max })
     .withMessage('too long');
 
+const optCountry = body('country')
+  .optional({ nullable: true })
+  .isString()
+  .matches(/^[A-Za-z]{2}$/)
+  .withMessage('must be a 2-letter country code');
+
 router.post(
   '/register',
   body('email').isString().trim().isEmail().isLength({ max: 254 }).withMessage('must be an email'),
@@ -47,7 +53,7 @@ router.post(
   optText('lastName'),
   optText('avatarShape'),
   optText('avatarColor'),
-  optText('country'),
+  optCountry,
   optText('city'),
   validate,
   async (req, res) => {
@@ -115,6 +121,7 @@ router.put(
   optText('avatarShape'),
   optText('avatarColor'),
   optText('city'),
+  optCountry,
   validate,
   async (req: any, res) => {
     try {

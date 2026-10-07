@@ -20,17 +20,24 @@ const authenticate = (req: any, res: any, next: any) => {
   }
 };
 
+const isNum = (v: any) => typeof v === 'number';
+
 // Create table
 router.post(
   '/',
   authenticate,
   body('name').optional().isString().isLength({ max: 60 }).withMessage('max 60 characters'),
-  body('maxPlayers').optional().isInt({ min: 2, max: 4 }).withMessage('2-4'),
+  body('maxPlayers').optional().isInt({ min: 2, max: 4 }).bail().custom(isNum).withMessage('2-4'),
   body('gameType').optional().isString().isLength({ max: 30 }),
   body('team1Name').optional().isString().isLength({ max: 40 }),
   body('team2Name').optional().isString().isLength({ max: 40 }),
-  body('targetPoints').optional().isInt({ min: 1, max: 5000 }).withMessage('1-5000'),
-  body('isPrivate').optional().isBoolean(),
+  body('targetPoints')
+    .optional()
+    .isInt({ min: 1, max: 5000 })
+    .bail()
+    .custom(isNum)
+    .withMessage('1-5000'),
+  body('isPrivate').optional().isBoolean({ strict: true }),
   body('password').optional({ nullable: true }).isString().isLength({ max: 100 }),
   validate,
   async (req: any, res) => {
