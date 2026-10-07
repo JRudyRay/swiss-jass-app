@@ -13,7 +13,13 @@ import LastTrick from './components/table/LastTrick';
 import SettingsSheet from './components/table/SettingsSheet';
 import RulesSheet from './components/table/RulesSheet';
 import ResumeCard from './components/setup/ResumeCard';
-import { readSavedGame, type SavedGameSummary } from './components/setup/savedGame';
+import {
+  readSavedGame,
+  readSavedRounds,
+  writeSavedRounds,
+  clearSavedRounds,
+  type SavedGameSummary,
+} from './components/setup/savedGame';
 import { useSettings } from './components/table/useSettings';
 import { useLastTrick } from './components/table/useLastTrick';
 import Hand from './components/table/Hand';
@@ -109,6 +115,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   }, []);
 
   const t = messages(lang).game;
+  const tm = messages(lang).mp;
   const [gameId, setGameId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -283,7 +290,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       const data = await res.json();
       if (data.success) {
         setActiveTableId(id);
-        setMessage('Game starting...');
+        setMessage(tm.gameStarting);
       }
       fetchTables();
     } catch {}
@@ -318,6 +325,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [roundHistory, setRoundHistory] = useState<
     Array<{ round: number; team1: number; team2: number; trump: string }>
   >([]);
+  // Keep the results table across reloads (restored by Continue). Empty lists are cleared explicitly.
+  useEffect(() => {
+    writeSavedRounds(roundHistory);
+  }, [roundHistory]);
   const [weisWinner, setWeisWinner] = useState<{ playerId: number; teamId: number } | null>(null);
   const [weisCompetition, setWeisCompetition] = useState<{
     active: boolean;
@@ -672,7 +683,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               setHand(resolved.players.find((p: any) => p.id === 0)?.hand || []);
               setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
               setUiPendingResolve(false);
-              setMessage('Auto-resolved stalled trick');
+              setMessage(tm.autoResolved);
             }
           }
         }
@@ -717,7 +728,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                 } catch {}
               }
               if (idleMs > 20000) {
-                setMessage('Game appears idle — you can Force Resume or Reset Local to recover');
+                setMessage(tm.idle);
               }
             }
           }
@@ -770,7 +781,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       if (!API_URL) {
         // no backend available (e.g. GitHub Pages) — start local game instead
         startLocalGameWithOptions();
-        setMessage('No backend detected — running local game');
+        setMessage(tm.noBackend);
         return;
       }
       const res = await fetch(`${API_URL}/api/games/create`, {
@@ -792,13 +803,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         setGameState(data.state || null);
         setPlayers(mapPlayersWithSeats(data.players || []));
         setHand(data.hand || []);
-        setMessage('Game created');
+        setMessage(tm.gameCreated);
         setOptionsVisible(false);
       } else {
-        setMessage(data?.message || 'Failed to create game');
+        setMessage(data?.message || tm.createFailed);
       }
     } catch (err) {
-      setMessage('Could not create game — is backend running?');
+      setMessage(tm.noServer);
     } finally {
       setIsLoading(false);
     }
@@ -822,7 +833,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       if (!API_URL) {
         // run local flow instead
         startLocalGameWithOptions();
-        setMessage('No backend detected — running local game');
+        setMessage(tm.noBackend);
         return;
       }
       const res = await fetch(`${API_URL}/api/games/create`, {
@@ -836,13 +847,13 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         setGameState(data.state || null);
         setPlayers(mapPlayersWithSeats(data.players || []));
         setHand(data.hand || []);
-        setMessage('Game created');
+        setMessage(tm.gameCreated);
         setOptionsVisible(false);
       } else {
-        setMessage(data?.message || 'Failed to create game');
+        setMessage(data?.message || tm.createFailed);
       }
     } catch (err) {
-      setMessage('Could not create game — is backend running?');
+      setMessage(tm.noServer);
     } finally {
       setIsLoading(false);
     }
@@ -916,6 +927,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     let st = loadLocalState();
     // A trick that was waiting for its resolve animation when the page closed
     if (st && !st.target) st.target = maxPoints; // games saved before the target lived in the state
+    // Old saves have no rounds: the table then starts empty and fills from here on.
+    if (st) setRoundHistory(readSavedRounds(st.scores));
     if (st?.pendingResolve) {
       st = Schieber.resolveTrick(st);
       saveLocalState(st);
@@ -961,6 +974,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     try {
       localStorage.removeItem('jassLocalState');
     } catch {}
+    clearSavedRounds();
     setSavedGame(null);
   };
 
@@ -977,6 +991,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     setMatchFinished(false);
     setShowVictory(false);
     setRoundHistory([]);
+    clearSavedRounds();
     setOrientedTrick([]);
     setAnimatingSwoop(null);
     setCollect(null);
@@ -1009,6 +1024,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     // if a previous match finished, starting a new local game clears it
     setMatchFinished(false);
     setRoundHistory([]);
+    clearSavedRounds();
     setSavedGame(null);
     setIsLocal(true);
     startLocalGame();
@@ -1193,7 +1209,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         gameId: multiplayerGameId,
         trump: choice,
       });
-      setMessage(`Trump submitted: ${choice}`);
+      setMessage(tm.trumpSubmitted(trumpName(choice, lang)));
       return;
     }
     // Fallback to HTTP API legacy flow
@@ -1268,7 +1284,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         }
       }
     } catch (err) {
-      setMessage('Error loading game state');
+      setMessage(tm.loadError);
     }
   };
 
@@ -1527,7 +1543,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         st.phase = 'playing';
         saveLocalState(st);
         setGameState(toGameState(st));
-        setMessage(`Trump selected: ${trump}`);
+        setMessage(tm.trumpSelected(trumpName(trump, lang)));
         setTimeout(() => botsTakeTurns(), 200);
         return;
       }
@@ -1554,10 +1570,10 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             setWeisWinner(ww);
           }
         } catch (e) {}
-        setMessage(`Trump selected: ${trump}`);
-      } else setMessage(data?.message || 'Failed to select trump');
+        setMessage(tm.trumpSelected(trumpName(trump, lang)));
+      } else setMessage(data?.message || tm.trumpFailed);
     } catch (err) {
-      setMessage('Error selecting trump');
+      setMessage(tm.trumpError);
     } finally {
       setIsLoading(false);
     }
@@ -1603,7 +1619,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         setHand(data.hand || []);
         setLegalCards(data.legalCards || []);
         setSelectedCard(null);
-        setMessage('Card played');
+        setMessage(tm.cardPlayed);
         // If server returned that round finished, update totals
         if (data.state?.phase === 'finished' || data.state?.phase === 'scoring') {
           const processedRaw = localStorage.getItem('jassProcessedGames');
@@ -1611,9 +1627,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           if (gameId && !processed.includes(gameId))
             updateTotalsFromGameState(data.state, data.players || [], gameId);
         }
-      } else setMessage(data?.message || 'Invalid play');
+      } else setMessage(data?.message || tm.invalidPlay);
     } catch (err) {
-      setMessage('Error playing card');
+      setMessage(tm.playError);
     } finally {
       setIsLoading(false);
     }
@@ -1649,7 +1665,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           if (payload?.gameId) {
             setMultiplayerGameId(payload.gameId);
           }
-          setMessage('Game starting...');
+          setMessage(tm.gameStarting);
           // Ensure we're in the socket room
           s.emit('table:join', { tableId: payload.tableId });
         }
@@ -1664,7 +1680,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       s.on('table:started', (payload: any) => {
         // Game started
         // Placeholder: could initialize synchronized game state here
-        setMessage(`Game started: ${payload?.table?.name || ''}`);
+        setMessage(tm.gameStartedTable(payload?.table?.name || ''));
       });
       s.on('friends:update', () => fetchFriends());
       s.on('game:state', (payload: any) => {
@@ -1842,7 +1858,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   useEffect(() => {
     if (!socket) return;
     const handler = (err: any) => {
-      setMessage(err?.message || 'Illegal move');
+      setMessage(err?.message || tm.illegalMove);
     };
     socket.on('game:error', handler);
     return () => {
@@ -2025,9 +2041,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       });
       const data = await res.json();
       if (!data.success) {
-        setMessage(data.message || 'Failed to create table');
+        setMessage(data.message || tm.tableFailed);
       } else {
-        setMessage(`Table '${data.table?.name || nameOverride || 'Table'}' created`);
+        setMessage(tm.tableCreated(data.table?.name || nameOverride || 'Table'));
         setTableName('');
         setActiveTableId(data.table.id);
         socket?.emit('table:join', { tableId: data.table.id });
@@ -2036,7 +2052,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       }
       fetchTables();
     } catch (e) {
-      setMessage('Error creating table');
+      setMessage(tm.tableError);
     } finally {
       setCreatingTable(false);
     }
@@ -2741,6 +2757,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         {/* Welcome Screen - shown when user hasn't chosen single or multi yet */}
         {optionsVisible && setupChoice === 'welcome' && (
           <WelcomeCard
+            lang={lang}
             onlineCount={onlineCount}
             onSingle={() => {
               setMode('single');
@@ -2771,11 +2788,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
         {optionsVisible && setupChoice === 'multi' && mode === 'multi' && (
           <MultiInfoCard
+            lang={lang}
             onlineCount={onlineCount}
-            blurb={
-              t.multiTablesBlurb ||
-              'Go to the Tables tab to create or join a game table. Once all players are ready, the game will begin automatically.'
-            }
+            blurb={t.multiTablesBlurb}
             onBack={() => setSetupChoice('welcome')}
           />
         )}

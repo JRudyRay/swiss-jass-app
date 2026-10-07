@@ -101,11 +101,17 @@ function App() {
         />
         <main className="app-main">
           {view === 'dashboard' && (
-            <SwissDashboard user={user} token={token || ''} onNavigate={setCurrentView} />
+            <SwissDashboard
+              lang={lang}
+              user={user}
+              token={token || ''}
+              onNavigate={setCurrentView}
+            />
           )}
           {view === 'game' && <JassGame user={user} onLogout={handleLogout} lang={lang} />}
           {view === 'tables' && (
             <SwissTables
+              lang={lang}
               user={user}
               token={token || ''}
               onJoinGame={(tableId) => {
@@ -116,12 +122,13 @@ function App() {
           )}
           {view === 'rankings' && (
             <Rankings
+              lang={lang}
               apiUrl={API_URL || ''}
               onBack={() => setCurrentView('dashboard')}
               onReset={() => {}}
             />
           )}
-          {view === 'friends' && <SwissFriends user={user} token={token || ''} />}
+          {view === 'friends' && <SwissFriends lang={lang} user={user} token={token || ''} />}
         </main>
       </div>
     </ErrorBoundary>

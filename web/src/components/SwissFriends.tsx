@@ -4,13 +4,16 @@ import { io, Socket } from 'socket.io-client';
 import { Loading, EmptyState } from './Loading';
 import Icon from './Icon';
 import './SwissFriends.css';
+import { messages, type Lang } from '../i18n';
 
 interface SwissFriendsProps {
+  lang: Lang;
   user: any;
   token: string;
 }
 
-const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
+const SwissFriends: React.FC<SwissFriendsProps> = ({ lang, user, token }) => {
+  const t = messages(lang).friends;
   const [friendInput, setFriendInput] = useState('');
   const [friendsTabData, setFriendsTabData] = useState<{
     friends: any[];
@@ -125,11 +128,11 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
     friendsTabData.friends.length === 0 &&
     friendsTabData.requests.length === 0
   ) {
-    return <Loading message="Lade Fründ..." />;
+    return <Loading message={t.loading} />;
   }
 
   const requestLabel = (status: string) =>
-    status === 'PENDING' ? 'Pendent' : status === 'ACCEPTED' ? 'Akzeptiert' : 'Abglehnt';
+    status === 'PENDING' ? t.pending : status === 'ACCEPTED' ? t.accepted : t.declined;
   const requestPill = (status: string) =>
     status === 'PENDING' ? 'pill--warn' : status === 'ACCEPTED' ? 'pill--ok' : 'pill--live';
 
@@ -137,29 +140,30 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
     <div className="page friends">
       <h1 className="page__title friends__title">
         <Icon name="friends" size={26} />
-        Fründ
+        {t.title}
       </h1>
-      <p className="page__sub">Füeg Fründ hinzue zum zämme Jass spiele und online Status gseh.</p>
+      <p className="page__sub">{t.sub}</p>
 
       <form onSubmit={handleSubmit} className="friends__form">
         <input
           ref={inputRef}
           value={friendInput}
           onChange={(e) => setFriendInput(e.target.value)}
-          placeholder="Fründ Username"
+          placeholder={t.inputPh}
+          aria-label={t.inputPh}
           className="input friends__input"
         />
         <button type="submit" className="btn btn--primary" disabled={!friendInput.trim()}>
           <Icon name="plus" size={18} />
-          Hinzuefüge
+          {t.add}
         </button>
         <button type="button" className="btn" onClick={fetchFriends}>
           <Icon name="refresh" size={18} />
-          Aktualisiere
+          {t.refresh}
         </button>
       </form>
 
-      <h2 className="friends__section">Fründ ({friendsTabData.friends.length})</h2>
+      <h2 className="friends__section">{t.friendsH(friendsTabData.friends.length)}</h2>
       {friendsTabData.friends.length > 0 ? (
         <div className="list friends__grid">
           {friendsTabData.friends.map((f) => (
@@ -171,7 +175,7 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
                 <div className="row__title">{f.username}</div>
               </div>
               <span className={`pill ${f.online ? 'pill--ok' : ''}`}>
-                {f.online ? 'Online' : 'Offline'}
+                {f.online ? t.online : t.offline}
               </span>
             </div>
           ))}
@@ -179,25 +183,25 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
       ) : (
         <EmptyState
           icon={<Icon name="friends" size={44} />}
-          title="Kei Fründ"
-          description="Füeg Fründ hinzue zum zämme spiele"
+          title={t.emptyTitle}
+          description={t.emptyText}
           action={
             <button className="btn btn--primary" onClick={() => inputRef.current?.focus()}>
               <Icon name="plus" size={18} />
-              Hinzuefüge
+              {t.add}
             </button>
           }
         />
       )}
 
-      <h2 className="friends__section">Afrage ({friendsTabData.requests.length})</h2>
+      <h2 className="friends__section">{t.requestsH(friendsTabData.requests.length)}</h2>
       {friendsTabData.requests.length > 0 ? (
         <div className="list">
           {friendsTabData.requests.map((r) => (
             <div key={r.id} className="row friends__request">
               <div className="row__main">
                 <div className="row__title">
-                  <span className="row__meta">{r.senderId === user?.id ? 'An:' : 'Vo:'}</span>{' '}
+                  <span className="row__meta">{r.senderId === user?.id ? t.to : t.from}</span>{' '}
                   {r.senderId === user?.id ? r.receiver?.username : r.sender?.username}
                 </div>
               </div>
@@ -209,14 +213,14 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
                     onClick={() => respondFriendRequest(r.id, true)}
                   >
                     <Icon name="check" size={18} />
-                    Akzeptiere
+                    {t.accept}
                   </button>
                   <button
                     className="btn btn--danger"
                     onClick={() => respondFriendRequest(r.id, false)}
                   >
                     <Icon name="close" size={18} />
-                    Ablehne
+                    {t.decline}
                   </button>
                 </div>
               )}
@@ -224,7 +228,7 @@ const SwissFriends: React.FC<SwissFriendsProps> = ({ user, token }) => {
           ))}
         </div>
       ) : (
-        <p className="friends__none">Kei pendenti Afrage</p>
+        <p className="friends__none">{t.noRequests}</p>
       )}
     </div>
   );

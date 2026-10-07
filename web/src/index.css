@@ -286,16 +286,6 @@ body {
    Component-Specific Styles
    ======================================== */
 
-/* Header hover effects */
-button:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
 /* Dropdown menu animation */
 @keyframes slideInDown {
   from {

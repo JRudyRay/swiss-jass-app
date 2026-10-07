@@ -27,3 +27,53 @@ export function readSavedGame(fallbackTarget = 1000): SavedGameSummary | null {
     return null;
   }
 }
+
+// The per-round results table lives in its own key so saves made before it existed still load
+// (they just start with an empty table) and the engine state stays untouched.
+export type SavedRound = { round: number; team1: number; team2: number; trump: string };
+const ROUNDS_KEY = 'jassLocalRounds';
+
+export function writeSavedRounds(rounds: SavedRound[]) {
+  try {
+    if (rounds.length) localStorage.setItem(ROUNDS_KEY, JSON.stringify(rounds));
+  } catch {
+    // storage unavailable: the table just won't survive a reload
+  }
+}
+
+export function clearSavedRounds() {
+  try {
+    localStorage.removeItem(ROUNDS_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+// Returns the saved rounds, or [] when missing, damaged, or not matching the saved scores
+// (e.g. left over from another match).
+export function readSavedRounds(scores?: { team1?: number; team2?: number }): SavedRound[] {
+  try {
+    const raw = localStorage.getItem(ROUNDS_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    const rounds: SavedRound[] = [];
+    for (const r of arr) {
+      const t1 = num(r?.team1);
+      const t2 = num(r?.team2);
+      if (t1 === null || t2 === null) return [];
+      rounds.push({
+        round: rounds.length + 1,
+        team1: t1,
+        team2: t2,
+        trump: String(r?.trump ?? ''),
+      });
+    }
+    const sum1 = rounds.reduce((a, r) => a + r.team1, 0);
+    const sum2 = rounds.reduce((a, r) => a + r.team2, 0);
+    if (scores && (sum1 > (scores.team1 || 0) || sum2 > (scores.team2 || 0))) return [];
+    return rounds;
+  } catch {
+    return [];
+  }
+}

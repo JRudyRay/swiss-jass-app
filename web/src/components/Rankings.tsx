@@ -3,6 +3,7 @@ import { Loading, EmptyState } from './Loading';
 import Icon from './Icon';
 import './Rankings.css';
 import { authFetch } from '../authFetch';
+import { messages, type Lang } from '../i18n';
 
 export type LeaderboardEntry = {
   id: string;
@@ -14,12 +15,14 @@ export type LeaderboardEntry = {
 };
 
 interface RankingsProps {
+  lang: Lang;
   apiUrl: string;
   onBack: () => void;
   onReset: () => void;
 }
 
-const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
+const Rankings: React.FC<RankingsProps> = ({ lang, apiUrl, onBack, onReset }) => {
+  const t = messages(lang).rankings;
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [metric, setMetric] = useState<'totalWins' | 'totalGames' | 'totalPoints' | 'winRate'>(
     'totalWins',
@@ -48,10 +51,10 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
   const sorted = [...leaderboard].sort((a, b) => (b[metric] as number) - (a[metric] as number));
 
   const metricLabels = {
-    totalWins: 'Siege',
-    totalGames: 'Spiel',
-    totalPoints: 'Punkte',
-    winRate: 'Siegquote',
+    totalWins: t.labelWins,
+    totalGames: t.labelGames,
+    totalPoints: t.labelPoints,
+    winRate: t.labelRate,
   };
 
   const formatValue = (entry: LeaderboardEntry, metric: string) => {
@@ -62,7 +65,7 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
   };
 
   if (isLoading) {
-    return <Loading message="Lade Rangliste..." />;
+    return <Loading message={t.loading} />;
   }
 
   const podiumOrder = sorted.length >= 3 ? [1, 0, 2] : [];
@@ -73,15 +76,13 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
     <div className="page rank">
       <h1 className="page__title rank__title">
         <Icon name="trophy" size={26} />
-        Rangliste
+        {t.title}
       </h1>
-      <p className="page__sub">
-        Die beschte Jass Spieler vo de Welt – sortiert nach dine Kriterie.
-      </p>
+      <p className="page__sub">{t.sub}</p>
 
       <div className="rank__sort">
         <label className="rank__sort-label" htmlFor="rank-metric">
-          Sortiere nach:
+          {t.sortBy}
         </label>
         <select
           id="rank-metric"
@@ -89,10 +90,10 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
           onChange={(e) => setMetric(e.target.value as any)}
           className="input rank__select"
         >
-          <option value="totalWins">Siege</option>
-          <option value="totalGames">Gspilti Spiel</option>
-          <option value="totalPoints">Total Punkte</option>
-          <option value="winRate">Siegquote</option>
+          <option value="totalWins">{t.optWins}</option>
+          <option value="totalGames">{t.optGames}</option>
+          <option value="totalPoints">{t.optPoints}</option>
+          <option value="winRate">{t.optRate}</option>
         </select>
       </div>
 
@@ -115,8 +116,8 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
           )}
 
           <div className="rank__head">
-            <span className="rank__head-title">Alli Rangierige</span>
-            <span className="rank__head-count">{sorted.length} Spieler</span>
+            <span className="rank__head-title">{t.all}</span>
+            <span className="rank__head-count">{t.players(sorted.length)}</span>
           </div>
 
           <div className="list">
@@ -126,7 +127,8 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
                 <div className="row__main">
                   <div className="row__title">{entry.username}</div>
                   <div className="row__meta tabular">
-                    {entry.totalWins} S · {entry.totalGames} G · {(entry.winRate * 100).toFixed(0)}%
+                    {entry.totalWins} {t.winsShort} · {entry.totalGames} {t.gamesShort} ·{' '}
+                    {(entry.winRate * 100).toFixed(0)}%
                   </div>
                 </div>
                 <div className="rank__row-value">
@@ -140,11 +142,11 @@ const Rankings: React.FC<RankingsProps> = ({ apiUrl, onBack, onReset }) => {
       ) : (
         <EmptyState
           icon={<Icon name="trophy" size={44} />}
-          title="Kei Rangierige"
-          description="Spil en Match zum uf de Rangliste erschiene!"
+          title={t.emptyTitle}
+          description={t.emptyText}
           action={
             <button className="btn btn--primary" onClick={onBack}>
-              Zrugg
+              {t.back}
             </button>
           }
         />
