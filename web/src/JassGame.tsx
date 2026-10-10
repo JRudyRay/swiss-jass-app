@@ -31,20 +31,14 @@ import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
 import { messages, type Lang } from './i18n';
 import { authFetch } from './authFetch';
-type GameState = {
-  phase: string;
-  currentPlayer: number;
-  trumpSuit?: string | null;
-  currentTrick?: any[];
-  scores?: { team1: number; team2: number };
-  roundScores?: { team1: number; team2: number };
-  dealer?: number;
-  forehand?: number | null;
-  weis?: Record<number, any[]>; // playerId -> Weis declarations
-};
-
-type Player = { id: number; name: string; hand: any[]; team: number; position: string };
-
+import { sortHandForDisplay } from './game/handSort';
+import {
+  loadLocalState,
+  saveLocalState,
+  toGameState,
+  type GameState,
+  type Player,
+} from './game/localState';
 export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang }> = ({
   user,
   onLogout,
@@ -102,16 +96,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     } catch {
       return {};
     }
-  });
-  const toGameState = (st: Schieber.State): GameState => ({
-    phase: st.phase,
-    currentPlayer: st.currentPlayer,
-    trumpSuit: st.trump || null,
-    currentTrick: st.currentTrick || [],
-    scores: st.scores,
-    dealer: st.dealer,
-    weis: st.weis,
-    forehand: st.forehand ?? null,
   });
   // richer local user store: name -> { totalPoints, gamesPlayed, wins, lastSeen, passwordHash }
   const [jassUsers, setJassUsers] = useState<Record<string, any>>(() => {
@@ -327,32 +311,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     });
 
   const seatPlayer = (pos: string) => players.find((p) => p.position === pos);
-
-  function sortHandForDisplay(hand: any[], trump?: string | null) {
-    if (!hand || !hand.length) return hand.slice();
-    const trumpSuit = trump || null;
-
-    // Swiss Jass trump order: U(Jack)=20, 9=14, A=11, 10=10, K=4, O(Queen)=3, 8=0, 7=0, 6=0
-    // Normal order: A=11, 10=10, K=4, O=3, U=2, 9=0, 8=0, 7=0, 6=0
-    const normalRankOrder = ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
-    const trumpRankOrder = ['6', '7', '8', 'O', 'K', '10', 'A', '9', 'U']; // Proper Swiss trump order (best to worst)
-
-    const normalCards = hand.filter((c) => c.suit !== trumpSuit);
-    const trumpCards = hand.filter((c) => c.suit === trumpSuit);
-
-    // Sort normal cards by suit, then by rank
-    normalCards.sort((a, b) => {
-      if (a.suit !== b.suit) return a.suit.localeCompare(b.suit);
-      return normalRankOrder.indexOf(a.rank) - normalRankOrder.indexOf(b.rank);
-    });
-
-    // Sort trump cards by proper Swiss trump value (highest first for easy selection)
-    trumpCards.sort((a, b) => {
-      return trumpRankOrder.indexOf(b.rank) - trumpRankOrder.indexOf(a.rank);
-    });
-
-    return [...normalCards, ...trumpCards];
-  }
 
   // Compact tricks count for inline display
   function getTricksCount(p: any) {
@@ -812,31 +770,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       botsTakeTurns();
     }, 200);
     setOptionsVisible(false);
-  };
-
-  const loadLocalState = (): Schieber.State | null => {
-    try {
-      const raw = localStorage.getItem('jassLocalState');
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as Schieber.State & { _lastActionAt?: number };
-      // Backfill missing timestamp to avoid huge age values
-      if (!parsed._lastActionAt) parsed._lastActionAt = Date.now();
-      return parsed as Schieber.State;
-    } catch {
-      return null;
-    }
-  };
-
-  const saveLocalState = (st: Schieber.State) => {
-    try {
-      // annotate with last action timestamp used by UI watchdog
-      try {
-        (st as any)._lastActionAt = Date.now();
-      } catch (e) {}
-      localStorage.setItem('jassLocalState', JSON.stringify(st));
-    } catch (e) {
-      // ignore storage errors
-    }
   };
 
   const botsTakeTurns = async () => {
