@@ -1991,3 +1991,16 @@
   z-index: 1;
   background: var(--paper);
 }
+
+/* Portrait phones: the rules button moves to the opposite corner so the three
+   corner buttons never cover the north seat. */
+@media (orientation: portrait) and (max-width: 520px) {
+  .sheet-btn.rules-btn {
+    left: auto;
+    right: 6px;
+  }
+  .jass-screen--lefty .sheet-btn.rules-btn {
+    left: 6px;
+    right: auto;
+  }
+}
