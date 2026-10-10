@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import logo from './assets/logo.png';
 import CardCredits from './components/CardCredits';
 import ScoreBar, { TEAM_COLORS } from './components/table/ScoreBar';
-import { SuitIcon, trumpName } from './components/table/SuitBadge';
+import { trumpName } from './components/table/SuitBadge';
 import PlayerSeat from './components/table/PlayerSeat';
 import * as Schieber from './engine/schieber';
 import * as Bot from './engine/bot';
@@ -26,21 +25,12 @@ import Hand from './components/table/Hand';
 import TrumpChooser from './components/table/TrumpChooser';
 import { API_URL, ONLINE_ENABLED } from './config';
 import { io, Socket } from 'socket.io-client';
-import Rankings from './components/Rankings';
 import { WelcomeCard, MultiInfoCard } from './components/setup/WelcomeCard';
 import MatchSetup from './components/setup/MatchSetup';
 import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
-import { Loading, Spinner, SkeletonCard, EmptyState } from './components/Loading';
-import { generateSwissBotName } from './utils/swissBotNames';
 import { messages, type Lang } from './i18n';
 import { authFetch } from './authFetch';
-
-// Allow API override at build-time via Vite env (VITE_API_URL).
-// When the app is served from GitHub Pages (not localhost) there is no backend available,
-// so default to empty string to indicate local-only mode.
-const _meta = import.meta as any;
-
 type GameState = {
   phase: string;
   currentPlayer: number;
@@ -54,35 +44,6 @@ type GameState = {
 };
 
 type Player = { id: number; name: string; hand: any[]; team: number; position: string };
-
-const styles: { [key: string]: React.CSSProperties } = {
-  header: {
-    background: '#D42E2C',
-    color: 'white',
-    padding: '1rem 1rem',
-    textAlign: 'center' as const,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  },
-  controls: {
-    display: 'flex',
-    gap: 12,
-    marginBottom: 16,
-    flexWrap: 'wrap' as const,
-    justifyContent: 'center',
-  },
-  button: {
-    background: '#1A7A4C',
-    color: 'white',
-    border: 'none',
-    padding: '10px 18px',
-    borderRadius: 8,
-    cursor: 'pointer',
-    fontWeight: 600,
-    fontSize: 14,
-    boxShadow: '0 2px 8px rgba(26, 122, 76, 0.3)',
-    transition: 'all 0.2s ease',
-  },
-};
 
 export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang }> = ({
   user,
@@ -183,17 +144,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   // Recovery helpers to avoid dead-end states
   const prevPlayerRef = useRef<number | null>(null);
   const lastProgressAt = useRef<number>(Date.now());
-  const centerRef = useRef<HTMLDivElement | null>(null);
-  const seatRefs = {
-    south: useRef<HTMLDivElement | null>(null),
-    north: useRef<HTMLDivElement | null>(null),
-    west: useRef<HTMLDivElement | null>(null),
-    east: useRef<HTMLDivElement | null>(null),
-  };
-  const [animPositions, setAnimPositions] = useState<Record<
-    string,
-    { left: number; top: number; rot: number }
-  > | null>(null);
   const [teamNames, setTeamNames] = useState<{ 1: string; 2: string }>(() => ({
     1: 'Team 1',
     2: 'Team 2',
@@ -209,8 +159,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [collect, setCollect] = useState<{ winnerId: number } | null>(null);
   const [matchFinished, setMatchFinished] = useState<boolean>(false);
   const [currentUserName, setCurrentUserName] = useState<string>(user?.username || 'You');
-  const [profileMessage, setProfileMessage] = useState<string | null>(null);
-  const [newPasswordInput, setNewPasswordInput] = useState('');
 
   // multiplayer state
   const [mode, setMode] = useState<'single' | 'multi'>('single');
@@ -218,13 +166,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [tables, setTables] = useState<any[]>([]);
-  const [creatingTable, setCreatingTable] = useState(false);
-  const [joiningTableId, setJoiningTableId] = useState<string | null>(null);
-  const [tableName, setTableName] = useState('');
-  const [newTableGameType, setNewTableGameType] = useState('schieber');
-  const [newTeam1, setNewTeam1] = useState('Team 1');
-  const [newTeam2, setNewTeam2] = useState('Team 2');
-  const [newTargetPoints, setNewTargetPoints] = useState(1000);
   const [friendsTabData, setFriendsTabData] = useState<{ friends: any[]; requests: any[] }>({
     friends: [],
     requests: [],
@@ -296,31 +237,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     } catch {}
   };
 
-  // simple SHA-256 helper for local password hashing
-  async function sha256(text: string) {
-    const enc = new TextEncoder();
-    const data = enc.encode(text);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-  }
-
-  const handleChangePassword = async () => {
-    if (!currentUserName) return setProfileMessage('No user');
-    if (!newPasswordInput || newPasswordInput.length < 6)
-      return setProfileMessage('Password must be at least 6 chars');
-    const h = await sha256(newPasswordInput);
-    const users = { ...jassUsers };
-    if (!users[currentUserName])
-      users[currentUserName] = { totalPoints: 0, gamesPlayed: 0, wins: 0, lastSeen: null };
-    users[currentUserName].passwordHash = h;
-    localStorage.setItem('jassUsers', JSON.stringify(users));
-    setJassUsers(users);
-    setProfileMessage('Password updated locally');
-    setNewPasswordInput('');
-    setTimeout(() => setProfileMessage(null), 3000);
-  };
   const [roundStarter, setRoundStarter] = useState(0);
   const [roundHistory, setRoundHistory] = useState<
     Array<{ round: number; team1: number; team2: number; trump: string }>
@@ -411,10 +327,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     });
 
   const seatPlayer = (pos: string) => players.find((p) => p.position === pos);
-  const northPlayer = seatPlayer('north');
-  const westPlayer = seatPlayer('west');
-  const eastPlayer = seatPlayer('east');
-  const southPlayer = seatPlayer('south');
 
   function sortHandForDisplay(hand: any[], trump?: string | null) {
     if (!hand || !hand.length) return hand.slice();
@@ -440,56 +352,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     });
 
     return [...normalCards, ...trumpCards];
-  }
-
-  function renderTrickStack(p: any) {
-    // Count actual tricks won (every 4 cards = 1 trick)
-    const tricksWon = Math.floor((p?.tricks?.length || 0) / 4);
-    const stack = [] as any[];
-    for (let i = 0; i < Math.min(tricksWon, 4); i++) stack.push(i);
-    // orientedTrick state now holds current trick cards mapped to perspective positions
-
-    return (
-      <div
-        style={{
-          display: 'flex',
-          gap: 4,
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-        }}
-      >
-        <div style={{ position: 'relative', width: 24, height: 32 }}>
-          {stack.map((s, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                left: i * 1.5,
-                top: -i * 1,
-                width: 24,
-                height: 32,
-                background: '#111827',
-                borderRadius: 2,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                opacity: 0.9,
-              }}
-            />
-          ))}
-        </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: '#4b5563',
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
-            fontWeight: '600',
-          }}
-        >
-          {tricksWon} {t.tricks}
-        </div>
-      </div>
-    );
   }
 
   // Compact tricks count for inline display
@@ -772,93 +634,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   // show trump indicator always during round
   const currentTrump = gameState?.trumpSuit || chosenTrump;
-
-  const createGame = async () => {
-    setIsLoading(true);
-    try {
-      // starting a new game clears any previous match-finished flag
-      setMatchFinished(false);
-      if (!API_URL) {
-        // no backend available (e.g. GitHub Pages) — start local game instead
-        startLocalGameWithOptions();
-        setMessage(tm.noBackend);
-        return;
-      }
-      const res = await fetch(`${API_URL}/api/games/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerNames: [
-            'You',
-            generateSwissBotName(),
-            generateSwissBotName(),
-            generateSwissBotName(),
-          ],
-          gameType,
-        }),
-      });
-      const data = await res.json();
-      if (data?.success) {
-        setGameId(data.gameId);
-        setGameState(data.state || null);
-        setPlayers(mapPlayersWithSeats(data.players || []));
-        setHand(data.hand || []);
-        setMessage(tm.gameCreated);
-        setOptionsVisible(false);
-      } else {
-        setMessage(data?.message || tm.createFailed);
-      }
-    } catch (err) {
-      setMessage(tm.noServer);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const createGameWithOptions = async (opts?: { gameType?: string; maxPoints?: number }) => {
-    setIsLoading(true);
-    try {
-      // clear previous finished flag when explicitly creating a game
-      setMatchFinished(false);
-      const body = {
-        playerNames: [
-          'You',
-          generateSwissBotName(),
-          generateSwissBotName(),
-          generateSwissBotName(),
-        ],
-        gameType: opts?.gameType || gameType,
-        maxPoints: opts?.maxPoints || maxPoints,
-      };
-      if (!API_URL) {
-        // run local flow instead
-        startLocalGameWithOptions();
-        setMessage(tm.noBackend);
-        return;
-      }
-      const res = await fetch(`${API_URL}/api/games/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (data?.success) {
-        setGameId(data.gameId);
-        setGameState(data.state || null);
-        setPlayers(mapPlayersWithSeats(data.players || []));
-        setHand(data.hand || []);
-        setMessage(tm.gameCreated);
-        setOptionsVisible(false);
-      } else {
-        setMessage(data?.message || tm.createFailed);
-      }
-    } catch (err) {
-      setMessage(tm.noServer);
-    } finally {
-      setIsLoading(false);
-    }
-    setIsLocal(false);
-  };
 
   // Complete game and update user stats on backend
   const completeGame = async (
@@ -1889,38 +1664,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     });
   }, [players, user?.id]);
 
-  // Render current trick in center using orientedTrick (placeholder; integrate into JSX where center cards shown)
-  function renderCurrentTrick() {
-    if (!orientedTrick.length) return null;
-    // Example minimal rendering; integrate with your styled board center if needed
-    return (
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%,-50%)',
-          display: 'flex',
-          gap: 12,
-        }}
-      >
-        {orientedTrick.map((c) => (
-          <div
-            key={c.id}
-            style={{
-              padding: 6,
-              background: '#fff',
-              borderRadius: 8,
-              boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
-            }}
-          >
-            {c.rank}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   // Recompute orientedTrick & legal cards on dependency changes (safety net if socket update missed ordering)
   useEffect(() => {
     try {
@@ -2024,62 +1767,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     } catch {}
   };
 
-  const createTable = async (nameOverride?: string) => {
-    if (!authToken.current) return;
-    setCreatingTable(true);
-    try {
-      const res = await fetch(`${API_URL}/api/tables`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken.current}`,
-        },
-        body: JSON.stringify({
-          name: (nameOverride || 'Table').slice(0, 60),
-          maxPlayers: 4,
-          gameType: newTableGameType,
-          team1Name: newTeam1.slice(0, 40),
-          team2Name: newTeam2.slice(0, 40),
-          targetPoints: Math.min(5000, Math.max(1, Math.round(newTargetPoints) || 1000)),
-        }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        setMessage(data.message || tm.tableFailed);
-      } else {
-        setMessage(tm.tableCreated(data.table?.name || nameOverride || 'Table'));
-        setTableName('');
-        setActiveTableId(data.table.id);
-        socket?.emit('table:join', { tableId: data.table.id });
-        setOptionsVisible(false);
-        setMode('multi');
-      }
-      fetchTables();
-    } catch (e) {
-      setMessage(tm.tableError);
-    } finally {
-      setCreatingTable(false);
-    }
-  };
-
-  const joinTable = async (id: string) => {
-    if (!authToken.current) return;
-    setJoiningTableId(id);
-    try {
-      await fetch(`${API_URL}/api/tables/${id}/join`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${authToken.current}` },
-      });
-      setActiveTableId(id);
-      socket?.emit('table:join', { tableId: id });
-      setOptionsVisible(false);
-      setMode('multi');
-      fetchTables();
-    } finally {
-      setJoiningTableId(null);
-    }
-  };
-
   const fetchFriends = async () => {
     if (!authToken.current) return;
     setFriendsLoading(true);
@@ -2099,26 +1786,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     } finally {
       setFriendsLoading(false);
     }
-  };
-
-  const sendFriendRequest = async (username: string) => {
-    if (!authToken.current || !username) return;
-    await fetch(`${API_URL}/api/friends/request`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken.current}` },
-      body: JSON.stringify({ username }),
-    });
-    fetchFriends();
-  };
-
-  const respondFriendRequest = async (id: string, accept: boolean) => {
-    if (!authToken.current) return;
-    await fetch(`${API_URL}/api/friends/requests/${id}/respond`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken.current}` },
-      body: JSON.stringify({ accept }),
-    });
-    fetchFriends();
   };
 
   // Trigger initial fetch when switching to multi tabs
@@ -2149,363 +1816,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   // Unused rendering functions removed (tables/friends/tabs moved to standalone views)
 
   // Apply multiplayer game state to UI
-
-  const renderTables = () => {
-    const statusTheme: Record<string, { bg: string; color: string; label: string }> = {
-      OPEN: { bg: '#dcfce7', color: '#166534', label: 'Open' },
-      STARTING: { bg: '#fef9c3', color: '#92400e', label: 'Starting' },
-      IN_PROGRESS: { bg: '#e0f2fe', color: '#1d4ed8', label: 'In progress' },
-      COMPLETED: { bg: '#ede9fe', color: '#5b21b6', label: 'Completed' },
-      CANCELLED: { bg: '#fee2e2', color: '#b91c1c', label: 'Cancelled' },
-    };
-    return (
-      <div style={{ padding: 12 }}>
-        <div
-          style={{
-            display: 'flex',
-            gap: 10,
-            marginBottom: 14,
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <input
-            value={tableName}
-            onChange={(e) => setTableName(e.target.value)}
-            placeholder="Table name"
-            maxLength={60}
-            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, minWidth: 180 }}
-          />
-          <select
-            value={newTableGameType}
-            onChange={(e) => setNewTableGameType(e.target.value)}
-            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10 }}
-          >
-            <option value="schieber">Schieber</option>
-          </select>
-          <input
-            value={newTeam1}
-            maxLength={40}
-            onChange={(e) => setNewTeam1(e.target.value)}
-            placeholder="Team 1 name"
-            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 140 }}
-          />
-          <input
-            value={newTeam2}
-            maxLength={40}
-            onChange={(e) => setNewTeam2(e.target.value)}
-            placeholder="Team 2 name"
-            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 140 }}
-          />
-          <input
-            type="number"
-            value={newTargetPoints}
-            onChange={(e) =>
-              setNewTargetPoints(Math.min(5000, Math.max(1, parseInt(e.target.value) || 1000)))
-            }
-            min={1}
-            max={5000}
-            placeholder="Target"
-            style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 10, width: 110 }}
-          />
-          <button
-            disabled={creatingTable}
-            style={{
-              ...styles.button,
-              background: creatingTable ? '#94a3b8' : '#1A7A4C',
-              padding: '10px 18px',
-            }}
-            onClick={() => createTable(tableName || 'Table')}
-          >
-            {creatingTable ? 'Creating…' : 'Create table'}
-          </button>
-          <button
-            style={{ ...styles.button, background: '#2563eb', padding: '10px 18px' }}
-            onClick={fetchTables}
-          >
-            Refresh list
-          </button>
-          <div style={{ fontSize: 12, color: '#4b5563' }}>Online: {onlineCount}</div>
-        </div>
-        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 14 }}>
-          Host a public table or join an existing lobby below. Tables automatically upgrade to live
-          games when everyone is ready.
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gap: 14,
-            gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))',
-          }}
-        >
-          {tables.map((t) => (
-            <div
-              key={t.id}
-              style={{
-                border: '1px solid #e5e7eb',
-                borderRadius: 14,
-                padding: 16,
-                background: '#ffffff',
-                boxShadow: '0 10px 24px rgba(15,23,42,0.08)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <div style={{ fontWeight: 700, fontSize: 16, color: '#111827' }}>{t.name}</div>
-                {(() => {
-                  const theme = statusTheme[t.status] || {
-                    bg: '#e5e7eb',
-                    color: '#374151',
-                    label: t.status,
-                  };
-                  return (
-                    <span
-                      style={{
-                        background: theme.bg,
-                        color: theme.color,
-                        padding: '4px 10px',
-                        borderRadius: 999,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '.6px',
-                      }}
-                    >
-                      {theme.label}
-                    </span>
-                  );
-                })()}
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
-                  fontSize: 12,
-                  color: '#4b5563',
-                }}
-              >
-                <div>
-                  <strong>Host:</strong>{' '}
-                  {t.players?.find((p: any) => p.isHost)?.user?.username || 'Unknown'}
-                </div>
-                <div>
-                  <strong>Teams:</strong> {t.team1Name || 'Team 1'} vs {t.team2Name || 'Team 2'}
-                </div>
-                <div>
-                  <strong>Target:</strong> {t.targetPoints || newTargetPoints} pts •{' '}
-                  <strong>Players:</strong> {t.players?.length || 0}/{t.maxPlayers}
-                </div>
-              </div>
-              {t.players && t.players.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 6,
-                    flexWrap: 'wrap',
-                    fontSize: 11,
-                    color: '#6b7280',
-                  }}
-                >
-                  {t.players.map((p: any) => (
-                    <span
-                      key={p.id}
-                      style={{
-                        background: '#f3f4f6',
-                        borderRadius: 999,
-                        padding: '4px 8px',
-                        border: p.isHost ? '1px solid #1A7A4C' : '1px solid #e5e7eb',
-                      }}
-                    >
-                      {p.user?.username || p.userId}
-                      {p.isHost ? ' ★' : ''}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                <button
-                  disabled={
-                    joiningTableId === t.id || (t.status !== 'OPEN' && t.status !== 'STARTING')
-                  }
-                  style={{
-                    ...styles.button,
-                    flex: 1,
-                    background: joiningTableId === t.id ? '#94a3b8' : '#1A7A4C',
-                  }}
-                  onClick={() => joinTable(t.id)}
-                >
-                  {joiningTableId === t.id ? 'Joining…' : 'Join table'}
-                </button>
-                {t.status === 'OPEN' && t.createdById === user?.id && (
-                  <button
-                    style={{ ...styles.button, background: '#f59e0b' }}
-                    onClick={() => startTableEarly(t.id)}
-                  >
-                    Start now
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-          {!tables.length && (
-            <EmptyState
-              icon="🎴"
-              title="No Active Tables"
-              description="Be the first to create a public table and invite friends to play!"
-              action={
-                <button
-                  onClick={() => createTable('My Table')}
-                  disabled={creatingTable}
-                  style={{
-                    ...styles.button,
-                    padding: '12px 24px',
-                    fontSize: '1rem',
-                  }}
-                >
-                  {creatingTable ? (
-                    <>
-                      <Spinner size="sm" /> {t.creating}
-                    </>
-                  ) : (
-                    '+ Create First Table'
-                  )}
-                </button>
-              }
-            />
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const [friendInput, setFriendInput] = useState('');
-  const renderFriends = () => (
-    <div style={{ padding: 12 }}>
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 12,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-        }}
-      >
-        <input
-          value={friendInput}
-          onChange={(e) => setFriendInput(e.target.value)}
-          placeholder="Friend username"
-          style={{ flex: 1, padding: 8, border: '1px solid #ddd', borderRadius: 6 }}
-        />
-        <button
-          style={styles.button}
-          onClick={() => {
-            sendFriendRequest(friendInput);
-            setFriendInput('');
-          }}
-        >
-          Add
-        </button>
-        <button style={styles.button} onClick={fetchFriends}>
-          Refresh
-        </button>
-      </div>
-      {friendsLoading && <Loading message="Loading friends..." />}
-      {!friendsLoading && (
-        <>
-          <h4 style={{ margin: '8px 0 4px' }}>Friends</h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {friendsTabData.friends.map((f) => (
-              <div
-                key={f.id}
-                style={{
-                  background: '#fff',
-                  padding: '6px 10px',
-                  borderRadius: 20,
-                  fontSize: 12,
-                  border: '1px solid #e5e7eb',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    background: f.online ? '#10b981' : '#9ca3af',
-                    display: 'inline-block',
-                  }}
-                />
-                {f.username}
-              </div>
-            ))}
-            {!friendsTabData.friends.length && (
-              <EmptyState
-                icon="👥"
-                title="No Friends Yet"
-                description="Add friends to play multiplayer games together"
-                style={{ gridColumn: '1 / -1' }}
-              />
-            )}
-          </div>
-          <h4 style={{ margin: '12px 0 4px' }}>Requests</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {friendsTabData.requests.map((r) => (
-              <div
-                key={r.id}
-                style={{
-                  background: '#fff',
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  border: '1px solid #e5e7eb',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div style={{ fontSize: 12 }}>
-                  {r.senderId === user?.id
-                    ? `To ${r.receiver?.username}`
-                    : `From ${r.sender?.username}`}{' '}
-                  – {r.status}
-                </div>
-                {r.status === 'PENDING' && r.receiverId === user?.id && (
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      style={{ ...styles.button, background: '#1A7A4C' }}
-                      onClick={() => respondFriendRequest(r.id, true)}
-                    >
-                      Accept
-                    </button>
-                    <button
-                      style={{ ...styles.button, background: '#D42E2C' }}
-                      onClick={() => respondFriendRequest(r.id, false)}
-                    >
-                      Decline
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-            {!friendsTabData.requests.length && (
-              <div style={{ fontSize: 12, color: '#555' }}>No pending requests</div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
 
   // Apply multiplayer game state to UI
   useEffect(() => {
