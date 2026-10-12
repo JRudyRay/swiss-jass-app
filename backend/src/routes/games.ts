@@ -1,7 +1,14 @@
 import { Router } from 'express';
+import { body, param } from 'express-validator';
+import { validate } from '../validate';
 import { gameHub } from '../gameHub';
 import { SwissSuit, TrumpContract } from '../gameEngine/SwissJassEngine';
 import { AuthService } from '../services/authService';
+
+const idParam = param('id').isString().isLength({ min: 1, max: 100 });
+const playerIdField = body('playerId').optional().isInt({ min: 0, max: 3 }).toInt();
+const bounded = (name: string, max: number) =>
+  body(name).optional().isInt({ min: 0, max }).withMessage(`0-${max}`).toInt();
 
 const router = Router();
 
@@ -10,30 +17,37 @@ const router = Router();
  * Creates a new game
  * body: { playerNames?: string[], gameType?: string }
  */
-router.post('/create', (req, res) => {
-  try {
-    const { playerNames, gameType = 'schieber' } = req.body || {};
-    const { id, engine } = gameHub.create(playerNames, gameType);
+router.post(
+  '/create',
+  body('playerNames').optional().isArray({ max: 4 }),
+  body('playerNames.*').isString().isLength({ max: 40 }),
+  body('gameType').optional().isString().isLength({ max: 30 }),
+  validate,
+  (req, res) => {
+    try {
+      const { playerNames, gameType = 'schieber' } = req.body || {};
+      const { id, engine } = gameHub.create(playerNames, gameType);
 
-    // Deal cards to start the game
-    engine.dealCards();
+      // Deal cards to start the game
+      engine.dealCards();
 
-    const state = engine.getGameState();
-    const players = engine.getPlayers();
-    const humanPlayer = players.find((p) => !p.isBot);
+      const state = engine.getGameState();
+      const players = engine.getPlayers();
+      const humanPlayer = players.find((p) => !p.isBot);
 
-    res.json({
-      success: true,
-      gameId: id,
-      state,
-      players,
-      hand: humanPlayer?.hand || [],
-    });
-  } catch (e: any) {
-    console.error('Error creating game:', e);
-    res.status(400).json({ success: false, message: e.message });
-  }
-});
+      res.json({
+        success: true,
+        gameId: id,
+        state,
+        players,
+        hand: humanPlayer?.hand || [],
+      });
+    } catch (e: any) {
+      console.error('Error creating game:', e);
+      res.status(400).json({ success: false, message: e.message });
+    }
+  },
+);
 
 /**
  * POST /api/games/report
@@ -41,101 +55,123 @@ router.post('/create', (req, res) => {
  * body: { teamA: string[] (userIds), teamB: string[] (userIds), scoreA: number, scoreB: number, rounds?: number }
  * Never changes ratings: those are only updated server-side from finished table games.
  */
-router.post('/report', async (req, res) => {
-  try {
-    const authHeader = (req.headers && (req.headers as any).authorization) || null;
-    const token = authHeader ? String(authHeader).split(' ')[1] : null;
-    if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
-    let callerId: string | undefined;
+router.post(
+  '/report',
+  body('teamA').isArray({ min: 1, max: 2 }),
+  body('teamB').isArray({ min: 1, max: 2 }),
+  body('teamA.*').isString().isLength({ max: 100 }),
+  body('teamB.*').isString().isLength({ max: 100 }),
+  bounded('scoreA', 5000),
+  bounded('scoreB', 5000),
+  bounded('rounds', 1000),
+  validate,
+  async (req, res) => {
     try {
-      callerId = (AuthService.verifyToken(token) as any)?.userId;
-    } catch {
-      return res.status(401).json({ success: false, message: 'Invalid token' });
+      const authHeader = (req.headers && (req.headers as any).authorization) || null;
+      const token = authHeader ? String(authHeader).split(' ')[1] : null;
+      if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
+      let callerId: string | undefined;
+      try {
+        callerId = (AuthService.verifyToken(token) as any)?.userId;
+      } catch {
+        return res.status(401).json({ success: false, message: 'Invalid token' });
+      }
+
+      const { teamA, teamB, scoreA, scoreB, rounds } = req.body || {};
+
+      const validTeam = (t: any) =>
+        Array.isArray(t) && t.length >= 1 && t.length <= 2 && t.every((x) => typeof x === 'string');
+      if (!validTeam(teamA) || !validTeam(teamB)) {
+        return res.status(400).json({ success: false, message: 'Invalid teams' });
+      }
+      // Only a player in the match may report it.
+      if (!callerId || ![...teamA, ...teamB].includes(callerId)) {
+        return res.status(403).json({ success: false, message: 'Not a player in this match' });
+      }
+      const inRange = (n: any, max: number) =>
+        Number.isFinite(Number(n)) && Number(n) >= 0 && Number(n) <= max;
+      if (
+        !inRange(scoreA ?? 0, 5000) ||
+        !inRange(scoreB ?? 0, 5000) ||
+        !inRange(rounds ?? 0, 1000)
+      ) {
+        return res.status(400).json({ success: false, message: 'Invalid scores' });
+      }
+
+      // Rated (multiplayer) results are recorded by the server when a table game
+      // finishes (gameHub). A client report is never trusted for ratings, so the
+      // client-sent isMultiplayer flag is ignored.
+      const isMultiplayerGame = false;
+
+      const { updateStatsForMatch } = require('../services/gameService');
+      await updateStatsForMatch(
+        teamA,
+        teamB,
+        Number(scoreA || 0),
+        Number(scoreB || 0),
+        Number(rounds || 0),
+        isMultiplayerGame, // ✅ Pass flag
+      );
+
+      res.json({ success: true, message: 'Match report processed' });
+    } catch (e: any) {
+      console.error('Error processing match report:', e);
+      res.status(500).json({ success: false, message: e.message });
     }
-
-    const { teamA, teamB, scoreA, scoreB, rounds } = req.body || {};
-
-    const validTeam = (t: any) =>
-      Array.isArray(t) && t.length >= 1 && t.length <= 2 && t.every((x) => typeof x === 'string');
-    if (!validTeam(teamA) || !validTeam(teamB)) {
-      return res.status(400).json({ success: false, message: 'Invalid teams' });
-    }
-    // Only a player in the match may report it.
-    if (!callerId || ![...teamA, ...teamB].includes(callerId)) {
-      return res.status(403).json({ success: false, message: 'Not a player in this match' });
-    }
-    const inRange = (n: any, max: number) =>
-      Number.isFinite(Number(n)) && Number(n) >= 0 && Number(n) <= max;
-    if (!inRange(scoreA ?? 0, 5000) || !inRange(scoreB ?? 0, 5000) || !inRange(rounds ?? 0, 1000)) {
-      return res.status(400).json({ success: false, message: 'Invalid scores' });
-    }
-
-    // Rated (multiplayer) results are recorded by the server when a table game
-    // finishes (gameHub). A client report is never trusted for ratings, so the
-    // client-sent isMultiplayer flag is ignored.
-    const isMultiplayerGame = false;
-
-    const { updateStatsForMatch } = require('../services/gameService');
-    await updateStatsForMatch(
-      teamA,
-      teamB,
-      Number(scoreA || 0),
-      Number(scoreB || 0),
-      Number(rounds || 0),
-      isMultiplayerGame, // ✅ Pass flag
-    );
-
-    res.json({ success: true, message: 'Match report processed' });
-  } catch (e: any) {
-    console.error('Error processing match report:', e);
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
+  },
+);
 
 /**
  * POST /api/games/user-result
  * Fallback endpoint: update stats for a single authenticated user when other players are bots (no mapped user IDs).
  * body: { won: boolean, points?: number, rounds?: number }
  */
-router.post('/user-result', async (req, res) => {
-  try {
-    const authHeader = (req.headers && (req.headers as any).authorization) || null;
-    const token = authHeader ? String(authHeader).split(' ')[1] : null;
-    if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
-    let decoded: any;
+router.post(
+  '/user-result',
+  body('won').optional().isBoolean({ strict: true }),
+  bounded('points', 5000),
+  bounded('rounds', 1000),
+  validate,
+  async (req, res) => {
     try {
-      decoded = AuthService.verifyToken(token);
-    } catch {
-      return res.status(401).json({ success: false, message: 'Invalid token' });
-    }
-    const userId = decoded?.userId;
-    if (!userId) return res.status(401).json({ success: false, message: 'Invalid token user' });
+      const authHeader = (req.headers && (req.headers as any).authorization) || null;
+      const token = authHeader ? String(authHeader).split(' ')[1] : null;
+      if (!token) return res.status(401).json({ success: false, message: 'Missing token' });
+      let decoded: any;
+      try {
+        decoded = AuthService.verifyToken(token);
+      } catch {
+        return res.status(401).json({ success: false, message: 'Invalid token' });
+      }
+      const userId = decoded?.userId;
+      if (!userId) return res.status(401).json({ success: false, message: 'Invalid token user' });
 
-    const { won, points = 0, rounds = 0 } = req.body || {};
-    const clamp = (n: any, max: number) => Math.min(Math.max(Number(n) || 0, 0), max);
-    const { updateUserStats } = require('../services/gameService');
-    await updateUserStats(
-      userId,
-      {
-        gamesPlayed: 1,
-        gamesWon: won === true ? 1 : 0,
-        totalPoints: clamp(points, 5000),
-        totalRounds: clamp(rounds, 1000),
-      },
-      false,
-    ); // ✅ Explicitly mark as offline (single-user endpoint is for offline games)
-    return res.json({ success: true, message: 'User stats updated', won: won === true });
-  } catch (e: any) {
-    console.error('Error in user-result:', e);
-    return res.status(500).json({ success: false, message: 'Failed to update user stats' });
-  }
-});
+      const { won, points = 0, rounds = 0 } = req.body || {};
+      const clamp = (n: any, max: number) => Math.min(Math.max(Number(n) || 0, 0), max);
+      const { updateUserStats } = require('../services/gameService');
+      await updateUserStats(
+        userId,
+        {
+          gamesPlayed: 1,
+          gamesWon: won === true ? 1 : 0,
+          totalPoints: clamp(points, 5000),
+          totalRounds: clamp(rounds, 1000),
+        },
+        false,
+      ); // ✅ Explicitly mark as offline (single-user endpoint is for offline games)
+      return res.json({ success: true, message: 'User stats updated', won: won === true });
+    } catch (e: any) {
+      console.error('Error in user-result:', e);
+      return res.status(500).json({ success: false, message: 'Failed to update user stats' });
+    }
+  },
+);
 
 /**
  * GET /api/games/:id
  * Get game state
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', idParam, validate, (req, res) => {
   try {
     const { id } = req.params;
     const engine = gameHub.get(id);
@@ -161,80 +197,94 @@ router.get('/:id', (req, res) => {
  * Select trump
  * body: { trump: TrumpContract, playerId: number }
  */
-router.post('/:id/trump', (req, res) => {
-  try {
-    const { id } = req.params;
-    const { trump, playerId = 0 } = req.body as { trump: TrumpContract; playerId?: number };
-    const engine = gameHub.get(id);
+router.post(
+  '/:id/trump',
+  idParam,
+  body('trump').isString().isLength({ max: 30 }),
+  playerIdField,
+  validate,
+  (req, res) => {
+    try {
+      const { id } = req.params;
+      const { trump, playerId = 0 } = req.body as { trump: TrumpContract; playerId?: number };
+      const engine = gameHub.get(id);
 
-    const success = engine.selectTrump(trump, playerId);
+      const success = engine.selectTrump(trump, playerId);
 
-    if (!success) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot select trump at this time',
+      if (!success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot select trump at this time',
+        });
+      }
+
+      const state = engine.getGameState();
+      const players = engine.getPlayers();
+      const humanPlayer = players.find((p) => !p.isBot);
+
+      // Start bot play after trump selection
+      gameHub.startBotPlay(id);
+
+      res.json({
+        success: true,
+        state,
+        players,
+        hand: humanPlayer?.hand || [],
       });
+    } catch (e: any) {
+      res.status(400).json({ success: false, message: e.message });
     }
-
-    const state = engine.getGameState();
-    const players = engine.getPlayers();
-    const humanPlayer = players.find((p) => !p.isBot);
-
-    // Start bot play after trump selection
-    gameHub.startBotPlay(id);
-
-    res.json({
-      success: true,
-      state,
-      players,
-      hand: humanPlayer?.hand || [],
-    });
-  } catch (e: any) {
-    res.status(400).json({ success: false, message: e.message });
-  }
-});
+  },
+);
 
 /**
  * POST /api/games/:id/play
  * Play a card
  * body: { playerId: number, cardId: string }
  */
-router.post('/:id/play', (req, res) => {
-  try {
-    const { id } = req.params;
-    const { playerId = 0, cardId } = req.body;
-    const engine = gameHub.get(id);
+router.post(
+  '/:id/play',
+  idParam,
+  body('cardId').isString().isLength({ min: 1, max: 30 }),
+  playerIdField,
+  validate,
+  (req, res) => {
+    try {
+      const { id } = req.params;
+      const { playerId = 0, cardId } = req.body;
+      const engine = gameHub.get(id);
 
-    const success = engine.playCard(cardId, playerId);
+      const success = engine.playCard(cardId, playerId);
 
-    if (!success) {
-      return res.status(400).json({
-        success: false,
-        message: 'Illegal card play',
+      if (!success) {
+        return res.status(400).json({
+          success: false,
+          message: 'Illegal card play',
+        });
+      }
+
+      const state = engine.getGameState();
+      const players = engine.getPlayers();
+      const humanPlayer = players.find((p) => !p.isBot);
+
+      res.json({
+        success: true,
+        state,
+        players,
+        hand: humanPlayer?.hand || [],
+        legalCards: state.currentPlayer === 0 ? engine.getLegalCards(0) : [],
       });
+    } catch (e: any) {
+      res.status(400).json({ success: false, message: e.message });
     }
-
-    const state = engine.getGameState();
-    const players = engine.getPlayers();
-    const humanPlayer = players.find((p) => !p.isBot);
-
-    res.json({
-      success: true,
-      state,
-      players,
-      hand: humanPlayer?.hand || [],
-      legalCards: state.currentPlayer === 0 ? engine.getLegalCards(0) : [],
-    });
-  } catch (e: any) {
-    res.status(400).json({ success: false, message: e.message });
-  }
-});
+  },
+);
 
 /**
  * POST /api/games/:id/bot-action
  * Trigger bot to play (for testing)
  */
-router.post('/:id/bot-action', (req, res) => {
+router.post('/:id/bot-action', idParam, validate, (req, res) => {
   try {
     const { id } = req.params;
     gameHub.performBotAction(id);
@@ -260,78 +310,87 @@ router.post('/:id/bot-action', (req, res) => {
  * Handles game completion and updates user stats
  * body: { userTeamScore: number, opponentTeamScore: number, userWon: boolean, totalRounds: number }
  */
-router.post('/:id/complete', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { userTeamScore, opponentTeamScore, userWon, totalRounds } = req.body;
-    // Try to extract userId from Authorization header (JWT)
-    let userId: string | null = null;
-    let isMultiplayer = false; // ✅ Track mode
-
+router.post(
+  '/:id/complete',
+  idParam,
+  bounded('userTeamScore', 5000),
+  bounded('opponentTeamScore', 5000),
+  bounded('totalRounds', 1000),
+  body('userWon').optional().isBoolean({ strict: true }),
+  validate,
+  async (req, res) => {
     try {
-      const authHeader = (req.headers && (req.headers as any).authorization) || null;
-      const token = authHeader ? String(authHeader).split(' ')[1] : null;
-      if (token) {
-        const decoded = AuthService.verifyToken(token) as any;
-        userId = decoded?.userId || null;
+      const { id } = req.params;
+      const { userTeamScore, opponentTeamScore, userWon, totalRounds } = req.body;
+      // Try to extract userId from Authorization header (JWT)
+      let userId: string | null = null;
+      let isMultiplayer = false; // ✅ Track mode
+
+      try {
+        const authHeader = (req.headers && (req.headers as any).authorization) || null;
+        const token = authHeader ? String(authHeader).split(' ')[1] : null;
+        if (token) {
+          const decoded = AuthService.verifyToken(token) as any;
+          userId = decoded?.userId || null;
+        }
+
+        // ✅ Check if this is a multiplayer game via gameHub
+        const engine = gameHub.get(id);
+        const tableEntry: any = Array.from((gameHub as any)['tableGameMap'].values()).find(
+          (e: any) => e.gameId === id,
+        );
+        isMultiplayer = tableEntry?.tableConfig?.gameMode === 'MULTIPLAYER';
+      } catch (e) {
+        // fall through - userId stays null
       }
 
-      // ✅ Check if this is a multiplayer game via gameHub
-      const engine = gameHub.get(id);
-      const tableEntry: any = Array.from((gameHub as any)['tableGameMap'].values()).find(
-        (e: any) => e.gameId === id,
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
+
+      // Import the gameService here to avoid circular dependencies
+      const { updateUserStats } = require('../services/gameService');
+
+      // Calculate points earned (Swiss Jass typically awards 1-3 points based on margin)
+      let pointsEarned = 0;
+      if (userWon) {
+        const margin = userTeamScore - opponentTeamScore;
+        if (margin >= 100) {
+          pointsEarned = 3; // Dominant victory
+        } else if (margin >= 50) {
+          pointsEarned = 2; // Clear victory
+        } else {
+          pointsEarned = 1; // Close victory
+        }
+      }
+
+      // ✅ Update user stats with isMultiplayer flag
+      await updateUserStats(
+        userId,
+        {
+          gamesPlayed: 1,
+          gamesWon: userWon ? 1 : 0,
+          totalPoints: pointsEarned,
+          totalRounds: totalRounds || 0,
+        },
+        isMultiplayer,
       );
-      isMultiplayer = tableEntry?.tableConfig?.gameMode === 'MULTIPLAYER';
-    } catch (e) {
-      // fall through - userId stays null
+
+      // Clean up the game from memory
+      gameHub.destroyGame(id);
+
+      res.json({
+        success: true,
+        pointsEarned,
+        message: userWon
+          ? `Congratulations! You earned ${pointsEarned} points!`
+          : 'Better luck next time!',
+      });
+    } catch (e: any) {
+      console.error('Error completing game:', e);
+      res.status(500).json({ success: false, message: 'Failed to update stats' });
     }
-
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
-
-    // Import the gameService here to avoid circular dependencies
-    const { updateUserStats } = require('../services/gameService');
-
-    // Calculate points earned (Swiss Jass typically awards 1-3 points based on margin)
-    let pointsEarned = 0;
-    if (userWon) {
-      const margin = userTeamScore - opponentTeamScore;
-      if (margin >= 100) {
-        pointsEarned = 3; // Dominant victory
-      } else if (margin >= 50) {
-        pointsEarned = 2; // Clear victory
-      } else {
-        pointsEarned = 1; // Close victory
-      }
-    }
-
-    // ✅ Update user stats with isMultiplayer flag
-    await updateUserStats(
-      userId,
-      {
-        gamesPlayed: 1,
-        gamesWon: userWon ? 1 : 0,
-        totalPoints: pointsEarned,
-        totalRounds: totalRounds || 0,
-      },
-      isMultiplayer,
-    );
-
-    // Clean up the game from memory
-    gameHub.destroyGame(id);
-
-    res.json({
-      success: true,
-      pointsEarned,
-      message: userWon
-        ? `Congratulations! You earned ${pointsEarned} points!`
-        : 'Better luck next time!',
-    });
-  } catch (e: any) {
-    console.error('Error completing game:', e);
-    res.status(500).json({ success: false, message: 'Failed to update stats' });
-  }
-});
+  },
+);
 
 export default router;

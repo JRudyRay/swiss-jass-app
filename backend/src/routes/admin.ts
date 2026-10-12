@@ -2,6 +2,8 @@ import { Router, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../secrets';
 import { PrismaClient } from '@prisma/client';
+import { body, param } from 'express-validator';
+import { validate } from '../validate';
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -78,66 +80,80 @@ router.get('/leaderboard', requireUser, async (req, res) => {
 });
 
 // DELETE /api/admin/users/:id - delete a user
-router.delete('/users/:id', requireAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    await prisma.user.delete({ where: { id } });
-    res.json({ success: true, message: 'User deleted' });
-  } catch (e: any) {
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
+router.delete(
+  '/users/:id',
+  requireAdmin,
+  param('id').isString().isLength({ min: 1, max: 100 }),
+  validate,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+      await prisma.user.delete({ where: { id } });
+      res.json({ success: true, message: 'User deleted' });
+    } catch (e: any) {
+      res.status(500).json({ success: false, message: e.message });
+    }
+  },
+);
 
 // POST /api/admin/totals/sync - accept totals map { username: points }
-router.post('/totals/sync', requireUser, async (req, res) => {
-  try {
-    const { totals } = req.body || {};
-    if (!totals || typeof totals !== 'object')
-      return res.status(400).json({ success: false, message: 'Invalid totals payload' });
+router.post(
+  '/totals/sync',
+  requireUser,
+  body('totals')
+    .custom((v) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length <= 50)
+    .withMessage('must be an object with at most 50 entries'),
+  validate,
+  async (req, res) => {
+    try {
+      const { totals } = req.body || {};
+      if (!totals || typeof totals !== 'object')
+        return res.status(400).json({ success: false, message: 'Invalid totals payload' });
 
-    const results: any[] = [];
+      const results: any[] = [];
 
-    for (const [username, rawPts] of Object.entries(totals)) {
-      // A user may only add points to their own account, within a sane per-match range.
-      if (username !== res.locals.username) {
-        results.push({ username, updated: false, reason: 'not your account' });
-        continue;
-      }
-      const pts = Number(rawPts);
-      if (!Number.isFinite(pts) || pts < 0 || pts > MAX_POINTS_PER_SYNC) {
-        results.push({ username, updated: false, reason: 'invalid points' });
-        continue;
-      }
-      try {
-        const user = await prisma.user.findFirst({ where: { username } });
-        if (!user) {
-          results.push({ username, updated: false, reason: 'user not found' });
+      for (const [username, rawPts] of Object.entries(totals)) {
+        // A user may only add points to their own account, within a sane per-match range.
+        if (username !== res.locals.username) {
+          results.push({ username, updated: false, reason: 'not your account' });
           continue;
         }
-        const newPoints = (user.totalPoints || 0) + pts;
-        await prisma.user.update({ where: { id: user.id }, data: { totalPoints: newPoints } });
-        // Optionally record a GameSession entry
-        await prisma.gameSession.create({
-          data: {
-            userId: user.id,
-            gameType: 'schieber',
-            result: 'played',
-            points: pts,
-            duration: 0,
-          },
-        });
-        results.push({ username, updated: true, newPoints });
-      } catch (inner) {
-        results.push({ username, updated: false, reason: (inner as any).message });
+        const pts = Number(rawPts);
+        if (!Number.isFinite(pts) || pts < 0 || pts > MAX_POINTS_PER_SYNC) {
+          results.push({ username, updated: false, reason: 'invalid points' });
+          continue;
+        }
+        try {
+          const user = await prisma.user.findFirst({ where: { username } });
+          if (!user) {
+            results.push({ username, updated: false, reason: 'user not found' });
+            continue;
+          }
+          const newPoints = (user.totalPoints || 0) + pts;
+          await prisma.user.update({ where: { id: user.id }, data: { totalPoints: newPoints } });
+          // Optionally record a GameSession entry
+          await prisma.gameSession.create({
+            data: {
+              userId: user.id,
+              gameType: 'schieber',
+              result: 'played',
+              points: pts,
+              duration: 0,
+            },
+          });
+          results.push({ username, updated: true, newPoints });
+        } catch (inner) {
+          results.push({ username, updated: false, reason: (inner as any).message });
+        }
       }
-    }
 
-    res.json({ success: true, results });
-  } catch (e: any) {
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
+      res.json({ success: true, results });
+    } catch (e: any) {
+      res.status(500).json({ success: false, message: e.message });
+    }
+  },
+);
 
 export default router;
