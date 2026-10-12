@@ -41,12 +41,12 @@ const PORT = process.env.PORT || 3000;
 // Behind nginx in production: use the real client IP (rate limiting).
 if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
-// Middleware - CORS handled by nginx reverse proxy in production
-// Only enable CORS for local development
-if (process.env.NODE_ENV !== 'production') {
+// REST CORS uses the same allowlist as sockets. In production nginx adds CORS headers
+// today (duplicates break browsers), so the app only does it there with APP_CORS=1.
+if (process.env.NODE_ENV !== 'production' || process.env.APP_CORS === '1') {
   app.use(
     cors({
-      origin: ['http://localhost:3000', 'http://localhost:5173'],
+      origin: ALLOWED_ORIGINS,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
