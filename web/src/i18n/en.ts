@@ -340,6 +340,7 @@ const en = {
     selectTrump: 'Choose trump',
     schieben: 'Schieben (pass to partner)',
     schobenTo: (name: string) => `Schieben: ${name} chooses trump`,
+    schobenToYou: 'Schieben: you choose trump',
     trumpHintChooser: 'Tap a trump to play it, or schieben to let your partner choose.',
     trumpHintPartner: 'Your partner passed the choice to you (schieben). You must choose.',
     botChose: (name: string, trump: string) => `${name} chose: ${trump}`,

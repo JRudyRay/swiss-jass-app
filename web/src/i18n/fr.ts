@@ -342,6 +342,7 @@ const fr: Messages = {
     selectTrump: "Choisir l'atout",
     schieben: 'Chibrer (au partenaire)',
     schobenTo: (name: string) => `Chibré : ${name} choisit l'atout`,
+    schobenToYou: "Chibré : tu choisis l'atout",
     trumpHintChooser:
       'Touchez un atout pour le jouer, ou chibrez pour laisser choisir votre partenaire.',
     trumpHintPartner: 'Votre partenaire a chibré. Vous devez choisir.',

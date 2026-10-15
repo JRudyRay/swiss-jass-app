@@ -342,6 +342,7 @@ const rm: Messages = {
     selectTrump: 'Tscherner il trumf',
     schieben: 'Schieben (al partenari)',
     schobenTo: (name: string) => `Schobà: ${name} tscherna il trumf`,
+    schobenToYou: 'Schobà: ti tscherns il trumf',
     trumpHintChooser: 'Tutga in trumf, u schieba per che tes partenari tscherna.',
     trumpHintPartner: 'Tes partenari ha schobà. Ussa stos ti tscherner.',
     botChose: (name: string, trump: string) => `${name} fa: ${trump}`,

@@ -341,6 +341,7 @@ const ch: Messages = {
     selectTrump: 'Trumpf wähle',
     schieben: 'Schiebe (am Partner)',
     schobenTo: (name: string) => `Gschobe: ${name} wählt de Trumpf`,
+    schobenToYou: 'Gschobe: du wählsch de Trumpf',
     trumpHintChooser: 'Tipp uf en Trumpf, oder schieb und lass din Partner wähle.',
     trumpHintPartner: 'Din Partner hät gschobe. Jetzt muesch du wähle.',
     botChose: (name: string, trump: string) => `${name} macht: ${trump}`,

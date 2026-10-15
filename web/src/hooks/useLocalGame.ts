@@ -61,6 +61,11 @@ export function useLocalGame(c: any) {
   const progressKey = useRef('');
   const lastProgressAt = useRef<number>(Date.now());
 
+  const schobenMsg = (st: Schieber.State) =>
+    st.currentPlayer === 0
+      ? t.schobenToYou
+      : t.schobenTo(st.players.find((p) => p.id === st.currentPlayer)?.name || '');
+
   async function startSwoopAndResolve(st: Schieber.State): Promise<Schieber.State> {
     // Highlight the winning card, slide the trick to the winner, then resolve.
     const winner = Schieber.peekTrickWinner(st);
@@ -312,9 +317,7 @@ export function useLocalGame(c: any) {
         const newState = Schieber.setTrumpAndDetectWeis(st, chosen);
         st = newState;
         if (chosen === 'schieben') {
-          setMessage(
-            t.schobenTo(newState.players.find((p) => p.id === newState.currentPlayer)?.name || ''),
-          );
+          setMessage(schobenMsg(newState));
         } else {
           setChosenTrump(chosen);
           setWeisWinner(
@@ -398,9 +401,7 @@ export function useLocalGame(c: any) {
       // Schieben: the engine hands the choice to the partner, who must then choose.
       if (choice === 'schieben') {
         const passed = Schieber.setTrumpAndDetectWeis(st, 'schieben');
-        setMessage(
-          t.schobenTo(passed.players.find((p) => p.id === passed.currentPlayer)?.name || ''),
-        );
+        setMessage(schobenMsg(passed));
         saveLocalState(passed);
         setGameState(toGameState(passed));
         setChosenTrump(null);

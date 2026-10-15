@@ -342,6 +342,7 @@ const it: Messages = {
     selectTrump: 'Scegli la briscola',
     schieben: 'Schieben (passa al compagno)',
     schobenTo: (name: string) => `Passato: ${name} sceglie la briscola`,
+    schobenToYou: 'Passato: scegli tu la briscola',
     trumpHintChooser: 'Tocca una briscola per giocarla, oppure passa la scelta al tuo compagno.',
     trumpHintPartner: 'Il tuo compagno ti ha passato la scelta. Devi scegliere tu.',
     botChose: (name: string, trump: string) => `${name} sceglie: ${trump}`,
