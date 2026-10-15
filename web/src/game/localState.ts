@@ -32,6 +32,16 @@ export const loadLocalState = (): Schieber.State | null => {
     const parsed = JSON.parse(raw) as Schieber.State & { _lastActionAt?: number };
     // Backfill missing timestamp to avoid huge age values
     if (!parsed._lastActionAt) parsed._lastActionAt = Date.now();
+    // Saves from older versions lack some fields; a save without players is unusable.
+    if (!Array.isArray(parsed.players) || parsed.players.length !== 4 || !parsed.scores)
+      return null;
+    if (!Array.isArray(parsed.currentTrick)) parsed.currentTrick = [];
+    if (parsed.forehand === undefined || parsed.forehand === null)
+      parsed.forehand = (((parsed.dealer ?? 0) + 3) % 4) as any;
+    if (!parsed.handStartScores) {
+      const none = !parsed.scores.team1 && !parsed.scores.team2;
+      parsed.handStartScores = none ? { team1: 0, team2: 0 } : ({ ...parsed.scores } as any);
+    }
     return parsed as Schieber.State;
   } catch {
     return null;

@@ -54,13 +54,18 @@ export function useLocalGame(c: any) {
     updateTotalsFromGameState,
     selectTrump,
   } = c;
-  const prevPlayerRef = useRef<number | null>(null);
+  const loopGenRef: { current: number } = c.loopGenRef;
+  const live = useRef(c);
+  live.current = c;
+  const botsRef = useRef<() => Promise<void>>(async () => {});
+  const progressKey = useRef('');
   const lastProgressAt = useRef<number>(Date.now());
 
   async function startSwoopAndResolve(st: Schieber.State): Promise<Schieber.State> {
     // Highlight the winning card, slide the trick to the winner, then resolve.
     const winner = Schieber.peekTrickWinner(st);
     if (winner === null) return st;
+    const gen = loopGenRef.current;
     try {
       const tr = messages(lang).trick;
       setMessage(
@@ -68,6 +73,7 @@ export function useLocalGame(c: any) {
       );
       setCollect({ winnerId: winner });
       await new Promise((r) => setTimeout(r, COLLECT_MS * speedScale()));
+      if (gen !== loopGenRef.current) return st; // game was reset or restarted meanwhile
       const newSt = Schieber.resolveTrick(st);
       saveLocalState(newSt);
       setGameState(toGameState(newSt));
@@ -78,6 +84,7 @@ export function useLocalGame(c: any) {
       if (newSt.phase === 'finished') {
         // short pause on the empty table before the next deal
         await new Promise((r) => setTimeout(r, 900));
+        if (gen !== loopGenRef.current) return newSt;
         // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
         // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
         // if maxPoints reached by either team, stop; else start a fresh local round
@@ -141,83 +148,35 @@ export function useLocalGame(c: any) {
     }
   }
 
-  // Watchdog: detect stalled local games or UI pending states and recover.
+  // Watchdog: if a local game has made no progress while it is a bot's turn (or a trick is
+  // waiting to be resolved), restart the bot loop, which also resolves pending tricks.
   useEffect(() => {
     const id = setInterval(() => {
       try {
-        // If UI is waiting for a pending resolve for too long, force resolve by calling resolveTrick
-        if (uiPendingResolve) {
-          const st = loadLocalState();
-          if (st && st.pendingResolve) {
-            const age = Date.now() - ((st as any)._lastActionAt || Date.now());
-            if (age > 8000) {
-              // Force a resolveTrick to advance the game
-              const resolved = Schieber.resolveTrick(st);
-              saveLocalState(resolved);
-              setGameState(toGameState(resolved));
-              setPlayers(mapPlayersWithSeats(resolved.players));
-              setHand(resolved.players.find((p: any) => p.id === 0)?.hand || []);
-              setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
-              setUiPendingResolve(false);
-              setMessage(tm.autoResolved);
-            }
-          }
-        }
-
-        // If no visible progress (player didn't change) for long, attempt gentle auto-recovery then hint
+        const cur = live.current;
+        if (!cur.isLocal || cur.optionsVisible || cur.matchFinished) return;
         const st = loadLocalState();
-        if (st) {
-          const now = Date.now();
-          if (prevPlayerRef.current !== st.currentPlayer) {
-            prevPlayerRef.current = st.currentPlayer;
-            lastProgressAt.current = now;
-          } else {
-            const idleMs = now - lastProgressAt.current;
-            if (idleMs > 15000) {
-              // Attempt auto-play if it's a bot's turn and not waiting on user
-              if (st.currentPlayer !== 0 && st.phase === 'playing' && !st.pendingResolve) {
-                try {
-                  const pick = Bot.chooseCard(st, st.currentPlayer);
-                  if (pick) {
-                    const progressed = Schieber.playCardLocal(st, st.currentPlayer, pick);
-                    saveLocalState(progressed);
-                    setGameState(toGameState(progressed));
-                    setPlayers(mapPlayersWithSeats(progressed.players));
-                    setHand(progressed.players.find((p: any) => p.id === 0)?.hand || []);
-                    setLegalCards(Schieber.getLegalCardsForPlayer(progressed, 0));
-                    lastProgressAt.current = Date.now();
-                    return; // skip message if we advanced
-                  }
-                } catch {}
-              }
-              // If trick is stuck with 4 cards but not resolved
-              if ((st.currentTrick?.length || 0) === 4 && !st.pendingResolve) {
-                try {
-                  const resolved = Schieber.resolveTrick(st);
-                  saveLocalState(resolved);
-                  setGameState(toGameState(resolved));
-                  setPlayers(mapPlayersWithSeats(resolved.players));
-                  setHand(resolved.players.find((p: any) => p.id === 0)?.hand || []);
-                  setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
-                  lastProgressAt.current = Date.now();
-                  return;
-                } catch {}
-              }
-              if (idleMs > 20000) {
-                setMessage(tm.idle);
-              }
-            }
-          }
+        if (!st || st.phase === 'finished') return;
+        const humanTurn = st.currentPlayer === 0 && !st.pendingResolve;
+        const key = `${st.phase}|${st.currentPlayer}|${st.currentTrick?.length}|${!!st.pendingResolve}|${st.scores.team1}|${st.scores.team2}`;
+        const now = Date.now();
+        if (humanTurn || key !== progressKey.current) {
+          progressKey.current = key;
+          lastProgressAt.current = now;
+          return;
         }
-      } catch (e) {
-        // ignore
-      }
+        if (now - lastProgressAt.current > 12000) {
+          lastProgressAt.current = now;
+          botsRef.current();
+        }
+      } catch {}
     }, 2500);
     return () => clearInterval(id);
-  }, [uiPendingResolve]);
+  }, []);
 
   // --- Local play with simple bots ---
   const startLocalGame = () => {
+    loopGenRef.current++;
     const st = Schieber.startGameLocal(undefined, botNames, maxPoints);
     setBotNames(Schieber.pickBotNames());
     // map engine players to our UI players
@@ -232,54 +191,66 @@ export function useLocalGame(c: any) {
 
   // Resume the saved local match chosen on the welcome screen.
   const continueSavedGame = () => {
+    loopGenRef.current++;
     setSavedGame(null);
     setMode('single');
-    let st = loadLocalState();
-    // The match keeps its own target, whatever the setup screen says now.
-    if (st && Number.isFinite(Number(st.target)) && Number(st.target) > 0)
-      setMaxPoints(Number(st.target));
-    // A trick that was waiting for its resolve animation when the page closed
-    if (st && !st.target) st.target = maxPoints; // games saved before the target lived in the state
-    // Old saves have no rounds: the table then starts empty and fills from here on.
-    if (st) setRoundHistory(readSavedRounds(st.scores));
-    if (st?.pendingResolve) {
-      st = Schieber.resolveTrick(st);
-      saveLocalState(st);
-    }
-    if (st) {
-      // If the stored local game already finished, start a fresh hand instead of resuming finished state
-      const matchOver =
-        st.phase === 'finished' &&
-        (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
-      if (st.phase === 'finished' && !matchOver) {
-        const fresh = Schieber.startNewHand(st);
-        saveLocalState(fresh);
-        setPlayers(mapPlayersWithSeats(fresh.players));
-        setGameState(toGameState(fresh));
-        setHand(fresh.players.find((p: any) => p.id === 0)?.hand || []);
-        setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
-        setOptionsVisible(false);
-        setIsLocal(true);
-        setMessage(t.newRoundStarted);
-        if (fresh.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
-        return;
-      }
-
-      if (!matchOver) {
-        setGameState(toGameState(st));
+    try {
+      let st = loadLocalState();
+      if (st) {
+        // The match keeps its own target, whatever the setup screen says now.
+        if (Number.isFinite(Number(st.target)) && Number(st.target) > 0)
+          setMaxPoints(Number(st.target));
+        else st.target = maxPoints; // games saved before the target lived in the state
+        // Old saves have no rounds: the table then starts empty and fills from here on.
+        const rounds = readSavedRounds(st.scores);
+        setRoundHistory(rounds);
+        // A trick that was waiting for its resolve animation when the page closed
+        if (st.pendingResolve) {
+          st = Schieber.resolveTrick(st);
+          saveLocalState(st);
+        }
+        const matchOver =
+          st.phase === 'finished' &&
+          (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
+        if (st.phase === 'finished' && !matchOver) {
+          // The hand ended just before the page closed: record it, then deal a fresh one.
+          const base = st.handStartScores || { team1: 0, team2: 0 };
+          setRoundHistory((h) => [
+            ...h,
+            {
+              round: h.length + 1,
+              team1: (st!.scores.team1 || 0) - base.team1,
+              team2: (st!.scores.team2 || 0) - base.team2,
+              trump: String(st!.trump || ''),
+            },
+          ]);
+          st = Schieber.startNewHand(st);
+          saveLocalState(st);
+        }
         setPlayers(mapPlayersWithSeats(st.players));
+        setGameState(toGameState(st));
         setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
         setOptionsVisible(false);
         setIsLocal(true);
+        if (matchOver) {
+          // The saved match was already decided: show the result instead of dropping it.
+          setMatchFinished(true);
+          setShowVictory(true);
+          botsTakeTurns(); // counts the totals once; the loop is skipped for a finished state
+          return;
+        }
         setMessage(t.resumed);
         // bots don't wait for a click, so restart their loop if it's their turn
         if (st.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
         return;
       }
+    } catch (e) {
+      console.warn('Could not resume the saved match', e);
     }
 
     // Damaged save: fall back to a fresh match setup.
+    setOptionsVisible(true);
     clearSavedGame();
   };
 
@@ -311,11 +282,22 @@ export function useLocalGame(c: any) {
   };
 
   const botsTakeTurns = async () => {
-    // loop until finished
+    // A newer loop (or a reset/restart) supersedes this one: every await below re-checks `gen`.
+    const gen = ++loopGenRef.current;
+    const stale = () => gen !== loopGenRef.current;
     let st = loadLocalState();
     if (!st) return;
+    // A completed trick that was never resolved (tab closed, loop superseded): finish it first.
+    if (st.pendingResolve && st.phase !== 'finished') {
+      setUiPendingResolve(true);
+      try {
+        st = await startSwoopAndResolve(st);
+      } finally {
+        setUiPendingResolve(false);
+      }
+      if (stale()) return;
+    }
     while (st.phase !== 'finished') {
-      if (matchFinished) break;
       // if trump selection phase, let bots choose only when it's their turn
       if (st.phase === 'trump_selection') {
         if (st.currentPlayer === 0) {
@@ -335,6 +317,9 @@ export function useLocalGame(c: any) {
           );
         } else {
           setChosenTrump(chosen);
+          setWeisWinner(
+            Schieber.bestWeis(st.players, st.trump as Schieber.TrumpContract, st.forehand),
+          );
           setMessage(t.botChose(chooser?.name || 'Bot', trumpName(chosen, lang)));
         }
         saveLocalState(newState);
@@ -344,6 +329,7 @@ export function useLocalGame(c: any) {
         setHand(st.players.find((p) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
         await new Promise((r) => setTimeout(r, playDelayMs * speedScale()));
+        if (stale()) return;
         continue;
       } // if it's a bot's turn (0 is our south player), let bots play automatically
       if (st.currentPlayer !== 0) {
@@ -363,13 +349,14 @@ export function useLocalGame(c: any) {
           try {
             // compute animation positions and perform swoop then resolve and retrieve resulting state
             st = await startSwoopAndResolve(st);
-            if (matchFinished) break;
           } finally {
             setUiPendingResolve(false);
           }
+          if (stale()) return;
           continue;
         }
         await new Promise((r) => setTimeout(r, playDelayMs * speedScale()));
+        if (stale()) return;
         continue;
       }
 
@@ -397,6 +384,8 @@ export function useLocalGame(c: any) {
       'local-' + Date.now(),
     );
   };
+
+  botsRef.current = botsTakeTurns;
 
   const submitTrump = (override?: string) => {
     const choice = override ?? chosenTrump;
@@ -477,6 +466,7 @@ export function useLocalGame(c: any) {
     if (st.currentPlayer !== 0) return setMessage(t.notYourTurn);
     const legal = Schieber.getLegalCardsForPlayer(st, 0).map((c) => c.id);
     if (!legal.includes(cardId)) return setMessage(t.illegalCard);
+    const gen = loopGenRef.current;
     const newSt = Schieber.playCardLocal(st, 0, cardId);
     // if this play completes a trick, the engine will set pendingResolve
     if (newSt.pendingResolve) {
@@ -490,6 +480,7 @@ export function useLocalGame(c: any) {
         setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
         // perform swoop animation then resolve and retrieve resulting state
         const resolved = await startSwoopAndResolve(newSt);
+        if (gen !== loopGenRef.current) return;
         // update newSt to the resolved state so later logic uses correct state
         // (resolved may be same object)
         // ensure we persist resolved state

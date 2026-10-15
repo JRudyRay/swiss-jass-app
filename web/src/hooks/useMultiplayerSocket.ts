@@ -41,7 +41,11 @@ export function useMultiplayerSocket(c: any) {
     if (mode === 'multi' && !socket) {
       const s = io(API_URL || 'http://localhost:3000', { auth: { token: authToken.current } });
       setSocket(s);
-      s.on('connect', () => {});
+      // After a network drop socket.io reconnects, but the server has forgotten our room.
+      s.on('connect', () => {
+        const id = activeTableIdRef.current;
+        if (id) s.emit('table:join', { tableId: id });
+      });
       s.on('presence:count', (p: any) => setOnlineCount(p.online));
       s.on('tables:updated', () => fetchTables());
 
@@ -238,7 +242,10 @@ export function useMultiplayerSocket(c: any) {
       }, 2000);
 
       return () => {
+        clearTimeout(lateTimer);
+        clearInterval(retryInterval);
         s.disconnect();
+        setSocket(null);
       };
     }
   }, [mode]);

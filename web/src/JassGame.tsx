@@ -131,6 +131,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     2: 'Team 2',
   }));
   const [optionsVisible, setOptionsVisible] = useState(true);
+  const loopGenRef = useRef(0);
   const [setupChoice, setSetupChoice] = useState<'welcome' | 'single' | 'multi'>(
     ONLINE_ENABLED ? 'welcome' : 'single',
   );
@@ -480,6 +481,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   // Reset game to initial welcome screen state
   const resetToWelcome = () => {
+    loopGenRef.current++; // stops any bot loop or trick animation still running
     // Clear all game state
     setGameState(null);
     setPlayers([]);
@@ -695,6 +697,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     submitTrump,
     playLocalCard,
   } = useLocalGame({
+    loopGenRef,
+    optionsVisible,
     lang,
     t,
     tm,
