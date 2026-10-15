@@ -42,7 +42,7 @@ So every later change can be verified.
 
 - [x] Owner confirms the house rules in `docs/RULES.md`. (2026-10-05:
       standard rules; both engines updated, two small open questions remain.)
-- [ ] Extract a shared, pure TypeScript engine (e.g. `shared/engine/`) used by
+- [ ] (2026-10-15: engine moved to `shared/`, web uses it, Vitest started; backend still on its own engine. Backend now accepts web contract names.) Extract a shared, pure TypeScript engine (e.g. `shared/engine/`) used by
       both web and backend; port the best of both engines and their tests to
       Vitest. Cover scoring, Weis, Stöck, legal moves, schieben, match bonus.
 - [ ] Backend validates every move with it (turn order, legal cards).

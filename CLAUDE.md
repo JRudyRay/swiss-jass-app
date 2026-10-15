@@ -27,6 +27,9 @@ enforces it).
 
 ## Map
 
+- `shared/` source-only shared rules engine (`engine/schieber.ts`, moved from
+  `web/src/engine/`, which re-exports it). Imported by relative path, no build
+  step; Vitest tests live next to it. Backend adoption is roadmap M2.
 - `web/` React 18 + Vite + Tailwind, no router; `App.tsx` switches views.
   - `src/engine/schieber.ts`: pure, immutable rules engine for single-player.
   - `src/JassGame.tsx`: **2.9k-line god file** (game UI, bot loop, multiplayer
@@ -50,7 +53,7 @@ Node 22 on the Pi (CI uses 18/20). Two separate npm projects; run each from
 its own folder.
 
 - Full check (includes lint and Prettier check; `npm run format` fixes formatting) (must pass before a push):
-  `(cd web && npm ci && npm run check) && (cd backend && npm ci && npx prisma generate && npm run check)`
+  `(cd shared && npm ci && npm run check) && (cd web && npm ci && npm run check) && (cd backend && npm ci && npx prisma generate && npm run check)`
 - `npm run smoke` runs the web unit tests and a 40-hand simulation; it exits
   non-zero on any failure (all pass as of 2026-10-05). Backend engine tests:
   `cd backend && npx ts-node src/tests/gameEngine.test.ts` (no DB).

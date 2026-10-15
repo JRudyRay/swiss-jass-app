@@ -59,3 +59,24 @@ jobs:
       - name: Check
         run: npm run check
         working-directory: backend
+
+  shared:
+    name: Shared engine check (format, typecheck, tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: shared/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: shared
+
+      - name: Check
+        run: npm run check
+        working-directory: shared
