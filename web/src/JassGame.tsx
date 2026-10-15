@@ -132,6 +132,30 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   }));
   const [optionsVisible, setOptionsVisible] = useState(true);
   const loopGenRef = useRef(0);
+  // Short-lived notice floating over the table: only for things the player must know (illegal
+  // move, not your turn), never for routine game state, so the layout stays put.
+  const [notice, setNotice] = useState<{ id: number; text: string } | null>(null);
+  const noticeTimer = useRef<any>(null);
+  const showNotice = (text: string) => {
+    setNotice({ id: Date.now(), text });
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(null), 2400);
+  };
+  const noticeTexts = [
+    t.notYourTurn,
+    t.illegalCard,
+    t.notPlaying,
+    t.matchFinished,
+    t.chooseTrumpFirst,
+    tm.illegalMove,
+    tm.invalidPlay,
+    tm.playError,
+    tm.trumpFailed,
+    tm.trumpError,
+  ];
+  useEffect(() => {
+    if (noticeTexts.includes(message)) showNotice(message);
+  }, [message]);
   const [setupChoice, setSetupChoice] = useState<'welcome' | 'single' | 'multi'>(
     ONLINE_ENABLED ? 'welcome' : 'single',
   );
@@ -1115,12 +1139,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         )}
 
         <div className="jass-status">
-          {showPlaySurface && (
-            <div className="jass-status__msg" role="status" aria-live="polite">
-              {message}
-            </div>
-          )}
-
           {/* Quick action buttons - always available when not on welcome screen */}
           {(showPlaySurface || setupChoice !== 'welcome') && gameState && (
             <button
@@ -1136,113 +1154,14 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           )}
         </div>
 
-        {/* Game-only HUD (scores, trump, history) */}
-        {showPlaySurface && (
-          <>
-            {mode === 'multi' && multiGameState && (
-              <div
-                style={{
-                  margin: '0 auto 16px',
-                  maxWidth: 760,
-                  background: '#fff',
-                  padding: 12,
-                  borderRadius: 12,
-                  border: '1px solid #e5e7eb',
-                }}
-              >
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>Multiplayer State</div>
-                  <div style={{ fontSize: 12 }}>Dealer Seat: {multiGameState.dealerSeat}</div>
-                  <div style={{ fontSize: 12 }}>
-                    Current Player Seat: {multiGameState.currentPlayerSeat}
-                  </div>
-                  {activeTableId && (
-                    <div style={{ fontSize: 12, color: '#374151' }}>Table: {activeTableId}</div>
-                  )}
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-                    Your Multiplayer Hand
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {(multiGameState.players || [])
-                      .find((p: any) => p.userId === user?.id)
-                      ?.hand?.map((c: string, i: number) => (
-                        <div
-                          key={i}
-                          style={{
-                            padding: '4px 6px',
-                            background: '#1A7A4C',
-                            color: '#fff',
-                            borderRadius: 6,
-                            fontSize: 12,
-                            letterSpacing: 0.5,
-                          }}
-                        >
-                          {c}
-                        </div>
-                      )) || <div style={{ fontSize: 12, color: '#6b7280' }}>No hand</div>}
-                  </div>
-                </div>
-              </div>
-            )}
-            {roundHistory.length > 0 && (
-              <details
-                style={{
-                  maxWidth: 700,
-                  margin: '0 auto 10px',
-                  background: '#fffaf0',
-                  border: '1px solid #e3d7bf',
-                  borderRadius: 10,
-                  padding: '6px 12px',
-                }}
-              >
-                <summary
-                  style={{ fontSize: 13, fontWeight: 600, color: '#3a2e20', cursor: 'pointer' }}
-                >
-                  {t.roundHistory} ({roundHistory.length})
-                </summary>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 8,
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                    margin: '8px 0 4px',
-                  }}
-                >
-                  {roundHistory.map((round, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        background: 'white',
-                        borderRadius: 6,
-                        padding: '4px 8px',
-                        fontSize: 12,
-                        border: '1px solid #e5e7eb',
-                        minWidth: 80,
-                        textAlign: 'center',
-                      }}
-                    >
-                      <div style={{ fontWeight: 600 }}>
-                        {t.round} {round.round}
-                      </div>
-                      <div style={{ color: TEAM_COLORS[1] }}>{round.team1}</div>
-                      <div style={{ color: TEAM_COLORS[2] }}>{round.team2}</div>
-                      <div style={{ fontSize: 10, color: '#6b7280' }}>
-                        {trumpName(round.trump, lang)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            )}
-          </>
-        )}
-
         {showPlaySurface && (
           <div className="jass-stage">
             <div className="jass-table" data-jass-table>
+              {notice && (
+                <div key={notice.id} className="jass-notice" role="status" aria-live="polite">
+                  {notice.text}
+                </div>
+              )}
               {/* Seats: north/south centred, west/east on the sides */}
               <div className="seat-slot seat-slot--north">{renderSeat('north')}</div>
               <div className="seat-slot seat-slot--west">{renderSeat('west', true)}</div>
@@ -1275,26 +1194,25 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                         }
                       : null
                   }
-                  emptyLabel={uiPendingResolve || isAnimating ? null : t.noCardsPlayed}
+                  emptyLabel={null}
                   scale={speedScale()}
                   still={settings.speed === 'off'}
                 />
               </div>
+              {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
+              {choosingTrump && gameState && (
+                <TrumpChooser
+                  lang={lang}
+                  dealerName={
+                    players.find((p) => p.id === gameState.dealer)?.name ||
+                    `Player ${gameState.dealer}`
+                  }
+                  canSchieben={isLocal && gameState.forehand === 0}
+                  partnerMustChoose={isLocal && gameState.forehand !== 0}
+                  onPick={submitTrump}
+                />
+              )}
             </div>
-
-            {/* Trump selector: show when it's this user's turn (local: player 0; multi: mySeat) */}
-            {choosingTrump && gameState && (
-              <TrumpChooser
-                lang={lang}
-                dealerName={
-                  players.find((p) => p.id === gameState.dealer)?.name ||
-                  `Player ${gameState.dealer}`
-                }
-                canSchieben={isLocal && gameState.forehand === 0}
-                partnerMustChoose={isLocal && gameState.forehand !== 0}
-                onPick={submitTrump}
-              />
-            )}
           </div>
         )}
 
@@ -1362,7 +1280,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           reasonFor={notPlayableReason}
           onCardTap={(card, playable, reason) => {
             if (!playable) {
-              if (reason) setMessage(reason);
+              if (reason) showNotice(reason);
               return;
             }
             if (selectedCard !== card.id) {
@@ -1383,6 +1301,56 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           players={players as any}
           weisWinner={weisWinner as any}
         />
+
+        {roundHistory.length > 0 && (
+          <details
+            style={{
+              maxWidth: 700,
+              margin: '0 auto 10px',
+              background: '#fffaf0',
+              border: '1px solid #e3d7bf',
+              borderRadius: 10,
+              padding: '6px 12px',
+            }}
+          >
+            <summary style={{ fontSize: 13, fontWeight: 600, color: '#3a2e20', cursor: 'pointer' }}>
+              {t.roundHistory} ({roundHistory.length})
+            </summary>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                margin: '8px 0 4px',
+              }}
+            >
+              {roundHistory.map((round, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: 'white',
+                    borderRadius: 6,
+                    padding: '4px 8px',
+                    fontSize: 12,
+                    border: '1px solid #e5e7eb',
+                    minWidth: 80,
+                    textAlign: 'center',
+                  }}
+                >
+                  <div style={{ fontWeight: 600 }}>
+                    {t.round} {round.round}
+                  </div>
+                  <div style={{ color: TEAM_COLORS[1] }}>{round.team1}</div>
+                  <div style={{ color: TEAM_COLORS[2] }}>{round.team2}</div>
+                  <div style={{ fontSize: 10, color: '#6b7280' }}>
+                    {trumpName(round.trump, lang)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
 
         <InfoPanels lang={lang} />
 

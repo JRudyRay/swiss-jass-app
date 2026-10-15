@@ -32,9 +32,6 @@
   padding: clamp(8px, 2.5vw, 20px);
 }
 
-.jass-screen--choosing {
-  --g-table-h: clamp(170px, calc(100dvh - 630px), 380px);
-}
 
 .jass-screen button {
   touch-action: manipulation;
@@ -429,7 +426,7 @@
   transition:
     transform 220ms var(--ease-out),
     opacity 220ms ease;
-  animation: trickIn 250ms var(--ease-out) backwards;
+  animation: trickIn 280ms var(--ease-out) backwards;
 }
 .trick-card .swiss-card {
   --cw: var(--g-trick-w);
@@ -438,7 +435,7 @@
   left: 50%;
   top: 74%;
   --rot: 3deg;
-  --fy: 46px;
+  --fy: 96px; /* rises from the hand */
 }
 .trick-card--north {
   left: 50%;
@@ -647,16 +644,27 @@
 /* ---------- Trump chooser ---------- */
 
 .trump-sheet {
+  /* Floats on the felt so choosing trump never changes the layout. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 8;
   box-sizing: border-box;
-  max-width: 760px;
-  margin: 10px auto 0;
-  padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  width: min(620px, calc(100% - 16px));
+  margin: 0;
+  padding: 8px 10px;
+  transform: translate(-50%, -50%);
   background: var(--paper);
   border: 1px solid #e3d7bf;
   border-top: 3px solid var(--gold);
   border-radius: 16px 16px 12px 12px;
   color: var(--ink);
-  animation: sheetIn 220ms var(--ease-out);
+  animation: trumpIn 180ms var(--ease-out);
+}
+@keyframes trumpIn {
+  from {
+    opacity: 0;
+  }
 }
 .trump-sheet__head {
   display: flex;
@@ -664,7 +672,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 2px 12px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .trump-sheet__title {
   margin: 0;
@@ -674,13 +682,14 @@
   line-height: 1.2;
 }
 .trump-sheet__dealer {
+  display: none;
   font-size: 12px;
   color: var(--muted);
 }
 .trump-sheet__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 .trump-btn {
   display: flex;
@@ -688,8 +697,8 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-height: 64px;
-  padding: 6px 4px;
+  min-height: 54px;
+  padding: 4px;
   background: var(--cream);
   border: 2px solid #d9c9a8;
   border-radius: 12px;
@@ -721,9 +730,9 @@
 .trump-sheet__schieben {
   display: block;
   width: 100%;
-  min-height: 48px;
-  margin-top: 8px;
-  padding: 8px 12px;
+  min-height: 42px;
+  margin-top: 6px;
+  padding: 6px 12px;
   background: transparent;
   border: 2px solid var(--wood);
   border-radius: 12px;
@@ -738,6 +747,7 @@
   background: var(--cream);
 }
 .trump-sheet__hint {
+  display: none;
   margin: 8px 0 0;
   font-size: 12px;
   line-height: 1.35;
@@ -2002,5 +2012,37 @@
   .jass-screen--lefty .sheet-btn.rules-btn {
     left: 6px;
     right: auto;
+  }
+}
+
+/* ---------- Notice: floats over the table, takes no space ---------- */
+.jass-notice {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  z-index: 30;
+  max-width: calc(100% - 24px);
+  padding: 6px 14px;
+  background: rgba(20, 30, 22, 0.92);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--paper);
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: noticeIn 2400ms ease both;
+}
+@keyframes noticeIn {
+  0% {
+    opacity: 0;
+  }
+  8%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
