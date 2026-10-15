@@ -179,6 +179,20 @@ testRunner('Undenufe has 4x multiplier', () => {
   assertEquals(engine.getGameState().trumpMultiplier, 3, 'Undenufe should have 3x multiplier');
 });
 
+testRunner('Web contract names are accepted (oben-abe / unden-ufe)', () => {
+  for (const name of ['oben-abe', 'unden-ufe']) {
+    const engine = new SwissJassEngine('schieber');
+    engine.startRound();
+    const state: any = (engine as any).gameState;
+    state.phase = 'trump_selection';
+    state.currentPlayer = state.dealer;
+    engine.selectTrump(name as any, state.dealer);
+    const gs = engine.getGameState();
+    assertEquals(gs.trumpMultiplier, 3, name + ' should have 3x multiplier');
+    assertEquals(gs.contract, name === 'oben-abe' ? 'obenabe' : 'undenufe', 'normalised contract');
+  }
+});
+
 // ========================================
 // TEST SUITE 3: WEIS SCORING
 // ========================================

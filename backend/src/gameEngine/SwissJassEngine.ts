@@ -252,6 +252,9 @@ export class SwissJassEngine {
   }
 
   public selectTrump(trump: TrumpContract, playerId: number): boolean {
+    // The web client names these 'oben-abe' / 'unden-ufe'.
+    const alias: Record<string, TrumpContract> = { 'oben-abe': 'obenabe', 'unden-ufe': 'undenufe' };
+    trump = alias[trump as string] ?? trump;
     if (this.gameState.phase !== 'trump_selection' || playerId !== this.gameState.currentPlayer) {
       return false;
     }
