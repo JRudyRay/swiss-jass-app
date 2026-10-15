@@ -32,7 +32,6 @@
   padding: clamp(8px, 2.5vw, 20px);
 }
 
-
 .jass-screen button {
   touch-action: manipulation;
 }
