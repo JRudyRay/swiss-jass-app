@@ -116,9 +116,9 @@
 .app-signin {
   min-height: 44px;
   padding: 0 16px;
-  border: 0;
+  border: 1.5px solid rgb(255 255 255 / 0.55);
   border-radius: 8px;
-  background: var(--color-primary);
+  background: transparent;
   color: #fff;
   font: inherit;
   font-weight: 700;

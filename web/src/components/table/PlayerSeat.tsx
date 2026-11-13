@@ -1,6 +1,7 @@
 import React from 'react';
 import { TEAM_COLORS } from './ScoreBar';
 import { messages, type Lang } from '../../i18n';
+import type { SeatWeis } from './seatWeis';
 
 type Props = {
   lang: Lang;
@@ -14,6 +15,10 @@ type Props = {
   thinking?: boolean;
   // This player just won the trick: the pile slides here.
   taking?: boolean;
+  // Points of the trick being taken, floated next to the chip.
+  gain?: number;
+  // Weis announced with the first card (first trick only).
+  weis?: SeatWeis | null;
   seat?: string;
   // West/east: a stacked chip so the trick keeps its room.
   narrow?: boolean;
@@ -30,6 +35,8 @@ const PlayerSeat: React.FC<Props> = ({
   isTurn,
   thinking,
   taking,
+  gain,
+  weis,
   seat,
   narrow,
 }) => {
@@ -64,6 +71,16 @@ const PlayerSeat: React.FC<Props> = ({
           </span>
         )}
       </span>
+      {weis && !taking && (
+        <span className={`seat__weis${weis.counts ? '' : ' seat__weis--off'}`}>
+          {messages(lang).weis.short(weis.points)}
+        </span>
+      )}
+      {taking && !!gain && (
+        <span className="seat__gain" aria-hidden="true">
+          +{gain}
+        </span>
+      )}
       {isDealer && (
         <span className="seat__dealer" title={t.dealer} aria-label={t.dealer}>
           D

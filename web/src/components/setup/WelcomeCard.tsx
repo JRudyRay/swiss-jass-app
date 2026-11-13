@@ -3,6 +3,10 @@ import Icon from '../Icon';
 import { messages, type Lang } from '../../i18n';
 import './setup.css';
 
+// The four Under (Buur), the card every Jass player wants to hold.
+const FAN = ['schellen_U', 'rosen_U', 'eicheln_U', 'schilten_U'];
+const base: string = (import.meta as any).env?.BASE_URL || '/';
+
 export const WelcomeCard: React.FC<{
   lang: Lang;
   onlineCount: number;
@@ -12,7 +16,16 @@ export const WelcomeCard: React.FC<{
   const w = messages(lang).welcome;
   return (
     <section className="welcome card">
-      <div className="welcome__cross" aria-hidden="true" />
+      <div className="welcome__fan" aria-hidden="true">
+        {FAN.map((c, i) => (
+          <img
+            key={c}
+            src={`${base}assets/cards/${c}.webp`}
+            alt=""
+            style={{ '--i': i } as React.CSSProperties}
+          />
+        ))}
+      </div>
       <h2 className="welcome__title">{w.title}</h2>
       <p className="welcome__sub">{w.sub}</p>
 

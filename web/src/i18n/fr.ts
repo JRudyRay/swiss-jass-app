@@ -41,6 +41,7 @@ const fr: Messages = {
     turn: 'à jouer',
   },
   weis: {
+    short: (n: number) => `Annonce ${n}`,
     title: 'Annonces',
     points: 'pts',
     notCounted: 'ne compte pas',

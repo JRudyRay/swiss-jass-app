@@ -41,6 +41,7 @@ const de: Messages = {
     turn: 'am Zug',
   },
   weis: {
+    short: (n: number) => `Weis ${n}`,
     title: 'Weis',
     points: 'Pkt.',
     notCounted: 'zählt nicht',

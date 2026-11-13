@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import CardCredits from './components/CardCredits';
-import ScoreBar, { TEAM_COLORS } from './components/table/ScoreBar';
+import ScoreBar from './components/table/ScoreBar';
 import { trumpName } from './components/table/SuitBadge';
 import PlayerSeat from './components/table/PlayerSeat';
 import * as Schieber from './engine/schieber';
 import InfoPanels from './components/table/InfoPanels';
 import WeisPanel from './components/table/WeisPanel';
+import RoundHistory from './components/table/RoundHistory';
+import { seatWeis } from './components/table/seatWeis';
 import TrickArea from './components/table/TrickArea';
 import LastTrick from './components/table/LastTrick';
 import SettingsSheet from './components/table/SettingsSheet';
@@ -167,7 +169,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   // simplify optional checks used in JSX
   const isAnimating = Boolean(animatingSwoop);
   // Set while the finished trick is shown and collected by its winner.
-  const [collect, setCollect] = useState<{ winnerId: number } | null>(null);
+  const [collect, setCollect] = useState<{ winnerId: number; points?: number } | null>(null);
   const [matchFinished, setMatchFinished] = useState<boolean>(false);
   const [currentUserName, setCurrentUserName] = useState<string>(user?.username || 'You');
 
@@ -383,6 +385,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         isDealer={gameState?.dealer === p.id}
         isTurn={active && gameState?.currentPlayer === p.id}
         taking={collect?.winnerId === p.id}
+        gain={collect?.winnerId === p.id ? collect.points : undefined}
+        weis={seatWeis(gameState?.weis as any, weisWinner as any, p as any, players as any)}
         thinking={active && gameState?.currentPlayer === p.id && pos !== 'south'}
         seat={pos}
         narrow={narrow}
@@ -1276,6 +1280,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           legalCards={legalCards}
           selectedCard={selectedCard}
           markPlayability={gameState?.phase !== 'trump_selection'}
+          myTurn={
+            gameState?.phase === 'playing' &&
+            !collect &&
+            gameState?.currentPlayer === players.find((x) => x.position === 'south')?.id
+          }
           reasonFor={notPlayableReason}
           onCardTap={(card, playable, reason) => {
             if (!playable) {
@@ -1301,55 +1310,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           weisWinner={weisWinner as any}
         />
 
-        {roundHistory.length > 0 && (
-          <details
-            style={{
-              maxWidth: 700,
-              margin: '0 auto 10px',
-              background: '#fffaf0',
-              border: '1px solid #e3d7bf',
-              borderRadius: 10,
-              padding: '6px 12px',
-            }}
-          >
-            <summary style={{ fontSize: 13, fontWeight: 600, color: '#3a2e20', cursor: 'pointer' }}>
-              {t.roundHistory} ({roundHistory.length})
-            </summary>
-            <div
-              style={{
-                display: 'flex',
-                gap: 8,
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                margin: '8px 0 4px',
-              }}
-            >
-              {roundHistory.map((round, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: 'white',
-                    borderRadius: 6,
-                    padding: '4px 8px',
-                    fontSize: 12,
-                    border: '1px solid #e5e7eb',
-                    minWidth: 80,
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>
-                    {t.round} {round.round}
-                  </div>
-                  <div style={{ color: TEAM_COLORS[1] }}>{round.team1}</div>
-                  <div style={{ color: TEAM_COLORS[2] }}>{round.team2}</div>
-                  <div style={{ fontSize: 10, color: '#6b7280' }}>
-                    {trumpName(round.trump, lang)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
+        <RoundHistory lang={lang} rounds={roundHistory} />
 
         <InfoPanels lang={lang} />
 

@@ -41,6 +41,7 @@ const it: Messages = {
     turn: 'di turno',
   },
   weis: {
+    short: (n: number) => `Weis ${n}`,
     title: 'Annunci (Weis)',
     points: 'pt.',
     notCounted: 'non conta',

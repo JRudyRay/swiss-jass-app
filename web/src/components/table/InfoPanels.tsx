@@ -3,18 +3,6 @@ import YouTubePlayer from '../../YouTubePlayer';
 import { messages, type Lang } from '../../i18n';
 import CardValues from './CardValues';
 
-const panel: React.CSSProperties = {
-  background: '#fffaf0',
-  border: '1px solid #fde2b6',
-  borderRadius: 10,
-  padding: '8px 12px',
-};
-const summary: React.CSSProperties = {
-  fontWeight: 700,
-  fontSize: 14,
-  cursor: 'pointer',
-  color: '#3b2a14',
-};
 const btn: React.CSSProperties = {
   border: 'none',
   borderRadius: 6,
@@ -30,24 +18,16 @@ export const InfoPanels: React.FC<{ lang: Lang }> = ({ lang }) => {
   const yt = useRef<any>(null);
   const [musicOpen, setMusicOpen] = useState(false);
   return (
-    <div
-      style={{
-        marginTop: 18,
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-        gap: 12,
-        alignItems: 'start',
-      }}
-    >
-      <details style={{ ...panel, gridColumn: '1 / -1', padding: '10px 14px' }}>
-        <summary style={summary}>{t.scoring}</summary>
+    <div className="info-panels">
+      <details className="info-panel info-panel--wide">
+        <summary className="info-panel__summary">{t.scoring}</summary>
         <CardValues lang={lang} />
       </details>
       <details
-        style={panel}
+        className="info-panel"
         onToggle={(e) => setMusicOpen((e.currentTarget as HTMLDetailsElement).open)}
       >
-        <summary style={summary}>{t.music}</summary>
+        <summary className="info-panel__summary">{t.music}</summary>
         {musicOpen && (
           <div style={{ marginTop: 8 }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>

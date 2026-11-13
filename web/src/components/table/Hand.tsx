@@ -9,6 +9,8 @@ type Props = {
   selectedCard: string | null;
   // False while the trump is being chosen: nothing is dimmed then.
   markPlayability: boolean;
+  // The player is to play a card now: the playable cards step forward.
+  myTurn?: boolean;
   reasonFor: (card: any) => string | null;
   onCardTap: (card: any, playable: boolean, reason: string | null) => void;
 };
@@ -21,6 +23,7 @@ const Hand: React.FC<Props> = ({
   legalCards,
   selectedCard,
   markPlayability,
+  myTurn,
   reasonFor,
   onCardTap,
 }) => {
@@ -28,7 +31,7 @@ const Hand: React.FC<Props> = ({
   const label = (c: any) => `${m.suits[c.suit] || c.suit} ${m.ranks[c.rank] || c.rank}`;
   return (
     <div className="hand-dock">
-      <div className="hand" role="group">
+      <div className={`hand${myTurn ? ' hand--turn' : ''}`} role="group">
         {cards.map((card, i) => {
           const playable = legalCards.some((c: any) => c.id === card.id);
           const reason = !playable ? reasonFor(card) : null;

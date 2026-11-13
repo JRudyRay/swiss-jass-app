@@ -1,3 +1,4 @@
+import { trickGain } from '../game/trickGain';
 import { useEffect, useRef } from 'react';
 import * as Schieber from '../engine/schieber';
 import * as Bot from '../engine/bot';
@@ -76,7 +77,7 @@ export function useLocalGame(c: any) {
       setMessage(
         winner === 0 ? tr.youTake : tr.takes(st.players.find((p) => p.id === winner)?.name || ''),
       );
-      setCollect({ winnerId: winner });
+      setCollect({ winnerId: winner, points: trickGain(st) });
       await new Promise((r) => setTimeout(r, COLLECT_MS * speedScale()));
       if (gen !== loopGenRef.current) return st; // game was reset or restarted meanwhile
       const newSt = Schieber.resolveTrick(st);

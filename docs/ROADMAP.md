@@ -81,6 +81,13 @@ So every later change can be verified.
       the free height, tight trick diamond, "New game" moved into settings.
       Multiplayer hands still end without a score sheet (the backend sends no
       breakdown).
+- [x] (2026-11-13) Table polish, round 2: playable cards step forward on your
+      turn, "+N" at the seat that takes a trick, "Weis N" at each seat during
+      the first trick (struck through when it does not count), dark Stube
+      background on the welcome and setup screens with a four-Under card fan,
+      dark panels below the hand. Open: last-trick view, score sheet headline,
+      welcome page taller than a phone screen, "Play online" is offered on
+      Pages although multiplayer only works on the owner's LAN.
 - [x] Stronger bots (card memory, partner play, smarter trump choice and
       schieben), 2026-10-06. `web/src/engine/bot.ts`; `npm run h2h` (duplicate
       deals vs the old bot): +6.5 points per hand (2.3 SE) over 1000 deals,

@@ -10,7 +10,7 @@
   /* the felt takes the height the score strip and the hand leave free */
   --g-table-h: clamp(250px, calc(100dvh - 340px), 560px);
   /* trick card width: grows with the table, always smaller than a hand card */
-  --g-trick-w: clamp(52px, calc(var(--g-table-h) * 0.15), 60px);
+  --g-trick-w: clamp(52px, calc(var(--g-table-h) * 0.15), min(66px, 17vw));
   --g-seat-v: 46px; /* space kept free above/below the trick for the seat chips */
   --g-seat-h: 78px; /* space kept free left/right of the trick for the side chips */
   --felt: #1f5a3d;
@@ -25,7 +25,8 @@
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   touch-action: manipulation;
   min-height: calc(100dvh - 56px);
-  background: var(--color-cream, #f6efe0);
+  /* the Stube at night, on every screen: paper cards and the felt sit on it */
+  background: radial-gradient(120% 70% at 50% 0%, #24382c 0%, #14211a 55%, #0d1611 100%);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 .jass-screen__area {
@@ -615,7 +616,7 @@
 }
 /* dimmed, not transparent: the fanned cards overlap and must not show through */
 .hand-card[aria-disabled='true'] {
-  filter: brightness(0.62) saturate(0.75);
+  filter: brightness(0.55) saturate(0.7);
   cursor: default;
 }
 .hand-card:active:not([aria-disabled='true']) {
@@ -919,7 +920,7 @@
 .victory__meta {
   text-align: center;
   font-size: 12px;
-  color: var(--muted);
+  color: #5b4a3a;
 }
 .victory__details {
   margin-top: 14px;
@@ -1909,14 +1910,14 @@
   padding: 6px 14px;
   font: inherit;
   font-weight: 700;
-  color: var(--ink);
-  background: transparent;
-  border: 1.5px solid #cdbb98;
+  color: #f2ede1;
+  background: rgba(242, 237, 225, 0.06);
+  border: 1.5px solid rgba(201, 162, 74, 0.6);
   border-radius: 12px;
   cursor: pointer;
 }
 .rules-link:focus-visible {
-  outline: 3px solid var(--ink);
+  outline: 3px solid var(--gold);
   outline-offset: 2px;
 }
 
@@ -2021,7 +2022,8 @@
 .jass-notice {
   position: absolute;
   left: 50%;
-  top: 8px;
+  /* just above your own seat chip: near the hand, and clear of the partner's name */
+  bottom: calc(var(--g-seat-v) + 4px);
   z-index: 30;
   max-width: calc(100% - 24px);
   padding: 6px 14px;
@@ -2058,7 +2060,6 @@
   --chalk: #f2ede1;
   --slate: #1f2a28;
   --walnut: #5b3a24;
-  background: radial-gradient(120% 70% at 50% 0%, #24382c 0%, #14211a 55%, #0d1611 100%);
 }
 .jass-screen--play .jass-screen__area {
   margin-top: 0;
@@ -2273,6 +2274,196 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .sheet.hs-sheet {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Table feedback: your turn, Weis announced at the seat, points of the trick taken.
+   ========================================================================== */
+
+/* Your turn: the cards you may play step forward. */
+.hand--turn .hand-card:not([aria-disabled='true']):not(.hand-card--sel) {
+  transform: translateY(-6px);
+}
+.hand--turn .hand-card:active:not([aria-disabled='true']):not(.hand-card--sel) {
+  transform: translateY(-6px) scale(0.96);
+}
+
+/* Bubbles next to a seat chip: beside the top and bottom chips, under the side chips.
+   Placed with `translate` so the pop animation can use `transform`. */
+.seat__weis,
+.seat__gain {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 6px);
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  translate: 0 -50%;
+  animation: seatBubble 320ms var(--ease-out) both;
+}
+.seat--side .seat__weis,
+.seat--side .seat__gain {
+  top: calc(100% + 5px);
+  left: 50%;
+  translate: -50% 0;
+}
+.seat__weis {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.seat__weis--off {
+  background: rgba(20, 30, 22, 0.88);
+  box-shadow: none;
+  color: #cfc6b2;
+  text-decoration: line-through;
+}
+.seat__gain {
+  background: rgba(20, 30, 22, 0.92);
+  font-size: 14px;
+  color: #f0c869;
+}
+@keyframes seatBubble {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Narrow phones: the top chip must not reach the corner buttons. */
+@media (orientation: portrait) and (max-width: 380px) {
+  .seat:not(.seat--side) .seat__thinking {
+    display: none;
+  }
+  .sheet-btn.set-btn {
+    left: 52px;
+  }
+  .seat:not(.seat--side) .seat__weis {
+    left: calc(100% + 4px);
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+}
+
+/* ---------- Panels below the hand: quiet on the dark room, paper once opened ---------- */
+.info-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  align-items: start;
+  margin-top: 16px;
+}
+.info-panel {
+  padding: 0 14px;
+  background: rgba(242, 237, 225, 0.06);
+  border: 1px solid rgba(201, 162, 74, 0.35);
+  border-radius: 12px;
+  color: #f2ede1;
+}
+.info-panel--wide {
+  grid-column: 1 / -1;
+}
+.info-panel__summary {
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(242, 237, 225, 0.86);
+  cursor: pointer;
+}
+.info-panel__summary:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+.info-panel[open] {
+  padding-bottom: 12px;
+  background: var(--paper);
+  border-color: #e3d7bf;
+  color: var(--ink);
+}
+.info-panel[open] .info-panel__summary {
+  color: #3b2a14;
+}
+.round-history {
+  max-width: 700px;
+  margin: 16px auto 0;
+}
+.round-history__list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.round-history__item {
+  min-width: 80px;
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #e5dcc8;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.round-history__no {
+  color: var(--ink);
+}
+.round-history__trump {
+  font-size: 10px;
+  font-weight: 500;
+  color: #6b5f4d;
+}
+.card-credits {
+  margin-top: 20px;
+  padding: 8px 16px;
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+  color: rgba(242, 237, 225, 0.68);
+}
+.card-credits__title {
+  font-weight: 700;
+  color: rgba(242, 237, 225, 0.82);
+}
+.card-credits a {
+  color: inherit;
+}
+
+/* Weis list: same quiet panel; it also sits on the felt in landscape. */
+.jass-screen--play .weis-panel {
+  margin-top: 16px;
+  background: rgba(20, 30, 22, 0.88);
+  border-color: rgba(201, 162, 74, 0.35);
+  color: #f2ede1;
+}
+.jass-screen--play .weis-panel__winner {
+  color: #a8dcb8;
+}
+.jass-screen--play .weis-row__desc {
+  color: rgba(242, 237, 225, 0.72);
+}
+.jass-screen--play .weis-row__off {
+  color: #f3aaa1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat__weis,
+  .seat__gain {
     animation: none;
   }
 }

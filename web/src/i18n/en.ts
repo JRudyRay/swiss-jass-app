@@ -39,6 +39,7 @@ const en = {
     turn: 'to play',
   },
   weis: {
+    short: (n: number) => `Weis ${n}`,
     title: 'Weis (melds)',
     points: 'pts',
     notCounted: 'does not count',

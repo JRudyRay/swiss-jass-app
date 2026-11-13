@@ -42,6 +42,7 @@ const rm: Messages = {
     turn: 'a la retscha',
   },
   weis: {
+    short: (n: number) => `Weis ${n}`,
     title: 'Weis',
     points: 'puncts',
     notCounted: 'na quinta betg',

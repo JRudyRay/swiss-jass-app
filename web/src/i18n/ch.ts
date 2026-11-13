@@ -41,6 +41,7 @@ const ch: Messages = {
     turn: 'am Zug',
   },
   weis: {
+    short: (n: number) => `Wiis ${n}`,
     title: 'Wiis',
     points: 'Pkt',
     notCounted: 'zellt nöd',
