@@ -60,6 +60,17 @@ implement everything below as of 2026-10-05.
 - The first dealer of a match is random; the forehand (who chooses trump and
   leads) is always the dealer's right. No Rosen-7 rule.
 
+## Added 2026-11-13 (standard rule, not yet confirmed by the owner)
+
+- Two four-of-a-kinds of equal points (Ass, König, Ober, 10: all 100): the
+  higher rank wins, the lower in Undenufe. Before, seat order decided.
+- Fixed in the shared engine: the Weis seat-order tie-break ran clockwise; it
+  now follows play order (counter-clockwise from the forehand) as specified.
+- The shared engine itself now refuses a card played out of turn, in the wrong
+  phase or against the follow-suit rules, and a trump choice outside trump
+  selection. `shared/engine/rules.test.ts` has one test per rule in this file
+  and checks 400 random hands and 60 matches against an independent scorer.
+
 ## Open questions (owner)
 
 | Topic | Current code | Notes |

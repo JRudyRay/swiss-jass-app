@@ -378,6 +378,8 @@ export class SwissJassEngine {
   }
 
   public playCard(cardId: string, playerId: number): boolean {
+    // A full trick waits for completeTrick(); nobody may add a fifth card meanwhile.
+    if (this.gameState.currentTrick.length >= 4) return false;
     if (this.gameState.phase !== 'playing' || playerId !== this.gameState.currentPlayer) {
       console.warn(
         `playCard rejected: wrong phase or not player's turn (phase=${this.gameState.phase} playerId=${playerId} currentPlayer=${this.gameState.currentPlayer})`,
@@ -833,6 +835,12 @@ export class SwissJassEngine {
         if (aTop !== bTop) return aTop > bTop;
       }
       return a.cards[0]?.suit === trump && b.cards[0]?.suit !== trump;
+    }
+    // Two four-of-a-kinds of equal points: the higher rank wins, the lower in Undenufe.
+    if (!a.type.startsWith('sequence') && !b.type.startsWith('sequence')) {
+      const ra = this.rankIndex(a.cards[0].rank),
+        rb = this.rankIndex(b.cards[0].rank);
+      return this.gameState.trumpSuit === 'undenufe' ? ra < rb : ra > rb;
     }
     return false;
   }

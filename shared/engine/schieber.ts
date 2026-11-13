@@ -87,6 +87,7 @@ export type PlayedCard = {
 
 export const suits: Suit[] = ['eicheln', 'schellen', 'rosen', 'schilten'];
 export const ranks: Rank[] = ['6', '7', '8', '9', '10', 'U', 'O', 'K', 'A'];
+export const CONTRACTS: TrumpContract[] = [...suits, 'oben-abe', 'unden-ufe'];
 
 // Point values for non-trump
 const basePoints: Record<Rank, number> = {
@@ -390,6 +391,9 @@ export function chooseBotTrump(state: State, playerId: number): TrumpContract | 
 
 export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schieben'): State {
   const st = JSON.parse(JSON.stringify(state)) as State;
+  // Only during trump selection, and only a real contract (or schieben), changes anything.
+  if (state.phase !== 'trump_selection') return st;
+  if (trump !== 'schieben' && !CONTRACTS.includes(trump)) return st;
   // If trump passed as 'schieben' from bots, pass the decision to the partner (opposite player).
   // In Schieber a player may 'schieben' to their partner who must then choose; partner cannot pass back.
   if ((trump as any) === 'schieben') {
@@ -523,19 +527,6 @@ export function compareCards(
 }
 
 function winnerOfTrick(cards: Card[], trump?: string | null, leadSuit?: Suit | null) {
-  const winnerIndex = 0;
-  for (let i = 1; i < cards.length; i++) {
-    const cmp = compareCards(
-      cards[i],
-      cards[winnerIndex],
-      trump as TrumpContract | null | undefined,
-      leadSuit,
-    );
-    if (cmp < 0) {
-      // lower index means higher priority? adjust: our compare returns index difference, so negative means cards[i] higher? Wait
-    }
-  }
-  // simpler: find highest by using sort key
   let bestIdx = 0;
   let best = cards[0];
   for (let i = 1; i < cards.length; i++) {
@@ -581,11 +572,19 @@ export function peekTrickWinner(state: State): number | null {
   return winnerCard.playerId;
 }
 
+// May this player play this card right now? Checks phase, turn and the follow-suit rules.
+export function isLegalPlay(state: State, playerId: number, cardId: string): boolean {
+  if (state.phase !== 'playing' || state.pendingResolve) return false;
+  if (state.currentPlayer !== playerId || state.currentTrick.length >= 4) return false;
+  return getLegalCardsForPlayer(state, playerId).some((c) => c.id === cardId);
+}
+
 export function playCardLocal(state: State, playerId: number, cardId: string): State {
   const st = JSON.parse(JSON.stringify(state)) as State; // naive clone
+  // The engine is the authority: wrong phase, out of turn or an illegal card changes nothing.
+  if (!isLegalPlay(state, playerId, cardId)) return st;
   const player = st.players.find((p) => p.id === playerId)!;
   const idx = player.hand.findIndex((c) => c.id === cardId);
-  if (idx === -1) return st; // illegal
   const card = player.hand.splice(idx, 1)[0];
   if (st.currentTrick.length === 0) st.trickLead = card.suit;
   // Handle Stöck declarations: award 20 points when both trump king and queen are played
@@ -774,7 +773,8 @@ export function bestWeis(
   let best: { weis: WeisDeclaration; playerId: number; teamId: number; order: number } | null =
     null;
   for (const player of players) {
-    const order = (player.id - start + 4) % 4;
+    // Play runs counter-clockwise: forehand, forehand - 1, ...
+    const order = (start - player.id + 4) % 4;
     for (const weis of player.weis || []) {
       if (
         !best ||
@@ -829,6 +829,13 @@ export function isWeisBetter(
     const aTrump = !!trump && a.cards.length > 0 && a.cards[0].suit === trump;
     const bTrump = !!trump && b.cards.length > 0 && b.cards[0].suit === trump;
     return aTrump && !bTrump;
+  }
+  // Two four-of-a-kinds of equal points (Ass, König, Ober, 10): the higher rank
+  // wins, the lower in Undenufe.
+  if (!a.type.startsWith('sequence') && !b.type.startsWith('sequence')) {
+    const ra = rankToNumber(a.cards[0].rank);
+    const rb = rankToNumber(b.cards[0].rank);
+    return trump === 'unden-ufe' ? ra < rb : ra > rb;
   }
   return false;
 }
