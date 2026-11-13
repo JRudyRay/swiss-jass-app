@@ -147,7 +147,7 @@ const it: Messages = {
         items: [
           'Sequenza nello stesso seme (ordine 6 7 8 9 10 Under Ober Re Asso): 3 carte 20, 4 carte 50, 5 carte 100, 6 carte 150, 7 carte 200, 8 carte 250, 9 carte 300.',
           'Quattro uguali: quattro Under 200, quattro Nove 150, quattro Assi, Re, Ober o Dieci 100. Quattro 6, 7 o 8 non valgono nulla.',
-          'Segna solo la squadra con il miglior annuncio, e allora tutti i suoi annunci. Il migliore ha più punti. A parità: la sequenza più lunga, poi la più alta (la più bassa a Undenufe), poi quella di briscola. Se è ancora pari, vince il giocatore che gioca per primo a partire dal giocatore di mano.',
+          'Segna solo la squadra con il miglior annuncio, e allora tutti i suoi annunci. Il migliore ha più punti. A parità: l’annuncio con più carte (una sequenza di cinque batte quindi un poker), poi il più alto (il più basso a Undenufe), poi quello di briscola. Se è ancora pari, vince il giocatore che gioca per primo a partire dal giocatore di mano.',
         ],
       },
       {

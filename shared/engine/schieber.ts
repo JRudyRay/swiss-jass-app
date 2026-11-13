@@ -875,16 +875,17 @@ export function calculateTeamWeis(
   };
 }
 
-// Is Weis a strictly better than b? Higher points; between sequences of equal
-// points the longer, then the higher (lower in Undenufe), then the trump one.
+// Is Weis a strictly better than b? Higher points; at equal points the one with
+// more cards (so a sequence beats four of a kind), then the higher (lower in
+// Undenufe), then the trump one.
 export function isWeisBetter(
   a: WeisDeclaration,
   b: WeisDeclaration,
   trump?: TrumpContract | null,
 ): boolean {
   if (a.points !== b.points) return a.points > b.points;
+  if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
   if (a.type.startsWith('sequence') && b.type.startsWith('sequence')) {
-    if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
     const top = (w: WeisDeclaration) => Math.max(...w.cards.map((c) => rankToNumber(c.rank)));
     const low = (w: WeisDeclaration) => Math.min(...w.cards.map((c) => rankToNumber(c.rank)));
     if (trump === 'unden-ufe') {

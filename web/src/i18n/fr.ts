@@ -147,7 +147,7 @@ const fr: Messages = {
         items: [
           'Suite dans une couleur (ordre 6 7 8 9 10 Under Ober Roi As) : 3 cartes 20, 4 cartes 50, 5 cartes 100, 6 cartes 150, 7 cartes 200, 8 cartes 250, 9 cartes 300.',
           'Quatre cartes identiques : quatre Under 200, quatre Neuf 150, quatre As, Rois, Ober ou Dix 100. Quatre 6, 7 ou 8 ne comptent pas.',
-          'Seule l’équipe qui a la meilleure annonce marque, et alors toutes ses annonces. La meilleure a le plus de points. À égalité : la suite la plus longue, puis la plus haute (la plus basse à Undenufe), puis celle à l’atout. Si c’est encore égal, gagne le joueur qui est le premier à jouer à partir de la première main.',
+          'Seule l’équipe qui a la meilleure annonce marque, et alors toutes ses annonces. La meilleure a le plus de points. À égalité : l’annonce avec le plus de cartes (une suite de cinq bat donc un carré), puis la plus haute (la plus basse à Undenufe), puis celle à l’atout. Si c’est encore égal, gagne le joueur qui est le premier à jouer à partir de la première main.',
         ],
       },
       {

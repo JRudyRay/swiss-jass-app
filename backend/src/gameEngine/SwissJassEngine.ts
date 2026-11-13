@@ -816,13 +816,15 @@ export class SwissJassEngine {
   }
 
   /**
-   * Is Weis a strictly better than b? Higher points; between sequences of equal
-   * points the longer, then the higher (lower in Undenufe), then the trump one.
+   * Is Weis a strictly better than b? Higher points; at equal points the one with
+   * more cards (a sequence beats four of a kind), then the higher (lower in
+   * Undenufe), then the trump one.
    */
   private isWeisBetter(a: WeisDeclaration, b: WeisDeclaration): boolean {
     if (a.points !== b.points) return a.points > b.points;
+    // equal points: more cards win, so a sequence beats four of a kind
+    if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
     if (a.type.startsWith('sequence') && b.type.startsWith('sequence')) {
-      if (a.cards.length !== b.cards.length) return a.cards.length > b.cards.length;
       const trump = this.gameState.trumpSuit;
       const ranks = (w: WeisDeclaration) => w.cards.map((c) => this.rankIndex(c.rank));
       if (trump === 'undenufe') {

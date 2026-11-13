@@ -147,7 +147,7 @@ const de: Messages = {
         items: [
           'Folge in einer Farbe (Reihenfolge 6 7 8 9 10 Under Ober König Ass): 3 Karten 20, 4 Karten 50, 5 Karten 100, 6 Karten 150, 7 Karten 200, 8 Karten 250, 9 Karten 300.',
           'Vier Gleiche: vier Under 200, vier Neuner 150, vier Asse, Könige, Ober oder Zehner 100. Vier Sechser, Siebner oder Achter zählen nichts.',
-          'Nur das Team mit dem einen besten Weis schreibt, dann aber alle seine Weis. Der beste hat die meisten Punkte. Bei Gleichstand: die längere Folge, dann die höhere (bei Undenufe die tiefere), dann die im Trumpf. Ist es immer noch gleich, gewinnt, wer von der Vorhand aus zuerst an der Reihe ist.',
+          'Nur das Team mit dem einen besten Weis schreibt, dann aber alle seine Weis. Der beste hat die meisten Punkte. Bei Gleichstand: der Weis mit mehr Karten (ein Fünfblatt schlägt also vier Gleiche), dann der höhere (bei Undenufe der tiefere), dann der im Trumpf. Ist es immer noch gleich, gewinnt, wer von der Vorhand aus zuerst an der Reihe ist.',
         ],
       },
       {

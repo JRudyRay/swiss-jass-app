@@ -145,7 +145,7 @@ const en = {
         items: [
           'Sequence in one suit (order 6 7 8 9 10 Under Ober King Ace): 3 cards 20, 4 cards 50, 5 cards 100, 6 cards 150, 7 cards 200, 8 cards 250, 9 cards 300.',
           'Four of a kind: four Unders 200, four Nines 150, four Aces, Kings, Obers or Tens 100. Four 6s, 7s or 8s count nothing.',
-          'Only the team with the single best Weis scores, and then all of its Weis. The best has the most points. If equal: the longer sequence, then the higher one (the lower in Bottom up), then the one in trump. If still equal, the player who comes first in turn from the forehand wins.',
+          'Only the team with the single best Weis scores, and then all of its Weis. The best has the most points. If equal: the Weis with more cards (so a five-card sequence beats four of a kind), then the higher one (the lower in Bottom up), then the one in trump. If still equal, the player who comes first in turn from the forehand wins.',
         ],
       },
       {

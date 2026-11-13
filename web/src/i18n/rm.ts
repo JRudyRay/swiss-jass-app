@@ -148,7 +148,7 @@ const rm: Messages = {
         items: [
           'Suita en ina colur (ordinaziun 6 7 8 9 10 Under Ober Retg Ass): 3 cartas 20, 4 cartas 50, 5 cartas 100, 6 cartas 150, 7 cartas 200, 8 cartas 250, 9 cartas 300.',
           'Quatter listess: quatter Under 200, quatter Nov 150, quatter Ass, Retgs, Obers u Diesch 100. Quatter 6, 7 u 8 na valan nagut.',
-          'Mo l’equipa cun il meglier Weis quinta, e lura tut ses Weis. Il meglier ha il pli blers puncts. Sch’igl è igual: la suita pli lunga, lura la pli auta (la pli bassa tar Undenufe), lura quella en trumf. Sch’igl è anc igual, gudogna quel che è il emprim a la retscha a partir da l’emprima maun.',
+          'Mo l’equipa cun il meglier Weis quinta, e lura tut ses Weis. Il meglier ha il pli blers puncts. Sch’igl è igual: il Weis cun dapli chartas (ina suita da tschintg batta pia quatter chartas egualas), lura il pli aut (il pli bass tar Undenufe), lura quel en trumf. Sch’igl è anc igual, gudogna quel che è il emprim a la retscha a partir da l’emprima maun.',
         ],
       },
       {

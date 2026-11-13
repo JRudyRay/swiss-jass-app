@@ -257,6 +257,35 @@ testRunner('Equal Weis goes to the earlier player from the forehand', () => {
   );
 });
 
+testRunner('Equal points: a five-card sequence beats four of a kind, whoever is forehand', () => {
+  const engine = new SwissJassEngine('schieber');
+  engine.startRound();
+  const card = (suit: string, rank: string) => ({ id: `${suit}_${rank}`, suit, rank });
+  const suits = ['eicheln', 'schellen', 'rosen', 'schilten'];
+  (engine.getPlayer(0) as any).weis = [
+    {
+      type: 'four_A',
+      points: 100,
+      cards: suits.map((s) => card(s, 'A')),
+      description: 'Vier A',
+    },
+  ];
+  (engine.getPlayer(1) as any).weis = [
+    {
+      type: 'sequence5',
+      points: 100,
+      cards: ['6', '7', '8', '9', '10'].map((r) => card('rosen', r)),
+      description: '5-seq',
+    },
+  ];
+  for (const forehand of [0, 1, 2, 3]) {
+    (engine as any).gameState.forehand = forehand;
+    const scores = (engine as any).calculateTeamWeis();
+    assertEquals(scores.team2, 100, `Sequence wins with forehand ${forehand}`);
+    assertEquals(scores.team1, 0, `Four of a kind loses with forehand ${forehand}`);
+  }
+});
+
 testRunner('Team with no Weis gets zero points', () => {
   const engine = new SwissJassEngine('schieber');
   engine.startRound();

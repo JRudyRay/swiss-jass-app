@@ -147,7 +147,7 @@ const ch: Messages = {
         items: [
           'Folg i einere Farb (Reihefolg 6 7 8 9 10 Under Ober Chönig Ass): 3 Charte 20, 4 Charte 50, 5 Charte 100, 6 Charte 150, 7 Charte 200, 8 Charte 250, 9 Charte 300.',
           'Vier Glichi: vier Under 200, vier Nüni 150, vier Ass, Chönig, Ober oder Zäh 100. Vier Sächser, Siebni oder Achti zelled nüt.',
-          'Nume s Team mit em eine beschte Wiis schribt, denn aber alli sini Wiis. Dä beschti het am meischte Pünkt. Bi Glichstand: d längeri Folg, denn die höcheri (bi Undenufe die tüüferi), denn die im Trumpf. Isch es immer na glich, gwünnt dä, wo ab de Vorhand zerscht draa isch.',
+          'Nume s Team mit em eine beschte Wiis schribt, denn aber alli sini Wiis. Dä beschti het am meischte Pünkt. Bi Glichstand: dä Wiis mit meh Charte (es Füfblatt schlaht also vier Glichi), denn dä höcheri (bi Undenufe dä tüüferi), denn dä im Trumpf. Isch es immer na glich, gwünnt dä, wo ab de Vorhand zerscht draa isch.',
         ],
       },
       {

@@ -41,8 +41,9 @@ implement everything below as of 2026-10-05.
 - Four of a kind: 4 Under 200, 4 Nell 150, 4 Ass/König/Ober/10 100.
   Four 6s, 7s or 8s count nothing.
 - Weis: only the team holding the single best Weis scores, and then all of
-  its Weis. Best = more points; between sequences of equal points the
-  longer, then the higher (the lower in Undenufe), then the one in trump.
+  its Weis. Best = more points; at equal points the Weis with more cards
+  (so a five-card sequence beats four of a kind), then the higher (the lower
+  in Undenufe), then the one in trump.
   If still equal, the player first in play order from the forehand wins.
 - Stöck counts regardless of Weis.
 - Game target: 1000 (the target is adjustable per match in the UI).
@@ -60,10 +61,21 @@ implement everything below as of 2026-10-05.
 - The first dealer of a match is random; the forehand (who chooses trump and
   leads) is always the dealer's right. No Rosen-7 rule.
 
-## Added 2026-11-13 (standard rule, not yet confirmed by the owner)
+## Settled 2026-11-13 (owner: "research this"; sources below)
 
 - Two four-of-a-kinds of equal points (Ass, König, Ober, 10: all 100): the
   higher rank wins, the lower in Undenufe. Before, seat order decided.
+- Four of a kind against a sequence of equal points (four Ass against a
+  five-card sequence, both 100): the sequence wins because it has more
+  cards. Before, seat order decided. Both engines and their tests updated.
+- Sources: Swisslos Schieber rules ("Bei gleichhohen Weisen entscheidet die
+  Anzahl der Karten"), jassverzeichnis.ch Weisregeln ("Eine Reihenfolge hat
+  Vorrang vor vier Gleichen", "Die höhere Karte des Weis hat Vorrang,
+  Ausnahme Undeufe"), de.wikipedia.org "Weis (Jassen)", pagat.com Swiss Jass.
+  Swisslos names no rank step; the other three agree on it.
+
+## Added 2026-11-13
+
 - Fixed in the shared engine: the Weis seat-order tie-break ran clockwise; it
   now follows play order (counter-clockwise from the forehand) as specified.
 - The shared engine itself now refuses a card played out of turn, in the wrong
@@ -81,9 +93,7 @@ implement everything below as of 2026-10-05.
 
 ## Open questions (owner)
 
-| Topic | Current code | Notes |
-| --- | --- | --- |
-| Four of a kind vs. a sequence of equal points (e.g. 4 Ass vs. a 5-sequence, both 100) | Seat order from the forehand decides | Some rule sets rank four of a kind higher |
+None at the moment. Add new ones as a table: topic, current code, notes.
 
 When the owner answers, move the row into a "Settled" section (with the date)
 and fix both engines and their tests in the same change.

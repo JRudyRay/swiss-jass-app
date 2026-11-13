@@ -356,6 +356,20 @@ describe('Weis', () => {
     }
   });
 
+  it('equal points: a five-card sequence beats four of a kind (more cards)', () => {
+    const four = (r: Rank) => suits.map((s) => C(s, r));
+    for (const forehand of [0, 1, 2, 3]) {
+      for (const trump of ['rosen', 'schellen', 'oben-abe', 'unden-ufe'] as const) {
+        expect(score([four('A'), run('schellen', 0, 5), [], []], trump, forehand)).toEqual([
+          0, 100,
+        ]);
+        expect(score([run('schellen', 0, 5), [], [], four('K')], trump, forehand)).toEqual([
+          100, 0,
+        ]);
+      }
+    }
+  });
+
   it('more points beat a longer or a trump sequence', () => {
     const four = (r: Rank) => suits.map((s) => C(s, r));
     expect(score([four('U'), run('rosen', 0, 6), [], []], 'rosen')).toEqual([200, 0]);
