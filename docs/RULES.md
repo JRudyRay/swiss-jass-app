@@ -75,12 +75,15 @@ implement everything below as of 2026-10-05.
   the score strip shows multiplied running totals (Weis counted once the first
   trick is done). Both are checked against the same independent scorer.
 
+## Settled 2026-11-13 (owner answer)
+
+- Game target: 1000 stays the default; it remains adjustable. No code change.
+
 ## Open questions (owner)
 
 | Topic | Current code | Notes |
 | --- | --- | --- |
 | Four of a kind vs. a sequence of equal points (e.g. 4 Ass vs. a 5-sequence, both 100) | Seat order from the forehand decides | Some rule sets rank four of a kind higher |
-| Game target | 1000 by default, adjustable | Standard varies: 1000, 1500 or 2500 |
 
 When the owner answers, move the row into a "Settled" section (with the date)
 and fix both engines and their tests in the same change.

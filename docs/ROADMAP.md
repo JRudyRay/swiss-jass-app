@@ -94,6 +94,6 @@ So every later change can be verified.
 
 ## Waiting on the owner
 
-- Two small rule questions (see `docs/RULES.md`, "Open questions").
+- One small rule question (see `docs/RULES.md`, "Open questions").
 - Confirm the four-of-a-kind tie rule added 2026-11-13 (`docs/RULES.md`).
 - Where should the multiplayer backend live, if anywhere public?
