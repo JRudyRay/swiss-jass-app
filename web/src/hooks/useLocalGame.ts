@@ -415,11 +415,10 @@ export function useLocalGame(c: any) {
       }
       setChosenTrump(choice);
 
-      st.trump = choice as any;
-      st.phase = 'playing';
-
-      // Detect Weis for all players now that trump is known
+      // The engine applies the contract (declarer, multiplier, Weis, Stöck, forehand leads). It
+      // only does so during trump selection, so the state must not be touched before.
       const updatedSt = Schieber.setTrumpAndDetectWeis(st, choice as any);
+      if (updatedSt.phase !== 'playing') return;
 
       // Determine Weis winner (authentic Swiss Jass competition)
       const weisWinnerResult = Schieber.bestWeis(
