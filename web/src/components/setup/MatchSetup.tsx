@@ -23,6 +23,9 @@ type Props = {
   onTeamNames: (names: { 1: string; 2: string }) => void;
   target: number;
   onTarget: (n: number) => void;
+  // Training mode: the coach gives tips and explains the plays.
+  coach: boolean;
+  onCoach: (on: boolean) => void;
   onStart: () => void;
   onBack?: () => void;
   backLabel?: string;
@@ -39,6 +42,8 @@ export const MatchSetup: React.FC<Props> = ({
   onTeamNames,
   target,
   onTarget,
+  coach,
+  onCoach,
   onStart,
   onBack,
   backLabel,
@@ -161,6 +166,24 @@ export const MatchSetup: React.FC<Props> = ({
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="setup__section setup__coach">
+          <div>
+            <h3 className="setup__label">{m.coach.setting}</h3>
+            <p className="setup__hint">{m.coach.settingHint}</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={coach}
+            aria-label={m.coach.setting}
+            className="set-switch"
+            data-setup-coach
+            onClick={() => onCoach(!coach)}
+          >
+            <span className="set-switch__knob" />
+          </button>
         </section>
 
         <div className="setup__actions">

@@ -22,6 +22,8 @@ import {
 import { useSettings } from './components/table/useSettings';
 import { useLastTrick } from './components/table/useLastTrick';
 import Hand from './components/table/Hand';
+import CoachBar from './components/table/CoachBar';
+import { useCoach } from './components/table/useCoach';
 import TrumpChooser from './components/table/TrumpChooser';
 import { API_URL, ONLINE_ENABLED } from './config';
 import type { Socket } from 'socket.io-client';
@@ -271,6 +273,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     declarations: [],
   });
   const { settings, update: updateSettings, buzz, scale: speedScale } = useSettings();
+  // Training mode (single-player only)
+  const coachOn = isLocal && settings.coach;
+  const coach = useCoach(coachOn, gameState, !!collect);
   const lastTrick = useLastTrick(
     gameState?.currentTrick,
     collect,
@@ -781,10 +786,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     try {
       if (!API_URL || isLocal) {
         // apply locally
-        const st = loadLocalState();
-        if (!st) return;
-        st.trump = trump as any;
-        st.phase = 'playing';
+        const loaded = loadLocalState();
+        if (!loaded) return;
+        const st = Schieber.setTrumpAndDetectWeis(loaded, trump as any);
         saveLocalState(st);
         setGameState(toGameState(st));
         setMessage(tm.trumpSelected(trumpName(trump, lang)));
@@ -1134,7 +1138,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
   return (
     <div
-      className={`jass-screen${showPlaySurface ? ' jass-screen--play' : ''}${choosingTrump ? ' jass-screen--choosing' : ''}${settings.leftHanded ? ' jass-screen--lefty' : ''}${settings.suitMarks ? ' jass-screen--marks' : ''}${settings.speed === 'off' ? ' jass-screen--noanim' : ''}`}
+      className={`jass-screen${showPlaySurface ? ' jass-screen--play' : ''}${choosingTrump ? ' jass-screen--choosing' : ''}${settings.leftHanded ? ' jass-screen--lefty' : ''}${settings.suitMarks ? ' jass-screen--marks' : ''}${settings.speed === 'off' ? ' jass-screen--noanim' : ''}${coachOn && showPlaySurface ? ' jass-screen--coach' : ''}`}
     >
       <div className="jass-screen__area">
         {/* Game-only HUD: slim score bar with trump pill */}
@@ -1212,6 +1216,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                   }
                   canSchieben={isLocal && gameState.forehand === 0}
                   partnerMustChoose={isLocal && gameState.forehand !== 0}
+                  hint={coachOn ? coach.trumpHint : null}
                   onPick={submitTrump}
                 />
               )}
@@ -1258,6 +1263,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               onTeamNames={setTeamNames}
               target={maxPoints}
               onTarget={setMaxPoints}
+              coach={settings.coach}
+              onCoach={(on) => updateSettings({ coach: on })}
               onStart={startLocalGameWithOptions}
               onBack={ONLINE_ENABLED ? () => setSetupChoice('welcome') : undefined}
               backLabel={messages(lang).header.home}
@@ -1274,8 +1281,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           />
         )}
 
+        {coachOn && showPlaySurface && gameState && (
+          <CoachBar
+            lang={lang}
+            msg={coach.msg}
+            canTip={coach.canTip}
+            choosingTrump={gameState.phase === 'trump_selection'}
+            nameOf={(seat) =>
+              (players.find((p) => p.id === seat)?.name || '').replace(/\s*\(bot\)$/, '')
+            }
+            onTip={coach.askTip}
+          />
+        )}
         <Hand
           lang={lang}
+          hintCard={coachOn ? coach.hintCardId : null}
+          hintLabel={messages(lang).coach.tip}
           cards={sortHandForDisplay(hand, chosenTrump)}
           legalCards={legalCards}
           selectedCard={selectedCard}

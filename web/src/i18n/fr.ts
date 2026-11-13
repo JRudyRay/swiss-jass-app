@@ -324,6 +324,73 @@ const fr: Messages = {
     tableError: 'Erreur lors de la création de la table',
     gameStartedTable: (name: string) => `Partie démarrée : ${name}`,
   },
+  coach: {
+    label: 'Coach',
+    setting: 'Mode entraînement',
+    settingHint: 'Un coach donne des conseils et explique les coups. Le décompte reste le même.',
+    tip: 'Conseil',
+    tipAria: 'Demander un conseil au coach',
+    idle: 'Un doute ? Touchez Conseil.',
+    idleTrump: "Un doute sur l'atout ? Touchez Conseil.",
+    push: 'Chibrer',
+    tipCard: (what, why) => `Conseil : ${what}. ${why}`,
+    good: (why) => `Bien joué. ${why}`,
+    better: (what, why) => `Le coach jouerait ${what}. ${why}`,
+    betterTrump: (what, why) => `Le coach choisirait ${what}. ${why}`,
+    notes: {
+      only: () => "C'est votre seule carte permise.",
+      pushedLeadTrump: () => 'Vous avez chibré et votre partenaire a fait atout : entamez atout.',
+      drawTrump: (a) =>
+        `Votre camp a fait atout : tirez les atouts avec le plus fort. Encore ${a.n} dehors.`,
+      leadTrump: (a) => `Votre camp a fait atout : continuez à tirer atout. Encore ${a.n} dehors.`,
+      cashBock: (a) => `${a.card} est bock (la plus haute de sa couleur) : encaissez-la.`,
+      feedPartner: (a) => `Votre partenaire n'a plus de ${a.suit} et peut couper.`,
+      leadLow: () =>
+        'Pas de pli sûr : jouez petit dans votre couleur la plus longue et gardez les hautes cartes.',
+      leadAny: () => 'Rien de bon à entamer : donnez la carte la moins chère.',
+      secure: () =>
+        'La carte de votre partenaire peut encore être battue : prenez le pli vous-même.',
+      schmieren: () => 'Votre partenaire fait le pli : chargez-le de points.',
+      partnerLow: () => 'Votre partenaire fait le pli : jouez petit et gardez vos bonnes cartes.',
+      ruff: (a) => `Vous n'avez plus de ${a.suit} : coupez et prenez ${a.n} points.`,
+      win: () => 'Prenez le pli : cette carte devrait tenir.',
+      winLast: () => 'Vous jouez en dernier : prenez le pli avec la carte gagnante la moins chère.',
+      notWorth: () => 'Ce pli ne vaut pas une forte carte : gardez-la pour un meilleur pli.',
+      cantWin: () => 'Vous ne pouvez pas faire ce pli : donnez la carte la moins chère.',
+      discard: () =>
+        'Vous ne pouvez pas gagner : défaussez une couleur faible et gardez les cartes qui peuvent devenir bock.',
+      trumpPush: () =>
+        'Trop faible pour faire atout vous-même : chibrez et laissez choisir votre partenaire.',
+      trumpForced: () =>
+        "Votre partenaire a chibré, vous devez choisir : c'est votre meilleure option.",
+      trumpPuurNell: (a) => `Under et Nell avec ${a.n} atouts : une couleur d'atout forte.`,
+      trumpPuur: (a) => `${a.n} atouts avec l'Under (Puur), la plus haute carte.`,
+      trumpNell: (a) => `${a.n} atouts avec le Nell (le neuf) et de bonnes cartes à côté.`,
+      trumpLong: (a) => `${a.n} cartes en ${a.suit} : la longueur fait un bon atout.`,
+      trumpOben: (a) => `${a.n} plis sûrs par le haut, dans plusieurs couleurs.`,
+      trumpUnden: (a) => `${a.n} plis sûrs par le bas, dans plusieurs couleurs.`,
+      sigPartnerChose: (a) =>
+        `Vous avez chibré, ${a.name} fait ${a.suit} : entamez atout pour votre partenaire.`,
+      sigPartnerChoseSlalom: (a) =>
+        `Vous avez chibré, ${a.name} fait ${a.suit} : entamez votre couleur la plus forte.`,
+      sigTrumpLead: (a) =>
+        `${a.name} tire atout. Comptez : il en reste ${a.n} dehors, sans les vôtres.`,
+      sigTopLead: (a) =>
+        `${a.name} entame ${a.card}. Si vous avez la carte suivante de la série, jouez-la : elle montre que la couleur passe.`,
+      sigBockLead: (a) => `${a.name} encaisse ${a.card}. Si le pli est sûr, chargez-le de points.`,
+      sigAnziehen: (a) => `${a.name} entame petit en ${a.suit} : prenez le pli si vous pouvez.`,
+      sigPartnerRuffs: (a) =>
+        `${a.name} n'a plus de ${a.suit} et coupe. Rejouez ${a.suit} plus tard.`,
+      sigSchmieren: (a) => `${a.name} charge votre pli avec ${a.card}.`,
+      sigVerwerfen: (a) =>
+        `${a.name} défausse ${a.suit} : une couleur faible, mieux vaut ne pas l'entamer.`,
+      sigOppNoTrump: (a) => `${a.name} n'a plus d'atout.`,
+      sigOppRuffs: (a) => `${a.name} n'a plus de ${a.suit} et coupe. Évitez d'entamer ${a.suit}.`,
+      sigOppVoid: (a) => `${a.name} n'a plus de ${a.suit}.`,
+      sigTrumpsGone: () =>
+        "Les autres n'ont plus d'atout : vos hautes cartes ne peuvent plus être coupées.",
+    },
+  },
   setup: {
     title: 'Nouvelle partie',
     subtitle: 'Schieber contre trois bots',

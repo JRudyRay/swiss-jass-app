@@ -18,10 +18,15 @@ const SPEEDS: Speed[] = ['normal', 'fast', 'off'];
 // Gear button on the table and the settings dialog (Esc or the close button dismiss it, focus returns).
 const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel, onNewGame }) => {
   const t = messages(lang).settings;
+  const coach = messages(lang).coach;
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  const toggle = (key: 'haptics' | 'leftHanded' | 'suitMarks', label: string, hint: string) => (
+  const toggle = (
+    key: 'haptics' | 'leftHanded' | 'suitMarks' | 'coach',
+    label: string,
+    hint: string,
+  ) => (
     <div className="set-row">
       <div className="set-row__text">
         <span className="set-row__label">{label}</span>
@@ -82,6 +87,7 @@ const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel
               ))}
             </div>
           </div>
+          {toggle('coach', coach.setting, coach.settingHint)}
           {toggle('leftHanded', t.leftHanded, t.leftHandedHint)}
           {toggle('suitMarks', t.suitMarks, t.suitMarksHint)}
           {onNewGame && (

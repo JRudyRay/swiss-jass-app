@@ -324,6 +324,70 @@ const ch: Messages = {
     tableError: 'Fehler bim Tisch erstelle',
     gameStartedTable: (name: string) => `Spiel gstartet: ${name}`,
   },
+  coach: {
+    label: 'Coach',
+    setting: 'Trainingsmodus',
+    settingHint: 'En Coach git Tipps und erklärt d Spielzüg. D Wertig bliibt gliich.',
+    tip: 'Tipp',
+    tipAria: 'De Coach um en Tipp frage',
+    idle: 'Unsicher? Tipp uf Tipp.',
+    idleTrump: 'Unsicher bim Trumpf? Tipp uf Tipp.',
+    push: 'Schiebe',
+    tipCard: (what, why) => `Tipp: ${what}. ${why}`,
+    good: (why) => `Guet gspillt. ${why}`,
+    better: (what, why) => `De Coach würd ${what} spile. ${why}`,
+    betterTrump: (what, why) => `De Coach würd ${what} wähle. ${why}`,
+    notes: {
+      only: () => 'Das isch dini einzig erlaubti Charte.',
+      pushedLeadTrump: () => 'Du häsch gschobe, din Partner hät Trumpf gmacht: spil Trumpf aa.',
+      drawTrump: (a) => `Ihr händ Trumpf gmacht: zieh mit em höchste Trumpf ab. No ${a.n} dusse.`,
+      leadTrump: (a) => `Ihr händ Trumpf gmacht: zieh wiiter Trumpf. No ${a.n} dusse.`,
+      cashBock: (a) => `${a.card} isch Bock (di höchscht vo de Farb): spil si us.`,
+      feedPartner: (a) => `Din Partner hät kei ${a.suit} meh und cha stäche.`,
+      leadLow: () =>
+        'Kei sichere Stich: spil tüüf us dinere längschte Farb und bhalt di höche Charte.',
+      leadAny: () => 'Nüt Guets zum Usspile: gib di billigscht Charte.',
+      secure: () => 'D Charte vo dim Partner cha no gstoche werde: nimm de Stich sälber.',
+      schmieren: () => 'Din Partner macht de Stich: schmier em Pünkt.',
+      partnerLow: () => 'Din Partner macht de Stich: spil tüüf und bhalt di guete Charte.',
+      ruff: (a) => `Du häsch kei ${a.suit} meh: stich mit Trumpf und hol ${a.n} Pünkt.`,
+      win: () => 'Nimm de Stich: die Charte sött hebe.',
+      winLast: () => 'Du spillsch z letscht: nimm de Stich mit de billigschte Charte, wo langet.',
+      notWorth: () => 'Da lohnt sich kei starchi Charte: spar si für en bessere Stich.',
+      cantWin: () => 'Dä Stich chasch nöd mache: gib di billigscht Charte.',
+      discard: () =>
+        'Du chasch nöd stäche: verwirf e schwachi Farb und bhalt Charte, wo Bock chönd werde.',
+      trumpPush: () => 'Z schwach zum sälber Trumpf mache: schieb zu dim Partner.',
+      trumpForced: () =>
+        'Din Partner hät gschobe, du muesch wähle: das isch dini bescht Möglichkeit.',
+      trumpPuurNell: (a) => `Puur und Näll mit ${a.n} Trümpf: e starchi Trumpffarb.`,
+      trumpPuur: (a) => `${a.n} Trümpf mit em Puur, de höchschte Charte.`,
+      trumpNell: (a) => `${a.n} Trümpf mit em Näll (s Nüüni) und gueti Näbecharte.`,
+      trumpLong: (a) => `${a.n} Charte i de ${a.suit}: d Längi macht de Trumpf.`,
+      trumpOben: (a) => `${a.n} sicheri Stich vo obe, i mehrere Farbe.`,
+      trumpUnden: (a) => `${a.n} sicheri Stich vo une, i mehrere Farbe.`,
+      sigPartnerChose: (a) =>
+        `Du häsch gschobe, ${a.name} macht ${a.suit}: spil für din Partner Trumpf aa.`,
+      sigPartnerChoseSlalom: (a) =>
+        `Du häsch gschobe, ${a.name} macht ${a.suit}: spil dini stärchscht Farb aa.`,
+      sigTrumpLead: (a) => `${a.name} zieht Trumpf. Zell mit: usser dine sind no ${a.n} dusse.`,
+      sigTopLead: (a) =>
+        `${a.name} fangt mit ${a.card} aa. Häsch di nächscht Charte vo de Reihe, spil si: das zeigt, dass d Farb lauft.`,
+      sigBockLead: (a) =>
+        `${a.name} spillt ${a.card} als Bock. Isch de Stich sicher, schmier Pünkt.`,
+      sigAnziehen: (a) => `${a.name} zieht ${a.suit} tüüf aa: nimm de Stich, wänn chasch.`,
+      sigPartnerRuffs: (a) =>
+        `${a.name} hät kei ${a.suit} meh und sticht. Spil spöter wieder ${a.suit}.`,
+      sigSchmieren: (a) => `${a.name} schmiert dir ${a.card}.`,
+      sigVerwerfen: (a) => `${a.name} verwirft ${a.suit}: e schwachi Farb, spil si besser nöd aa.`,
+      sigOppNoTrump: (a) => `${a.name} hät kei Trumpf meh.`,
+      sigOppRuffs: (a) =>
+        `${a.name} hät kei ${a.suit} meh und sticht. Spil ${a.suit} lieber nüme aa.`,
+      sigOppVoid: (a) => `${a.name} hät kei ${a.suit} meh.`,
+      sigTrumpsGone: () =>
+        'Di andere händ kei Trumpf meh: dini höche Charte chönd nüme gstoche werde.',
+    },
+  },
   setup: {
     title: 'Neus Spiel',
     subtitle: 'Schieber gäge drei Bots',

@@ -325,6 +325,73 @@ const de: Messages = {
     tableError: 'Fehler beim Erstellen des Tisches',
     gameStartedTable: (name: string) => `Spiel gestartet: ${name}`,
   },
+  coach: {
+    label: 'Coach',
+    setting: 'Trainingsmodus',
+    settingHint: 'Ein Coach gibt Tipps und erklärt die Spielzüge. Die Wertung bleibt gleich.',
+    tip: 'Tipp',
+    tipAria: 'Den Coach um einen Tipp bitten',
+    idle: 'Unsicher? Tippe auf Tipp.',
+    idleTrump: 'Unsicher beim Trumpf? Tippe auf Tipp.',
+    push: 'Schieben',
+    tipCard: (what, why) => `Tipp: ${what}. ${why}`,
+    good: (why) => `Gut gespielt. ${why}`,
+    better: (what, why) => `Der Coach würde ${what} spielen. ${why}`,
+    betterTrump: (what, why) => `Der Coach würde ${what} wählen. ${why}`,
+    notes: {
+      only: () => 'Das ist deine einzige erlaubte Karte.',
+      pushedLeadTrump: () => 'Du hast geschoben, dein Partner hat Trumpf gemacht: spiel Trumpf an.',
+      drawTrump: (a) =>
+        `Ihr habt Trumpf gemacht: zieh mit dem höchsten Trumpf ab. Noch ${a.n} draussen.`,
+      leadTrump: (a) => `Ihr habt Trumpf gemacht: zieh weiter Trumpf. Noch ${a.n} draussen.`,
+      cashBock: (a) => `${a.card} ist Bock (die höchste der Farbe): spiel sie aus.`,
+      feedPartner: (a) => `Dein Partner hat keine ${a.suit} mehr und kann stechen.`,
+      leadLow: () =>
+        'Kein sicherer Stich: spiel tief aus deiner längsten Farbe und behalte die hohen Karten.',
+      leadAny: () => 'Nichts Gutes zum Ausspielen: gib die billigste Karte.',
+      secure: () => 'Die Karte deines Partners kann noch gestochen werden: nimm den Stich selbst.',
+      schmieren: () => 'Dein Partner macht den Stich: schmier ihm Punkte.',
+      partnerLow: () => 'Dein Partner macht den Stich: spiel tief und behalte die guten Karten.',
+      ruff: (a) => `Du hast keine ${a.suit} mehr: stich mit Trumpf und hol ${a.n} Punkte.`,
+      win: () => 'Nimm den Stich: diese Karte sollte halten.',
+      winLast: () => 'Du spielst zuletzt: nimm den Stich mit der billigsten Karte, die reicht.',
+      notWorth: () => 'Hier lohnt sich keine starke Karte: spar sie für einen besseren Stich.',
+      cantWin: () => 'Diesen Stich kannst du nicht machen: gib die billigste Karte.',
+      discard: () =>
+        'Du kannst nicht stechen: verwirf eine schwache Farbe und behalte Karten, die Bock werden können.',
+      trumpPush: () => 'Zu schwach, um selbst Trumpf zu machen: schieb zu deinem Partner.',
+      trumpForced: () =>
+        'Dein Partner hat geschoben, du musst wählen: das ist deine beste Möglichkeit.',
+      trumpPuurNell: (a) => `Under und Nell mit ${a.n} Trümpfen: eine starke Trumpffarbe.`,
+      trumpPuur: (a) => `${a.n} Trümpfe mit dem Under (Puur), der höchsten Karte.`,
+      trumpNell: (a) => `${a.n} Trümpfe mit dem Nell (der Neun) und gute Nebenkarten.`,
+      trumpLong: (a) => `${a.n} Karten in ${a.suit}: die Länge macht den Trumpf.`,
+      trumpOben: (a) => `${a.n} sichere Stiche von oben, in mehreren Farben.`,
+      trumpUnden: (a) => `${a.n} sichere Stiche von unten, in mehreren Farben.`,
+      sigPartnerChose: (a) =>
+        `Du hast geschoben, ${a.name} macht ${a.suit}: spiel für deinen Partner Trumpf an.`,
+      sigPartnerChoseSlalom: (a) =>
+        `Du hast geschoben, ${a.name} macht ${a.suit}: spiel deine stärkste Farbe an.`,
+      sigTrumpLead: (a) =>
+        `${a.name} zieht Trumpf. Zähl mit: ausser deinen sind noch ${a.n} draussen.`,
+      sigTopLead: (a) =>
+        `${a.name} beginnt mit ${a.card}. Hast du die nächste Karte der Reihe, spiel sie: das zeigt, dass die Farbe läuft.`,
+      sigBockLead: (a) =>
+        `${a.name} spielt ${a.card} als Bock. Ist der Stich sicher, schmier Punkte.`,
+      sigAnziehen: (a) => `${a.name} zieht ${a.suit} tief an: nimm den Stich, wenn du kannst.`,
+      sigPartnerRuffs: (a) =>
+        `${a.name} hat keine ${a.suit} mehr und sticht. Spiel später wieder ${a.suit}.`,
+      sigSchmieren: (a) => `${a.name} schmiert dir ${a.card}.`,
+      sigVerwerfen: (a) =>
+        `${a.name} verwirft ${a.suit}: eine schwache Farbe, spiel sie besser nicht an.`,
+      sigOppNoTrump: (a) => `${a.name} hat keinen Trumpf mehr.`,
+      sigOppRuffs: (a) =>
+        `${a.name} hat keine ${a.suit} mehr und sticht. Spiel ${a.suit} lieber nicht mehr an.`,
+      sigOppVoid: (a) => `${a.name} hat keine ${a.suit} mehr.`,
+      sigTrumpsGone: () =>
+        'Die anderen haben keinen Trumpf mehr: deine hohen Karten können nicht mehr gestochen werden.',
+    },
+  },
   setup: {
     title: 'Neue Partie',
     subtitle: 'Schieber gegen drei Bots',

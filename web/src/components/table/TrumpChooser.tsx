@@ -10,6 +10,8 @@ type Props = {
   // Only the original chooser (forehand) may schieben; the partner can't push it back.
   canSchieben: boolean;
   partnerMustChoose: boolean;
+  // Training mode: the choice the coach recommends ('schieben' or a contract).
+  hint?: string | null;
   onPick: (trump: string) => void;
 };
 
@@ -19,6 +21,7 @@ const TrumpChooser: React.FC<Props> = ({
   dealerName,
   canSchieben,
   partnerMustChoose,
+  hint,
   onPick,
 }) => {
   const t = messages(lang).game;
@@ -34,7 +37,12 @@ const TrumpChooser: React.FC<Props> = ({
       </div>
       <div className="trump-sheet__grid">
         {TRUMPS.map((s) => (
-          <button key={s} className="trump-btn" data-trump={s} onClick={() => onPick(s)}>
+          <button
+            key={s}
+            className={`trump-btn${hint === s ? ' trump-btn--hint' : ''}`}
+            data-trump={s}
+            onClick={() => onPick(s)}
+          >
             <SuitIcon trump={s} size={34} />
             <span>{trumpName(s, lang)}</span>
           </button>
@@ -42,7 +50,7 @@ const TrumpChooser: React.FC<Props> = ({
       </div>
       {canSchieben && (
         <button
-          className="trump-sheet__schieben"
+          className={`trump-sheet__schieben${hint === 'schieben' ? ' trump-sheet__schieben--hint' : ''}`}
           data-trump="schieben"
           onClick={() => onPick('schieben')}
         >

@@ -8,7 +8,9 @@
 .jass-screen {
   --g-card-w: 64px; /* hand card width */
   /* the felt takes the height the score strip and the hand leave free */
-  --g-table-h: clamp(250px, calc(100dvh - 340px), 560px);
+  --g-coach-h: 0px; /* row of the training-mode coach, when it is on */
+  --g-table-min: 250px;
+  --g-table-h: clamp(var(--g-table-min), calc(100dvh - 340px - var(--g-coach-h)), 560px);
   /* trick card width: grows with the table, always smaller than a hand card */
   --g-trick-w: clamp(52px, calc(var(--g-table-h) * 0.15), min(66px, 17vw));
   --g-seat-v: 46px; /* space kept free above/below the trick for the seat chips */
@@ -1093,7 +1095,7 @@
 @media (min-width: 601px) {
   .jass-screen {
     --g-card-w: 84px;
-    --g-table-h: clamp(300px, calc(100dvh - 390px), 600px);
+    --g-table-h: clamp(300px, calc(100dvh - 390px - var(--g-coach-h)), 600px);
     --g-trick-w: clamp(68px, calc(var(--g-table-h) * 0.16), 88px);
     --g-seat-v: 52px;
     --g-seat-h: 96px;
@@ -2466,4 +2468,176 @@
   .seat__gain {
     animation: none;
   }
+}
+
+/* ==========================================================================
+   Training mode: the coach's row between the table and the hand, the recommended card and
+   the recommended contract. The table gives up the row's height (--g-coach-h).
+   ========================================================================== */
+
+.jass-screen--coach {
+  --g-coach-h: 76px;
+  --g-table-min: 220px;
+}
+.coach-bar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 760px;
+  height: 68px;
+  margin: 8px auto 0;
+  padding: 2px 6px 2px 10px;
+  background: rgba(10, 18, 14, 0.78);
+  border: 1px solid rgba(240, 200, 105, 0.2);
+  border-left: 3px solid #f0c869;
+  border-radius: 10px;
+  color: #efe6d2;
+}
+.coach-bar--good {
+  border-left-color: #8fbf9a;
+}
+.coach-bar--signal {
+  border-left-color: #e9dfc8;
+}
+.coach-bar__msg {
+  flex: 1;
+  min-width: 0;
+}
+.coach-bar__text {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.22;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  animation: coach-in 200ms var(--ease-out);
+}
+.coach-bar--idle .coach-bar__text {
+  color: #b9ad94;
+}
+.coach-bar__tip {
+  flex: none;
+  min-width: 56px;
+  height: 44px;
+  padding: 0 12px;
+  background: #f0c869;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  color: #2a2118;
+  cursor: pointer;
+}
+.coach-bar__tip:active {
+  transform: scale(0.96);
+}
+.coach-bar__tip:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+@keyframes coach-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+@media (min-width: 400px) {
+  .coach-bar__text {
+    font-size: 14px;
+    line-height: 1.3;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
+
+/* The card the coach recommends: lifted, brass ring, small badge. */
+.hand-slot--hint {
+  z-index: 3;
+}
+.hand-card--hint {
+  position: relative;
+}
+.jass-screen .hand .hand-card.hand-card--hint:not(.hand-card--sel) {
+  transform: translateY(-12px);
+}
+.jass-screen--play .hand-card.hand-card--hint .swiss-card {
+  box-shadow:
+    0 0 0 2px #f0c869,
+    0 0 14px 2px rgba(240, 200, 105, 0.55);
+  animation: coach-pulse 1.2s ease-out 1;
+}
+.hand-card--hint::after {
+  content: attr(data-hint);
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  padding: 1px 6px;
+  background: #f0c869;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: #2a2118;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+@keyframes coach-pulse {
+  0% {
+    box-shadow:
+      0 0 0 2px #f0c869,
+      0 0 0 0 rgba(240, 200, 105, 0.8);
+  }
+  60% {
+    box-shadow:
+      0 0 0 2px #f0c869,
+      0 0 22px 8px rgba(240, 200, 105, 0.5);
+  }
+}
+.trump-btn--hint,
+.trump-sheet__schieben--hint {
+  background: #fff6dc;
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 14px rgba(200, 150, 46, 0.6);
+}
+
+/* Phone landscape: no free row, so the coach sits on the upper left of the felt, clear of the
+   north seat. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .jass-screen--coach {
+    --g-coach-h: 0px;
+  }
+  .jass-screen:has([data-jass-table]) .jass-screen__area > .coach-bar {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    justify-self: start;
+    z-index: 5;
+    width: min(36%, 240px);
+    height: auto;
+    min-height: 48px;
+    margin: 6px 0 0 6px;
+  }
+  .coach-bar__text {
+    font-size: 12px;
+    line-height: 1.22;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-bar__text,
+  .jass-screen--play .hand-card.hand-card--hint .swiss-card {
+    animation: none;
+  }
+}
+.jass-screen--noanim .coach-bar__text,
+.jass-screen--noanim .hand-card.hand-card--hint .swiss-card {
+  animation: none;
 }

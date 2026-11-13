@@ -324,6 +324,72 @@ const it: Messages = {
     tableError: 'Errore nella creazione del tavolo',
     gameStartedTable: (name: string) => `Partita iniziata: ${name}`,
   },
+  coach: {
+    label: 'Coach',
+    setting: 'Modalità allenamento',
+    settingHint: 'Un coach dà consigli e spiega le giocate. Il punteggio non cambia.',
+    tip: 'Consiglio',
+    tipAria: 'Chiedi un consiglio al coach',
+    idle: 'Un dubbio? Tocca Consiglio.',
+    idleTrump: 'Un dubbio sulla briscola? Tocca Consiglio.',
+    push: 'Schieben',
+    tipCard: (what, why) => `Consiglio: ${what}. ${why}`,
+    good: (why) => `Ben giocato. ${why}`,
+    better: (what, why) => `Il coach giocherebbe ${what}. ${why}`,
+    betterTrump: (what, why) => `Il coach sceglierebbe ${what}. ${why}`,
+    notes: {
+      only: () => "È l'unica carta che puoi giocare.",
+      pushedLeadTrump: () =>
+        'Hai passato e il tuo compagno ha scelto la briscola: apri di briscola.',
+      drawTrump: (a) =>
+        `La briscola è vostra: tira le briscole con la più alta. Ancora ${a.n} fuori.`,
+      leadTrump: (a) => `La briscola è vostra: continua a tirare briscola. Ancora ${a.n} fuori.`,
+      cashBock: (a) => `${a.card} è Bock (la più alta rimasta del seme): incassala.`,
+      feedPartner: (a) => `Il tuo compagno non ha più ${a.suit} e può tagliare.`,
+      leadLow: () =>
+        'Nessuna presa sicura: gioca basso nel tuo seme più lungo e tieni le carte alte.',
+      leadAny: () => 'Niente di buono da giocare: dai la carta meno preziosa.',
+      secure: () => 'La carta del tuo compagno può ancora essere battuta: prendi tu la presa.',
+      schmieren: () => 'Il tuo compagno fa la presa: caricala di punti.',
+      partnerLow: () => 'Il tuo compagno fa la presa: gioca basso e tieni le carte buone.',
+      ruff: (a) => `Non hai più ${a.suit}: taglia con la briscola e prendi ${a.n} punti.`,
+      win: () => 'Prendi la presa: questa carta dovrebbe reggere.',
+      winLast: () => 'Giochi per ultimo: prendi con la carta vincente meno preziosa.',
+      notWorth: () => 'Qui non vale una carta forte: tienila per una presa migliore.',
+      cantWin: () => 'Non puoi fare questa presa: dai la carta meno preziosa.',
+      discard: () =>
+        'Non puoi vincere: scarta un seme debole e tieni le carte che possono diventare Bock.',
+      trumpPush: () =>
+        'Troppo debole per scegliere tu: passa (schieben) e lascia scegliere il compagno.',
+      trumpForced: () =>
+        'Il tuo compagno ha passato, devi scegliere tu: questa è la tua opzione migliore.',
+      trumpPuurNell: (a) => `Under e Nell con ${a.n} briscole: un seme di briscola forte.`,
+      trumpPuur: (a) => `${a.n} briscole con l'Under (Puur), la carta più alta.`,
+      trumpNell: (a) => `${a.n} briscole con il Nell (il nove) e buone carte a lato.`,
+      trumpLong: (a) => `${a.n} carte di ${a.suit}: la lunghezza fa una buona briscola.`,
+      trumpOben: (a) => `${a.n} prese sicure dall'alto, in più semi.`,
+      trumpUnden: (a) => `${a.n} prese sicure dal basso, in più semi.`,
+      sigPartnerChose: (a) =>
+        `Hai passato, ${a.name} sceglie ${a.suit}: apri di briscola per il tuo compagno.`,
+      sigPartnerChoseSlalom: (a) =>
+        `Hai passato, ${a.name} sceglie ${a.suit}: apri il tuo seme più forte.`,
+      sigTrumpLead: (a) =>
+        `${a.name} tira briscola. Conta: ne restano ${a.n} fuori, oltre alle tue.`,
+      sigTopLead: (a) =>
+        `${a.name} apre con ${a.card}. Se hai la carta successiva della serie, giocala: mostra che il seme passa.`,
+      sigBockLead: (a) => `${a.name} incassa ${a.card}. Se la presa è sicura, caricala di punti.`,
+      sigAnziehen: (a) => `${a.name} apre basso a ${a.suit}: prendi la presa se puoi.`,
+      sigPartnerRuffs: (a) =>
+        `${a.name} non ha più ${a.suit} e taglia. Rigioca ${a.suit} più tardi.`,
+      sigSchmieren: (a) => `${a.name} carica la tua presa con ${a.card}.`,
+      sigVerwerfen: (a) => `${a.name} scarta ${a.suit}: un seme debole, meglio non giocarlo.`,
+      sigOppNoTrump: (a) => `${a.name} non ha più briscole.`,
+      sigOppRuffs: (a) => `${a.name} non ha più ${a.suit} e taglia. Evita di giocare ${a.suit}.`,
+      sigOppVoid: (a) => `${a.name} non ha più ${a.suit}.`,
+      sigTrumpsGone: () =>
+        'Gli altri non hanno più briscole: le tue carte alte non possono più essere tagliate.',
+    },
+  },
   setup: {
     title: 'Nuova partita',
     subtitle: 'Schieber contro tre bot',

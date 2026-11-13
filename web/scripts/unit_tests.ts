@@ -1,5 +1,6 @@
 import * as Schieber from '../src/engine/schieber';
 import * as Bot from '../src/engine/bot';
+import * as Coach from '../src/game/coach';
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
@@ -725,6 +726,232 @@ function testBotMemory() {
   );
 }
 
+// ---- Training mode (coach) ----
+function playing(st: any) {
+  st.phase = 'playing';
+  st.currentPlayer = 0;
+  return st;
+}
+function testCoachAdvisesAndReviews() {
+  // partner (seat 2) wins with the Ace, I play last: the coach adds the Ten
+  const st = playing(
+    botState(
+      [
+        ['schellen', '10'],
+        ['schellen', '6'],
+        ['rosen', '7'],
+      ],
+      [
+        ['schellen', '8'],
+        ['schellen', 'A'],
+        ['schellen', '7'],
+      ],
+      'eicheln',
+    ),
+  );
+  const a = Coach.adviseCard(st, 0);
+  assert(!!a && a.cardId === 'schellen10', 'coach recommends the Ten');
+  assert(a!.why.key === 'schmieren', `reason should be schmieren, got ${a!.why.key}`);
+  assert(
+    Schieber.getLegalCardsForPlayer(st, 0).some((c) => c.id === a!.cardId),
+    'the recommended card is legal',
+  );
+  const good = Coach.reviewCard(st, 0, 'schellen10');
+  assert(!!good && good.tone === 'good', 'playing the recommended card is good');
+  const better = Coach.reviewCard(st, 0, 'schellen6');
+  assert(
+    !!better && better.tone === 'better' && better.card?.rank === '10',
+    'playing the Six gets the Ten suggested',
+  );
+  // nothing to review when there was no choice
+  const forced = playing(
+    botState(
+      [
+        ['schellen', '6'],
+        ['rosen', '7'],
+      ],
+      [['schellen', '8']],
+      'eicheln',
+    ),
+  );
+  assert(Coach.reviewCard(forced, 0, 'schellen6') === null, 'a forced card is not reviewed');
+  // not my turn: no advice
+  st.currentPlayer = 1;
+  assert(Coach.adviseCard(st, 0) === null, 'no advice when it is not my turn');
+}
+function testCoachTrumpAdvice() {
+  const strong = botState(
+    [
+      ['eicheln', 'U'],
+      ['eicheln', '9'],
+      ['eicheln', 'A'],
+      ['eicheln', '10'],
+      ['eicheln', '7'],
+      ['rosen', 'K'],
+      ['rosen', '7'],
+      ['schilten', '6'],
+      ['schellen', '7'],
+    ],
+    [],
+    'eicheln',
+  );
+  strong.trump = null as any;
+  const a = Coach.adviseTrump(strong, 0);
+  assert(a.choice === 'eicheln', `strong Eicheln hand names Eicheln, got ${a.choice}`);
+  assert(a.why.key === 'trumpPuurNell' && a.why.n === 5, 'reason: Under and Nell, five trumps');
+  assert(Coach.reviewTrump(strong, 0, 'eicheln').tone === 'good', 'naming Eicheln is good');
+  const pushed = Coach.reviewTrump(strong, 0, 'schieben');
+  assert(pushed.tone === 'better' && pushed.choice === 'eicheln', 'pushing it gets Eicheln');
+
+  const weak = botState(
+    [
+      ['eicheln', '8'],
+      ['eicheln', 'O'],
+      ['rosen', '9'],
+      ['rosen', 'K'],
+      ['schilten', '8'],
+      ['schilten', 'O'],
+      ['schilten', '7'],
+      ['schellen', '9'],
+      ['schellen', '10'],
+    ],
+    [],
+    'eicheln',
+  );
+  weak.trump = null as any;
+  const w = Coach.adviseTrump(weak, 0);
+  assert(w.choice === 'schieben' && w.why.key === 'trumpPush', 'weak forehand hand is pushed');
+  // the same hand after the partner pushed: a contract must be named
+  weak.forehand = 2 as any;
+  const f = Coach.adviseTrump(weak, 0);
+  assert(f.choice !== 'schieben', 'after a push the coach names a contract');
+  assert(f.why.key === 'trumpForced', `reason should be trumpForced, got ${f.why.key}`);
+}
+function testPushedTrumpLead() {
+  // I (forehand) pushed, my partner named Eicheln: open with trump, the Under if I hold it
+  const st = playing(
+    botState(
+      [
+        ['eicheln', 'U'],
+        ['eicheln', '6'],
+        ['rosen', 'A'],
+        ['schellen', '7'],
+      ],
+      [],
+      'eicheln',
+    ),
+  );
+  st.declarer = 2;
+  assert(Bot.pushedTrumpLead(st, 0)?.id === 'eichelnU', 'opens with the trump Under');
+  assert(Bot.chooseCard(st, 0) === 'eichelnU', 'the bot follows the convention');
+  assert(Coach.explainCard(st, 0, 'eichelnU').key === 'pushedLeadTrump', 'and the coach says why');
+  st.players[0].hand = st.players[0].hand.filter((c: any) => c.rank !== 'U');
+  assert(Bot.pushedTrumpLead(st, 0)?.id === 'eicheln6', 'without the Under: the lowest trump');
+  st.players[0].hand = [
+    { id: 'eicheln9', suit: 'eicheln', rank: '9' },
+    { id: 'rosenA', suit: 'rosen', rank: 'A' },
+  ];
+  assert(Bot.pushedTrumpLead(st, 0) === null, 'a lone Nell is kept');
+  st.declarer = 0;
+  assert(Bot.pushedTrumpLead(st, 0) === null, 'only when the partner named trump');
+  st.declarer = 2;
+  st.trump = 'oben-abe';
+  assert(Bot.pushedTrumpLead(st, 0) === null, 'not in Obenabe');
+}
+function testCoachReadsThePlays() {
+  const base = (hand: [string, string][], trump: string, played: any[]) => {
+    const st = playing(botState(hand, [], trump));
+    st.played = played;
+    return st;
+  };
+  const e = (playerId: number, suit: string, rank: string, lead: string | null, trickNo = 0) => ({
+    playerId,
+    suit,
+    rank,
+    lead,
+    trickNo,
+  });
+  const mine: [string, string][] = [
+    ['schilten', '7'],
+    ['schilten', '8'],
+  ];
+  const key = (st: any) => Coach.readPlay(st, 0)?.key;
+
+  // partner cannot follow and throws a small card on the opponents' trick
+  let st = base(mine, 'eicheln', [e(3, 'schellen', 'K', null), e(2, 'rosen', '7', 'schellen')]);
+  let s = Coach.readPlay(st, 0);
+  assert(!!s && s.key === 'sigVerwerfen' && s.suit === 'rosen', 'partner discards Rosen');
+  // partner adds a Ten to my winning Ace
+  st = base(mine, 'eicheln', [
+    e(0, 'schellen', 'A', null),
+    e(3, 'schellen', '7', 'schellen'),
+    e(2, 'rosen', '10', 'schellen'),
+  ]);
+  assert(key(st) === 'sigSchmieren', 'partner smears a Ten on my Ace');
+  // partner trumps in
+  st = base(mine, 'eicheln', [e(3, 'schellen', 'K', null), e(2, 'eicheln', '7', 'schellen')]);
+  assert(key(st) === 'sigPartnerRuffs', 'partner trumps in');
+  // partner's leads
+  st = base(mine, 'eicheln', [e(2, 'schellen', '7', null)]);
+  assert(key(st) === 'sigAnziehen', 'partner leads low');
+  st = base(mine, 'eicheln', [e(2, 'schellen', 'A', null)]);
+  assert(key(st) === 'sigBockLead', 'partner cashes the Ace');
+  st = base(mine, 'oben-abe', [e(2, 'schellen', 'A', null)]);
+  assert(key(st) === 'sigTopLead', 'Obenabe: partner opens with the Ace');
+  st = base(mine, 'unden-ufe', [e(2, 'schellen', '6', null)]);
+  assert(key(st) === 'sigTopLead', 'Undenufe: partner opens with the Six');
+  st = base(mine, 'eicheln', [e(2, 'eicheln', 'U', null)]);
+  s = Coach.readPlay(st, 0);
+  assert(!!s && s.key === 'sigTrumpLead' && s.n === 8, 'partner draws trump, eight still out');
+  // opponents
+  st = base(mine, 'eicheln', [
+    e(1, 'rosen', 'K', null),
+    e(0, 'rosen', '6', 'rosen'),
+    e(3, 'schellen', '7', 'rosen'),
+  ]);
+  s = Coach.readPlay(st, 0);
+  assert(!!s && s.key === 'sigOppVoid' && s.seat === 3 && s.suit === 'rosen', 'opponent is void');
+  st = base(mine, 'eicheln', [
+    e(1, 'rosen', 'K', null),
+    e(0, 'rosen', '6', 'rosen'),
+    e(3, 'eicheln', '7', 'rosen'),
+  ]);
+  assert(key(st) === 'sigOppRuffs', 'opponent trumps in');
+  // the last trump outside my hand falls
+  st = base(
+    [
+      ['eicheln', 'U'],
+      ['eicheln', '9'],
+      ['eicheln', 'A'],
+      ['eicheln', 'K'],
+      ['eicheln', 'O'],
+      ['eicheln', '10'],
+    ],
+    'eicheln',
+    [
+      e(2, 'eicheln', '8', null),
+      e(1, 'eicheln', '7', 'eicheln'),
+      e(0, 'rosen', '6', 'eicheln'),
+      e(3, 'eicheln', '6', 'eicheln'),
+    ],
+  );
+  assert(key(st) === 'sigTrumpsGone', 'no trumps left outside');
+  // my own play and following suit say nothing
+  st = base(mine, 'eicheln', [e(0, 'schellen', 'A', null)]);
+  assert(Coach.readPlay(st, 0) === null, 'my own play is not a signal');
+  st = base(mine, 'eicheln', [e(3, 'schellen', 'K', null), e(2, 'schellen', '7', 'schellen')]);
+  assert(Coach.readPlay(st, 0) === null, 'following suit is not a signal');
+
+  // contract named by the partner after my push
+  st = base(mine, 'rosen', []);
+  st.declarer = 2;
+  assert(Coach.readContract(st, 0)?.key === 'sigPartnerChose', 'partner named a trump suit');
+  st.trump = 'oben-abe';
+  assert(Coach.readContract(st, 0)?.key === 'sigPartnerChoseSlalom', 'partner named Obenabe');
+  st.declarer = 0;
+  assert(Coach.readContract(st, 0) === null, 'my own contract is not a signal');
+}
+
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
   tests.push(testBotNamesKeptAcrossHands);
@@ -764,6 +991,12 @@ function runAll() {
     testBotWinsCheaplyAgainstOpponent,
     testBotChooseTrump,
     testBotMemory,
+  );
+  tests.push(
+    testCoachAdvisesAndReviews,
+    testCoachTrumpAdvice,
+    testPushedTrumpLead,
+    testCoachReadsThePlays,
   );
   let passed = 0;
   for (const t of tests) {

@@ -88,6 +88,26 @@ So every later change can be verified.
       dark panels below the hand. Open: last-trick view, score sheet headline,
       welcome page taller than a phone screen, "Play online" is offered on
       Pages although multiplayer only works on the owner's LAN.
+- [x] (2026-11-13) Training mode (coach), single-player: switch on the setup
+      page and in settings (off by default). A coach row between table and
+      hand reviews each card and contract you choose ("Well played" / "The
+      coach would play ..." with the reason), reads the other seats' plays
+      (partner named trump after your push, Verwerfen, Schmieren, a seat out
+      of a suit or of trump, all trumps gone) and marks the recommended card
+      or contract on "Tip". Logic in `web/src/game/coach.ts` (the bot's choice
+      plus an explanation; never looks at hidden cards), UI in
+      `components/table/{useCoach.ts,CoachBar.tsx}`, six languages. Strategy
+      advice only, no rules change. The bot now also leads trump for its
+      partner after a push (`TUNE.pushLead`; h2h on 4000 duplicate deals
+      +5.19 -> +6.50 points per hand, SE 1.4) and names a solid trump suit
+      instead of pushing when a riskier contract scores higher (neutral in
+      h2h). Open: several conventions are weakly sourced (Anziehen, low/high
+      discards), a per-hand list of coach notes, multiplayer.
+- [x] (2026-11-13) Fix: since 7af1b9f a contract named by the human in
+      single-player was not applied by the engine (no declarer, multiplier
+      x1, no Weis or Stöck, wrong leader after a push), because
+      `useLocalGame.submitTrump` set the phase before calling the engine.
+      Browser-verified; no automated test covers the hook path yet.
 - [x] Stronger bots (card memory, partner play, smarter trump choice and
       schieben), 2026-10-06. `web/src/engine/bot.ts`; `npm run h2h` (duplicate
       deals vs the old bot): +6.5 points per hand (2.3 SE) over 1000 deals,

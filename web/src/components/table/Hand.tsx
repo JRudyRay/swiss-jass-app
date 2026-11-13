@@ -11,6 +11,9 @@ type Props = {
   markPlayability: boolean;
   // The player is to play a card now: the playable cards step forward.
   myTurn?: boolean;
+  // Training mode: the card the coach recommends, with the badge text.
+  hintCard?: string | null;
+  hintLabel?: string;
   reasonFor: (card: any) => string | null;
   onCardTap: (card: any, playable: boolean, reason: string | null) => void;
 };
@@ -24,6 +27,8 @@ const Hand: React.FC<Props> = ({
   selectedCard,
   markPlayability,
   myTurn,
+  hintCard,
+  hintLabel,
   reasonFor,
   onCardTap,
 }) => {
@@ -36,17 +41,19 @@ const Hand: React.FC<Props> = ({
           const playable = legalCards.some((c: any) => c.id === card.id);
           const reason = !playable ? reasonFor(card) : null;
           const selected = selectedCard === card.id;
+          const hint = !!hintCard && hintCard === card.id;
           const dim = markPlayability && legalCards.length > 0 && !playable;
           const tap = () => onCardTap(card, playable, reason);
           return (
             <div
               key={card.id}
-              className={`hand-slot${selected ? ' hand-slot--sel' : ''}`}
+              className={`hand-slot${selected ? ' hand-slot--sel' : ''}${hint ? ' hand-slot--hint' : ''}`}
               style={{ '--i': i, '--n': cards.length } as React.CSSProperties}
             >
               {/* Tap to select, tap again to play (dblclick never fires reliably on touch). */}
               <div
-                className={`hand-card${selected ? ' hand-card--sel' : ''}`}
+                className={`hand-card${selected ? ' hand-card--sel' : ''}${hint ? ' hand-card--hint' : ''}`}
+                data-hint={hint ? hintLabel || '' : undefined}
                 role="button"
                 tabIndex={0}
                 data-card-id={card.id}

@@ -223,7 +223,7 @@ export function sureTricks(hand: Card[], contract: TrumpContract): number {
   return n;
 }
 
-export const SCHIEBEN_BELOW = { margin: 60, sure: 2 };
+export const SCHIEBEN_BELOW = { margin: 60, sure: 2, solid: 1 };
 
 const ALL_CONTRACTS: TrumpContract[] = [
   'eicheln',
@@ -240,17 +240,28 @@ export function chooseTrump(state: State, seat: number): TrumpContract | 'schieb
   const forehand = typeof state.forehand === 'number' ? state.forehand === seat : true;
   let best: TrumpContract = 'eicheln';
   let bestVal = -Infinity;
+  // The best contract that is good enough to name as forehand (it need not be the best overall:
+  // a risky Undenufe must not hide a solid trump suit).
+  let solid: TrumpContract | null = null;
+  let solidVal = -Infinity;
   for (const c of ALL_CONTRACTS) {
     const v = evaluateContract(player.hand, c, forehand);
     if (v > bestVal) {
       bestVal = v;
       best = c;
     }
+    if (
+      v > solidVal &&
+      v >= SCHIEBEN_BELOW.margin &&
+      sureTricks(player.hand, c) >= SCHIEBEN_BELOW.sure
+    ) {
+      solidVal = v;
+      solid = c;
+    }
   }
   // After schieben the partner must choose; it can't be pushed back.
   if (!forehand) return best;
-  if (bestVal >= SCHIEBEN_BELOW.margin && sureTricks(player.hand, best) >= SCHIEBEN_BELOW.sure)
-    return best;
+  if (SCHIEBEN_BELOW.solid ? solid : solid === best) return solid as TrumpContract;
   return 'schieben';
 }
 
@@ -267,6 +278,7 @@ export const TUNE = {
   ruffCost: 5,
   precious: 4,
   oldLead: 1,
+  pushLead: 1, // open with trump when partner named it after a push
   oldP: 0,
   oldO: 0,
   oldFollow: 0,
@@ -284,6 +296,26 @@ type Ctx = {
   partner: number;
   handSizes: Record<number, number>;
 };
+
+// Convention after Schieben: you pushed and your partner named a trump suit, so you open with
+// trump (the Under if you hold it, else your lowest; a lone Nell is kept). Null when it doesn't apply.
+export function pushedTrumpLead(state: State, seat: number): Card | null {
+  const contract = state.trump as TrumpContract;
+  const trump = trumpSuitOf(contract);
+  if (!trump || state.forehand !== seat || state.declarer !== (seat + 2) % 4) return null;
+  if (state.currentTrick.length > 0 || state.players.some((p) => (p.tricks || []).length > 0))
+    return null;
+  const me = state.players.find((p) => p.id === seat);
+  const mine = (me?.hand || []).filter((c) => c.suit === trump);
+  const under = mine.find((c) => c.rank === 'U');
+  if (under) return under;
+  const low = mine
+    .filter((c) => c.rank !== '9')
+    .sort(
+      (a, b) => rankOrderIndex(b.rank, contract, true) - rankOrderIndex(a.rank, contract, true),
+    )[0];
+  return low ?? null;
+}
 
 export function chooseCard(state: State, seat: number): string | null {
   const legal = getLegalCardsForPlayer(state, seat);
@@ -320,8 +352,11 @@ function decide(
     partner: (seat + 2) % 4,
     handSizes,
   };
-  if (state.currentTrick.length === 0)
+  if (state.currentTrick.length === 0) {
+    const open = TUNE.pushLead ? pushedTrumpLead(state, seat) : null;
+    if (open) return open.id;
     return TUNE.oldLead ? (chooseBotCard(state, seat) ?? undefined) : lead(cx);
+  }
   return TUNE.oldFollow ? (chooseBotCard(state, seat) ?? undefined) : follow(cx);
 }
 

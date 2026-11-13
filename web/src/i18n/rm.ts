@@ -324,6 +324,73 @@ const rm: Messages = {
     tableError: 'Errur cun crear la maisa',
     gameStartedTable: (name: string) => `Gieu cumenzà: ${name}`,
   },
+  coach: {
+    label: 'Coach',
+    setting: 'Modus da trenament',
+    settingHint: 'In coach dat tips e declera ils tratgs. La valitaziun resta la medema.',
+    tip: 'Tip',
+    tipAria: 'Dumandar in tip al coach',
+    idle: 'Malsegir? Tutga Tip.',
+    idleTrump: 'Malsegir tar il trumf? Tutga Tip.',
+    push: 'Schieben',
+    tipCard: (what, why) => `Tip: ${what}. ${why}`,
+    good: (why) => `Bain giugà. ${why}`,
+    better: (what, why) => `Il coach giugass ${what}. ${why}`,
+    betterTrump: (what, why) => `Il coach tscherniss ${what}. ${why}`,
+    notes: {
+      only: () => 'Quai è tia suletta carta lubida.',
+      pushedLeadTrump: () => 'Ti has schobà e tes partenari ha fatg trumf: cumenza cun trumf.',
+      drawTrump: (a) => `Vus avais fatg trumf: tira ils trumfs cun il pli aut. Anc ${a.n} ordador.`,
+      leadTrump: (a) => `Vus avais fatg trumf: tira vinavant trumf. Anc ${a.n} ordador.`,
+      cashBock: (a) => `${a.card} è Bock (la pli auta da la colur): gioga ella.`,
+      feedPartner: (a) => `Tes partenari n'ha nagin ${a.suit} pli e po tagliar.`,
+      leadLow: () =>
+        'Nagin stich segir: gioga bass en tia colur la pli lunga e tegna las cartas autas.',
+      leadAny: () => 'Nagut bun da giugar: dà la carta la pli bunmartgada.',
+      secure: () => 'La carta da tes partenari po anc vegnir battida: prenda ti il stich.',
+      schmieren: () => 'Tes partenari fa il stich: dà puncts latiers.',
+      partnerLow: () => 'Tes partenari fa il stich: gioga bass e tegna las bunas cartas.',
+      ruff: (a) => `Ti n'has nagin ${a.suit} pli: taglia cun trumf e prenda ${a.n} puncts.`,
+      win: () => 'Prenda il stich: questa carta duess tegnair.',
+      winLast: () =>
+        'Ti giogas sco ultim: prenda il stich cun la carta la pli bunmartgada che basta.',
+      notWorth: () =>
+        'Qua na vala ina carta ferma betg la paina: spargna ella per in meglier stich.',
+      cantWin: () => 'Quest stich na pos ti betg far: dà la carta la pli bunmartgada.',
+      discard: () =>
+        'Ti na pos betg gudagnar: bitta ina colur flaivla e tegna cartas che pon daventar Bock.',
+      trumpPush: () => 'Memia flaivel per far sez trumf: stauscha (schieben) a tes partenari.',
+      trumpForced: () =>
+        'Tes partenari ha schobà, ti stos tscherner: quai è tia meglra pussaivladad.',
+      trumpPuurNell: (a) => `Under e Nell cun ${a.n} trumfs: ina ferma colur da trumf.`,
+      trumpPuur: (a) => `${a.n} trumfs cun l'Under (Puur), la carta la pli auta.`,
+      trumpNell: (a) => `${a.n} trumfs cun il Nell (il nov) e bunas cartas daspera.`,
+      trumpLong: (a) => `${a.n} cartas en ${a.suit}: la lunghezza fa in bun trumf.`,
+      trumpOben: (a) => `${a.n} stichs segirs da sura, en pliras colurs.`,
+      trumpUnden: (a) => `${a.n} stichs segirs da sut, en pliras colurs.`,
+      sigPartnerChose: (a) =>
+        `Ti has schobà, ${a.name} fa ${a.suit}: cumenza cun trumf per tes partenari.`,
+      sigPartnerChoseSlalom: (a) =>
+        `Ti has schobà, ${a.name} fa ${a.suit}: cumenza cun tia colur la pli ferma.`,
+      sigTrumpLead: (a) => `${a.name} tira trumf. Dumbra: ordaifer ils tes èn anc ${a.n} ordador.`,
+      sigTopLead: (a) =>
+        `${a.name} cumenza cun ${a.card}. Sche ti has la proxima carta da la retscha, gioga ella: quai mussa che la colur va.`,
+      sigBockLead: (a) =>
+        `${a.name} gioga ${a.card} sco Bock. Sch'il stich è segir, dà puncts latiers.`,
+      sigAnziehen: (a) => `${a.name} cumenza bass en ${a.suit}: prenda il stich sche ti pos.`,
+      sigPartnerRuffs: (a) =>
+        `${a.name} n'ha nagin ${a.suit} pli e taglia. Gioga pli tard puspè ${a.suit}.`,
+      sigSchmieren: (a) => `${a.name} dat ${a.card} sin tes stich.`,
+      sigVerwerfen: (a) =>
+        `${a.name} bitta ${a.suit}: ina colur flaivla, meglier betg giugar ella.`,
+      sigOppNoTrump: (a) => `${a.name} n'ha nagin trumf pli.`,
+      sigOppRuffs: (a) =>
+        `${a.name} n'ha nagin ${a.suit} pli e taglia. Evitescha da giugar ${a.suit}.`,
+      sigOppVoid: (a) => `${a.name} n'ha nagin ${a.suit} pli.`,
+      sigTrumpsGone: () =>
+        "Ils auters n'han nagin trumf pli: tias cartas autas na pon betg pli vegnir tagliadas.",
+    },
+  },
   setup: {
     title: 'Nova partida',
     subtitle: 'Schieber cunter trais bots',

@@ -1,3 +1,8 @@
+import type { CoachKey } from '../game/coach';
+
+// Values the coach texts can mention, already translated.
+export type CoachArgs = { card: string; suit: string; n: number; name: string };
+
 // English is the reference: every other language must provide the same keys.
 const en = {
   header: {
@@ -321,6 +326,73 @@ const en = {
     tableCreated: (name: string) => `Table '${name}' created`,
     tableError: 'Error creating the table',
     gameStartedTable: (name: string) => `Game started: ${name}`,
+  },
+  coach: {
+    label: 'Coach',
+    setting: 'Training mode',
+    settingHint: 'A coach gives tips and explains the plays. Scoring is unchanged.',
+    tip: 'Tip',
+    tipAria: 'Ask the coach for a tip',
+    idle: 'Not sure what to play? Tap Tip.',
+    idleTrump: 'Not sure which trump? Tap Tip.',
+    push: 'Schieben',
+    tipCard: (what: string, why: string) => `Tip: ${what}. ${why}`,
+    good: (why: string) => `Well played. ${why}`,
+    better: (what: string, why: string) => `The coach would play ${what}. ${why}`,
+    betterTrump: (what: string, why: string) => `The coach would choose ${what}. ${why}`,
+    notes: {
+      only: () => 'It is your only legal card.',
+      pushedLeadTrump: () => 'You pushed and your partner named trump: open with trump.',
+      drawTrump: (a: CoachArgs) =>
+        `Your side named trump: draw them with your top trump. ${a.n} still out.`,
+      leadTrump: (a: CoachArgs) => `Your side named trump: keep drawing trump. ${a.n} still out.`,
+      cashBock: (a: CoachArgs) => `${a.card} is Bock (the highest left in its suit): cash it.`,
+      feedPartner: (a: CoachArgs) => `Your partner is out of ${a.suit} and can trump it.`,
+      leadLow: () => 'No sure winner: lead low from your longest suit and keep the high cards.',
+      leadAny: () => 'Nothing good to lead: give away the cheapest card.',
+      secure: () => "Your partner's card can still be beaten: take the trick yourself.",
+      schmieren: () => 'Your partner takes this trick: add points to it (schmieren).',
+      partnerLow: () => 'Your partner is winning: play low and keep your good cards.',
+      ruff: (a: CoachArgs) => `You are out of ${a.suit}: trump in and take ${a.n} points.`,
+      win: () => 'Take the trick: this card should hold.',
+      winLast: () => 'You play last: take the trick with your cheapest winner.',
+      notWorth: () => 'Not worth a strong card here: keep it for a better trick.',
+      cantWin: () => 'You cannot win this trick: give your cheapest card.',
+      discard: () =>
+        'You cannot win: throw away a weak suit (verwerfen) and keep cards that can become Bock.',
+      trumpPush: () =>
+        'Too weak to name trump yourself: push (schieben) and let your partner choose.',
+      trumpForced: () => 'Your partner pushed, so you must choose: this is your best option.',
+      trumpPuurNell: (a: CoachArgs) => `Under and Nell with ${a.n} trumps: a strong trump suit.`,
+      trumpPuur: (a: CoachArgs) => `${a.n} trumps with the Under (Puur), the highest card.`,
+      trumpNell: (a: CoachArgs) => `${a.n} trumps with the Nell (the Nine) and good side cards.`,
+      trumpLong: (a: CoachArgs) => `${a.n} cards in ${a.suit}: length makes a good trump.`,
+      trumpOben: (a: CoachArgs) => `${a.n} sure tricks from the top, in several suits.`,
+      trumpUnden: (a: CoachArgs) => `${a.n} sure tricks from the bottom, in several suits.`,
+      sigPartnerChose: (a: CoachArgs) =>
+        `You pushed, ${a.name} named ${a.suit}: open with trump for your partner.`,
+      sigPartnerChoseSlalom: (a: CoachArgs) =>
+        `You pushed, ${a.name} named ${a.suit}: open your strongest suit.`,
+      sigTrumpLead: (a: CoachArgs) =>
+        `${a.name} draws trump. Count along: ${a.n} still out besides yours.`,
+      sigTopLead: (a: CoachArgs) =>
+        `${a.name} opens with ${a.card}. If you hold the next card in line, play it: it shows the suit runs.`,
+      sigBockLead: (a: CoachArgs) =>
+        `${a.name} cashes ${a.card}. If the trick is safe, add points to it.`,
+      sigAnziehen: (a: CoachArgs) =>
+        `${a.name} leads low in ${a.suit} (anziehen): win the trick if you can.`,
+      sigPartnerRuffs: (a: CoachArgs) =>
+        `${a.name} is out of ${a.suit} and trumps in. Lead ${a.suit} again later.`,
+      sigSchmieren: (a: CoachArgs) => `${a.name} adds ${a.card} to your trick (schmieren).`,
+      sigVerwerfen: (a: CoachArgs) =>
+        `${a.name} throws away ${a.suit} (verwerfen): a weak suit, better not lead it.`,
+      sigOppNoTrump: (a: CoachArgs) => `${a.name} has no trump left.`,
+      sigOppRuffs: (a: CoachArgs) =>
+        `${a.name} is out of ${a.suit} and trumps in. Avoid leading ${a.suit}.`,
+      sigOppVoid: (a: CoachArgs) => `${a.name} has no ${a.suit} left.`,
+      sigTrumpsGone: () =>
+        'The others have no trump left: your high cards cannot be trumped any more.',
+    } as Record<CoachKey, (a: CoachArgs) => string>,
   },
   setup: {
     title: 'New match',

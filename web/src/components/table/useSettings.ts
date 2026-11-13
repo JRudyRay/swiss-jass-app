@@ -6,10 +6,18 @@ export type Settings = {
   speed: Speed;
   leftHanded: boolean;
   suitMarks: boolean;
+  // Training mode (single-player): the coach bar with tips and explanations.
+  coach: boolean;
 };
 
 const KEY = 'jassSettings';
-const DEFAULTS: Settings = { haptics: true, speed: 'normal', leftHanded: false, suitMarks: false };
+const DEFAULTS: Settings = {
+  haptics: true,
+  speed: 'normal',
+  leftHanded: false,
+  suitMarks: false,
+  coach: false,
+};
 // Multiplier for the trick and bot pauses. "Off" switches the CSS animations off and shrinks the
 // pauses to 10% (never 0: the bot loop and trick collection still need a tick to let React render
 // each play, and a 0 or NaN delay would make the bots play all at once).
@@ -29,6 +37,7 @@ function load(): Settings {
       speed: isSpeed(raw.speed) ? raw.speed : DEFAULTS.speed,
       leftHanded: raw.leftHanded === true,
       suitMarks: raw.suitMarks === true,
+      coach: raw.coach === true,
     };
   } catch {
     return { ...DEFAULTS };
