@@ -8,12 +8,15 @@ type Props = {
   lang: Lang;
   settings: Settings;
   onChange: (patch: Partial<Settings>) => void;
+  // Leaving the match lives here so it cannot be hit by accident during play
+  newGameLabel?: string;
+  onNewGame?: () => void;
 };
 
 const SPEEDS: Speed[] = ['normal', 'fast', 'off'];
 
 // Gear button on the table and the settings dialog (Esc or the close button dismiss it, focus returns).
-const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange }) => {
+const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel, onNewGame }) => {
   const t = messages(lang).settings;
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -81,6 +84,19 @@ const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange }) => {
           </div>
           {toggle('leftHanded', t.leftHanded, t.leftHandedHint)}
           {toggle('suitMarks', t.suitMarks, t.suitMarksHint)}
+          {onNewGame && (
+            <button
+              type="button"
+              className="set-newgame"
+              data-new-game
+              onClick={() => {
+                setOpen(false);
+                onNewGame();
+              }}
+            >
+              {newGameLabel}
+            </button>
+          )}
         </Sheet>
       )}
     </>

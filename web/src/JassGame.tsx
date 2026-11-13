@@ -29,6 +29,7 @@ import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
 import { messages, type Lang } from './i18n';
 import { authFetch } from './authFetch';
+import { useScrollTopOnEnter } from './hooks/useScrollTopOnEnter';
 import { useLocalGame } from './hooks/useLocalGame';
 import { useMultiplayerSocket } from './hooks/useMultiplayerSocket';
 import { sortHandForDisplay } from './game/handSort';
@@ -40,6 +41,8 @@ import {
   type GameState,
   type Player,
 } from './game/localState';
+import { useHandSummary } from './components/table/useHandSummary';
+import HandSummarySheet from './components/table/HandSummarySheet';
 export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang }> = ({
   user,
   onLogout,
@@ -80,6 +83,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [orientedTrick, setOrientedTrick] = useState<any[]>([]); // cards positioned by perspective
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [message, setMessage] = useState(t.welcome);
+  const handSheet = useHandSummary();
   const [isLoading, setIsLoading] = useState(false);
   const [usersList, setUsersList] = useState<
     Array<{
@@ -506,6 +510,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   // Reset game to initial welcome screen state
   const resetToWelcome = () => {
     loopGenRef.current++; // stops any bot loop or trick animation still running
+    handSheet.dismiss();
     // Clear all game state
     setGameState(null);
     setPlayers([]);
@@ -722,6 +727,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     playLocalCard,
   } = useLocalGame({
     loopGenRef,
+    showHandSummary: handSheet.show,
     optionsVisible,
     lang,
     t,
@@ -1120,10 +1126,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       ? mySeat !== null && gameState.currentPlayer === mySeat
       : gameState.currentPlayer === 0);
   const showPlaySurface = !optionsVisible || (mode === 'multi' && !!gameState);
+  useScrollTopOnEnter(showPlaySurface);
 
   return (
     <div
-      className={`jass-screen${choosingTrump ? ' jass-screen--choosing' : ''}${settings.leftHanded ? ' jass-screen--lefty' : ''}${settings.suitMarks ? ' jass-screen--marks' : ''}${settings.speed === 'off' ? ' jass-screen--noanim' : ''}`}
+      className={`jass-screen${showPlaySurface ? ' jass-screen--play' : ''}${choosingTrump ? ' jass-screen--choosing' : ''}${settings.leftHanded ? ' jass-screen--lefty' : ''}${settings.suitMarks ? ' jass-screen--marks' : ''}${settings.speed === 'off' ? ' jass-screen--noanim' : ''}`}
     >
       <div className="jass-screen__area">
         {/* Game-only HUD: slim score bar with trump pill */}
@@ -1137,22 +1144,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             myTeam={players.find((p) => p.position === 'south')?.team}
           />
         )}
-
-        <div className="jass-status">
-          {/* Quick action buttons - always available when not on welcome screen */}
-          {(showPlaySurface || setupChoice !== 'welcome') && gameState && (
-            <button
-              className="jass-btn-ghost"
-              onClick={() => {
-                if (confirm(t.confirmNewGame)) {
-                  resetToWelcome();
-                }
-              }}
-            >
-              {t.newGame || 'New Game'}
-            </button>
-          )}
-        </div>
 
         {showPlaySurface && (
           <div className="jass-stage">
@@ -1171,7 +1162,15 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                 <LastTrick lang={lang} last={lastTrick} players={players as any} />
               )}
               {mode === 'single' && (
-                <SettingsSheet lang={lang} settings={settings} onChange={updateSettings} />
+                <SettingsSheet
+                  lang={lang}
+                  settings={settings}
+                  onChange={updateSettings}
+                  newGameLabel={t.newGame}
+                  onNewGame={() => {
+                    if (confirm(t.confirmNewGame)) resetToWelcome();
+                  }}
+                />
               )}
               {mode === 'single' && <RulesSheet lang={lang} />}
 
@@ -1356,6 +1355,19 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
         <CardCredits lang={lang} />
       </div>
+
+      {handSheet.summary && showPlaySurface && (
+        <HandSummarySheet
+          lang={lang}
+          summary={handSheet.summary}
+          round={roundHistory.length}
+          players={players}
+          youId={isLocal ? 0 : null}
+          teamNames={teamNames}
+          target={maxPoints}
+          onNext={handSheet.dismiss}
+        />
+      )}
 
       {showVictory && (
         <VictoryModal

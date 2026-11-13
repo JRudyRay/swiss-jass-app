@@ -14,12 +14,20 @@ export type GameState = {
 
 export type Player = { id: number; name: string; hand: any[]; team: number; position: string };
 
+// Score bar totals. While a hand is played the points so far already count with the contract
+// multiplier, and Weis from the first finished trick on, exactly as the hand will be settled.
+const liveScores = (st: Schieber.State) => {
+  if ((st.phase !== 'playing' && st.phase !== 'resolving') || !st.trump) return st.scores;
+  const firstTrickDone = st.players.some((p) => (p.tricks?.length || 0) > 0);
+  return Schieber.runningTotals(st, firstTrickDone);
+};
+
 export const toGameState = (st: Schieber.State): GameState => ({
   phase: st.phase,
   currentPlayer: st.currentPlayer,
   trumpSuit: st.trump || null,
   currentTrick: st.currentTrick || [],
-  scores: st.scores,
+  scores: liveScores(st),
   dealer: st.dealer,
   weis: st.weis,
   forehand: st.forehand ?? null,

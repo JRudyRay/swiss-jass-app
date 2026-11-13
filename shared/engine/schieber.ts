@@ -361,6 +361,73 @@ export function contractStrength(hand: Card[], contract: TrumpContract): number 
   return score;
 }
 
+export type TeamPair = { team1: number; team2: number };
+export type HandSummary = {
+  trump: TrumpContract | null;
+  multiplier: number;
+  declarer: number | null;
+  // false when the match was decided before all nine tricks were played
+  complete: boolean;
+  // Unmultiplied parts: card points (with the 5 for the last trick), Weis, Stöck, Match bonus
+  cards: TeamPair;
+  weis: TeamPair;
+  stoeck: TeamPair;
+  match: TeamPair;
+  // What the hand added to the match totals (multiplied), and the totals after it
+  hand: TeamPair;
+  totals: TeamPair;
+};
+
+// Break a finished hand down for the score sheet. Read-only: the scores come from the state
+// as settled by resolveTrick; for a complete hand, hand = multiplier × (cards + weis + stoeck + match).
+export function handSummary(state: State): HandSummary {
+  const trump = (state.trump as TrumpContract | null) || null;
+  const teamOf = (playerId: number) => state.players.find((p) => p.id === playerId)?.team;
+  const pair = (): TeamPair => ({ team1: 0, team2: 0 });
+  const add = (target: TeamPair, team: number | undefined, pts: number) => {
+    if (team === 1) target.team1 += pts;
+    else if (team === 2) target.team2 += pts;
+  };
+  const complete = state.players.every((p) => p.hand.length === 0) && !state.currentTrick.length;
+
+  const cards = pair();
+  const won = pair();
+  for (const p of state.players) {
+    add(won, p.team, p.tricks?.length || 0);
+    for (const c of p.tricks || []) add(cards, p.team, cardPoints(c, trump));
+  }
+  if (complete && state.lastTrick?.length === 4) {
+    const idx = winnerOfTrick(state.lastTrick as any, trump || undefined, state.lastTrick[0].suit);
+    add(cards, teamOf(state.lastTrick[idx].playerId), 5);
+  }
+
+  const stoeck = pair();
+  for (const [pid, s] of Object.entries(state.stoeckPending || {}))
+    if (s?.awarded) add(stoeck, teamOf(Number(pid)), 20);
+
+  const weisScore = calculateTeamWeis(state.players, trump, state.forehand);
+  const match = pair();
+  if (complete) {
+    const bonus = state.matchBonus || 100;
+    if (won.team1 === 36) match.team1 = bonus;
+    else if (won.team2 === 36) match.team2 = bonus;
+  }
+
+  const base = state.handStartScores || { team1: 0, team2: 0 };
+  return {
+    trump,
+    multiplier: state.trumpMultiplier || 1,
+    declarer: state.declarer ?? null,
+    complete,
+    cards,
+    weis: { team1: weisScore.team1 || 0, team2: weisScore.team2 || 0 },
+    stoeck,
+    match,
+    hand: { team1: state.scores.team1 - base.team1, team2: state.scores.team2 - base.team2 },
+    totals: { team1: state.scores.team1, team2: state.scores.team2 },
+  };
+}
+
 // BASELINE bot (kept unchanged as the opponent for scripts/h2h.ts; the game
 // uses engine/bot.ts). Bot contract choice. The forehand may schieben with a weak hand; after
 // schieben the partner must choose.
@@ -387,6 +454,14 @@ export function chooseBotTrump(state: State, playerId: number): TrumpContract | 
   const pushed = typeof state.forehand === 'number' && playerId !== state.forehand;
   if (!pushed && bestScore < 12) return 'schieben';
   return best;
+}
+
+// Contract multiplier, applied to both teams: Schellen/Schilten count double,
+// Obenabe/Undenufe triple, Eicheln/Rosen single.
+export function contractMultiplier(trump?: string | null): number {
+  if (trump === 'schellen' || trump === 'schilten') return 2;
+  if (trump === 'oben-abe' || trump === 'unden-ufe') return 3;
+  return 1;
 }
 
 export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schieben'): State {
@@ -419,16 +494,7 @@ export function setTrumpAndDetectWeis(state: State, trump: TrumpContract | 'schi
     st.forehand = (state.dealer - 1 + 4) % 4;
   }
 
-  // Set multiplier based on trump contract (authentic Swiss Jass rules)
-  if (trump === 'schellen' || trump === 'schilten') {
-    st.trumpMultiplier = 2; // Double for "Sch-" suits (black suits)
-  } else if (trump === 'oben-abe') {
-    st.trumpMultiplier = 3; // Triple for "tops-down"
-  } else if (trump === 'unden-ufe') {
-    st.trumpMultiplier = 3; // Triple, same as Oben-abe
-  } else {
-    st.trumpMultiplier = 1; // Normal for Eicheln/Rosen
-  }
+  st.trumpMultiplier = contractMultiplier(trump);
   st.matchBonus = 100;
 
   // Detect Weis for all players now that trump is known

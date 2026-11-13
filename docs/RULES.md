@@ -70,6 +70,10 @@ implement everything below as of 2026-10-05.
   phase or against the follow-suit rules, and a trump choice outside trump
   selection. `shared/engine/rules.test.ts` has one test per rule in this file
   and checks 400 random hands and 60 matches against an independent scorer.
+- Display only, no rule change: `handSummary` (shared engine) breaks a finished
+  hand into cards, Weis, Stöck, Match and multiplier for the score sheet, and
+  the score strip shows multiplied running totals (Weis counted once the first
+  trick is done). Both are checked against the same independent scorer.
 
 ## Open questions (owner)
 

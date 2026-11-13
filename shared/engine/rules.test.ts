@@ -8,6 +8,7 @@ import {
   CONTRACTS,
   detectWeis,
   getLegalCardsForPlayer,
+  handSummary,
   isLegalPlay,
   peekTrickWinner,
   playCardLocal,
@@ -552,11 +553,15 @@ describe('random hands', () => {
       const weis = calculateTeamWeis(st.players, contract, st.forehand);
       const raw = [0, 0];
       const tricksWon = [0, 0];
+      const stoeckBy = [0, 0];
       for (const p of st.players) {
         const stoeck = ['K', 'O'].every((r) =>
           p.hand.some((c) => c.suit === contract && c.rank === r),
         );
-        if (stoeck) raw[p.team - 1] += 20;
+        if (stoeck) {
+          raw[p.team - 1] += 20;
+          stoeckBy[p.team - 1] += 20;
+        }
       }
       for (let trickNo = 0; trickNo < 9; trickNo++) {
         const leader = st.currentPlayer;
@@ -581,6 +586,23 @@ describe('random hands', () => {
       const total = (t: 0 | 1) =>
         mult * (raw[t] + (t === 0 ? weis.team1 : weis.team2) + (tricksWon[t] === 9 ? 100 : 0));
       expect(st.scores).toEqual({ team1: total(0), team2: total(1) });
+
+      // The score sheet breakdown adds up to the same result
+      const sum = handSummary(st);
+      expect(sum.complete).toBe(true);
+      expect(sum.multiplier).toBe(mult);
+      expect(sum.cards.team1 + sum.cards.team2).toBe(157);
+      expect(sum.stoeck).toEqual({ team1: stoeckBy[0], team2: stoeckBy[1] });
+      expect(sum.weis).toEqual({ team1: weis.team1, team2: weis.team2 });
+      expect(sum.match).toEqual({
+        team1: tricksWon[0] === 9 ? 100 : 0,
+        team2: tricksWon[1] === 9 ? 100 : 0,
+      });
+      for (const k of ['team1', 'team2'] as const)
+        expect(sum.hand[k]).toBe(
+          mult * (sum.cards[k] + sum.weis[k] + sum.stoeck[k] + sum.match[k]),
+        );
+      expect(sum.totals).toEqual(st.scores);
     }
     expect(seen.size).toBe(6);
   });
@@ -594,7 +616,15 @@ describe('random hands', () => {
       for (;;) {
         st = setTrumpAndDetectWeis(st, CONTRACTS[Math.floor(rand() * 6)]);
         st = playOut(st, (_s, legal) => legal[Math.floor(rand() * legal.length)]);
+        const sum = handSummary(st);
+        const base = st.handStartScores ?? { team1: 0, team2: 0 };
+        expect(sum.totals).toEqual(st.scores);
+        expect(sum.hand).toEqual({
+          team1: st.scores.team1 - base.team1,
+          team2: st.scores.team2 - base.team2,
+        });
         if (st.matchWinner) break;
+        expect(sum.complete).toBe(true);
         expect(Math.max(st.scores.team1, st.scores.team2)).toBeLessThan(1000);
         expect(++hands).toBeLessThan(40);
         st = startNewHand(st);

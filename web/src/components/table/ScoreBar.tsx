@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { contractMultiplier } from '../../engine/schieber';
 import { SuitIcon, trumpName } from './SuitBadge';
 import { messages, type Lang } from '../../i18n';
 
@@ -13,9 +14,43 @@ type Props = {
   myTeam?: number;
 };
 
+// Counts up to a new score instead of jumping (no animation for reduced motion or a lower value).
+function useCountUp(value: number, ms = 600) {
+  const [shown, setShown] = useState(value);
+  const current = useRef(value);
+  useEffect(() => {
+    const start = current.current;
+    if (start === value) return;
+    const still =
+      value < start ||
+      typeof window.matchMedia !== 'function' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (still) {
+      current.current = value;
+      setShown(value);
+      return;
+    }
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const k = Math.min(1, (now - t0) / ms);
+      const v = Math.round(start + (value - start) * (1 - Math.pow(1 - k, 3)));
+      current.current = v;
+      setShown(v);
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, ms]);
+  return shown;
+}
+
+const Points: React.FC<{ value: number }> = ({ value }) => <>{useCountUp(value)}</>;
+
 // Slim match bar: both team totals with a thin progress line, and the trump pill in between.
 const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myTeam }) => {
   const t = messages(lang).scoreBar;
+  const mult = contractMultiplier(trump);
   const team = (n: 1 | 2) => {
     const score = n === 1 ? scores.team1 : scores.team2;
     const pct = Math.max(0, Math.min(1, score / (target || 1)));
@@ -32,7 +67,7 @@ const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myT
           </span>
         </div>
         <div className="score-team__points">
-          {score}
+          <Points value={score} />
           <span className="score-team__target"> / {target}</span>
         </div>
         <div className="score-team__track">
@@ -53,6 +88,7 @@ const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myT
           <>
             <SuitIcon trump={trump} size={24} />
             <span>{trumpName(trump, lang)}</span>
+            {mult > 1 && <span className="trump-pill__mult">×{mult}</span>}
           </>
         ) : (
           <span>

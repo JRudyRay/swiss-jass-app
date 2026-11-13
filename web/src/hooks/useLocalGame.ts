@@ -128,6 +128,10 @@ export function useLocalGame(c: any) {
             completeGame(userTeamScore, opponentTeamScore, userWon, totalRounds);
           }
         } else {
+          // Score sheet: the next deal waits until the player has seen it
+          setCollect(null);
+          await c.showHandSummary(Schieber.handSummary(newSt));
+          if (gen !== loopGenRef.current) return newSt;
           // start a new hand (fresh deal) keeping totals and rotating dealer
           const fresh = Schieber.startNewHand(newSt);
           saveLocalState(fresh);

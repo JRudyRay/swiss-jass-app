@@ -74,6 +74,13 @@ So every later change can be verified.
 ## M4: Product
 
 - [ ] Mobile-first table layout (phone portrait is the main target).
+- [x] (2026-11-13) Table polish, single-player: score sheet after every hand
+      (cards, Weis, Stöck, Match, multiplier, hand, total; the next deal waits
+      for a tap), live multiplied totals in the score strip with a ×2/×3
+      badge, dark "Stube" play theme with a slate score strip, felt sized to
+      the free height, tight trick diamond, "New game" moved into settings.
+      Multiplayer hands still end without a score sheet (the backend sends no
+      breakdown).
 - [x] Stronger bots (card memory, partner play, smarter trump choice and
       schieben), 2026-10-06. `web/src/engine/bot.ts`; `npm run h2h` (duplicate
       deals vs the old bot): +6.5 points per hand (2.3 SE) over 1000 deals,
@@ -88,4 +95,5 @@ So every later change can be verified.
 ## Waiting on the owner
 
 - Two small rule questions (see `docs/RULES.md`, "Open questions").
+- Confirm the four-of-a-kind tie rule added 2026-11-13 (`docs/RULES.md`).
 - Where should the multiplayer backend live, if anywhere public?

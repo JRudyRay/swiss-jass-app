@@ -7,8 +7,10 @@
 
 .jass-screen {
   --g-card-w: 64px; /* hand card width */
-  --g-trick-w: 52px; /* trick card width (smaller than the hand cards) */
-  --g-table-h: clamp(250px, calc(100dvh - 570px), 380px);
+  /* the felt takes the height the score strip and the hand leave free */
+  --g-table-h: clamp(250px, calc(100dvh - 340px), 560px);
+  /* trick card width: grows with the table, always smaller than a hand card */
+  --g-trick-w: clamp(52px, calc(var(--g-table-h) * 0.15), 60px);
   --g-seat-v: 46px; /* space kept free above/below the trick for the seat chips */
   --g-seat-h: 78px; /* space kept free left/right of the trick for the side chips */
   --felt: #1f5a3d;
@@ -432,24 +434,24 @@
 }
 .trick-card--south {
   left: 50%;
-  top: 74%;
+  top: calc(50% + min(24%, var(--g-trick-w) * 1.1));
   --rot: 3deg;
   --fy: 96px; /* rises from the hand */
 }
 .trick-card--north {
   left: 50%;
-  top: 26%;
+  top: calc(50% - min(24%, var(--g-trick-w) * 1.1));
   --rot: -4deg;
   --fy: -46px;
 }
 .trick-card--west {
-  left: 24%;
+  left: calc(50% - min(26%, var(--g-trick-w) * 0.9));
   top: 50%;
   --rot: -4deg;
   --fx: -46px;
 }
 .trick-card--east {
-  left: 76%;
+  left: calc(50% + min(26%, var(--g-trick-w) * 0.9));
   top: 50%;
   --rot: 4deg;
   --fx: 46px;
@@ -609,10 +611,11 @@
   -webkit-tap-highlight-color: transparent;
   transition:
     transform 160ms var(--ease-out),
-    opacity 160ms ease;
+    filter 160ms ease;
 }
+/* dimmed, not transparent: the fanned cards overlap and must not show through */
 .hand-card[aria-disabled='true'] {
-  opacity: 0.45;
+  filter: brightness(0.62) saturate(0.75);
   cursor: default;
 }
 .hand-card:active:not([aria-disabled='true']) {
@@ -1082,15 +1085,15 @@
 @media (min-width: 400px) and (max-width: 600px) {
   .jass-screen {
     --g-card-w: 66px;
-    --g-trick-w: 56px;
+    --g-trick-w: clamp(54px, calc(var(--g-table-h) * 0.15), 72px);
   }
 }
 
 @media (min-width: 601px) {
   .jass-screen {
     --g-card-w: 84px;
-    --g-trick-w: 68px;
-    --g-table-h: clamp(300px, calc(100dvh - 470px), 520px);
+    --g-table-h: clamp(300px, calc(100dvh - 390px), 600px);
+    --g-trick-w: clamp(68px, calc(var(--g-table-h) * 0.16), 88px);
     --g-seat-v: 52px;
     --g-seat-h: 96px;
   }
@@ -1128,7 +1131,7 @@
 @media (min-width: 900px) and (min-height: 760px) {
   .jass-screen {
     --g-card-w: 94px;
-    --g-trick-w: 76px;
+    --g-trick-w: clamp(76px, calc(var(--g-table-h) * 0.16), 92px);
   }
 }
 
@@ -2043,5 +2046,233 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Play surface: the Stube at night. Dark room around the felt, a slate "Jasstafel"
+   score strip with chalk figures, brass line inside the wooden table edge.
+   Only colours and shadows change here; sizes stay in the variables above.
+   ========================================================================== */
+.jass-screen--play {
+  --chalk: #f2ede1;
+  --slate: #1f2a28;
+  --walnut: #5b3a24;
+  background: radial-gradient(120% 70% at 50% 0%, #24382c 0%, #14211a 55%, #0d1611 100%);
+}
+.jass-screen--play .jass-screen__area {
+  margin-top: 0;
+}
+.jass-screen--play .score-bar {
+  background: linear-gradient(#27332f, var(--slate));
+  border: 2px solid var(--walnut);
+  box-shadow:
+    inset 0 0 0 1px rgba(242, 237, 225, 0.07),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+  color: var(--chalk);
+}
+.jass-screen--play .score-team__name,
+.jass-screen--play .score-team__points {
+  color: var(--chalk);
+}
+.jass-screen--play .score-team__us,
+.jass-screen--play .score-team__target {
+  color: rgba(242, 237, 225, 0.62);
+}
+.jass-screen--play .score-team__dot {
+  box-shadow: 0 0 0 1.5px rgba(242, 237, 225, 0.75);
+}
+.jass-screen--play .score-team__track {
+  background: rgba(242, 237, 225, 0.14);
+}
+.jass-screen--play .trump-pill {
+  background: var(--chalk);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.jass-screen--play .trump-pill--none {
+  background: transparent;
+  border-color: rgba(242, 237, 225, 0.3);
+  box-shadow: none;
+  color: rgba(242, 237, 225, 0.72);
+}
+.trump-pill__mult {
+  padding: 1px 7px;
+  background: var(--ink);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #f0c869;
+  font-variant-numeric: tabular-nums;
+}
+.jass-screen--play .jass-table {
+  border-color: var(--walnut);
+  box-shadow:
+    0 0 0 1px rgba(201, 162, 74, 0.55),
+    0 14px 34px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(201, 162, 74, 0.35),
+    inset 0 0 70px rgba(0, 0, 0, 0.35);
+}
+.jass-screen--play .hand-card .swiss-card {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+}
+.jass-screen--play .hand-card--sel .swiss-card {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 12px 22px rgba(0, 0, 0, 0.55);
+}
+.jass-screen--play .weis-panel {
+  margin-bottom: 12px;
+}
+
+/* ---------- New game: last row of the settings sheet ---------- */
+.set-newgame {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 14px;
+  background: transparent;
+  border: 1.5px solid var(--red);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--red);
+  cursor: pointer;
+}
+.set-newgame:active {
+  background: rgba(213, 43, 30, 0.08);
+}
+
+/* ---------- Score sheet after each hand ---------- */
+.sheet.hs-sheet {
+  animation: hsIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes hsIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+}
+.hs-contract {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--cream);
+  border-radius: 10px;
+  font-size: 16px;
+}
+.hs-mult {
+  padding: 1px 8px;
+  background: var(--ink);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #f0c869;
+}
+.hs-by {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+}
+.hs-table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.hs-table th,
+.hs-table td {
+  padding: 7px 4px;
+  text-align: right;
+}
+.hs-table tbody th {
+  font-weight: 500;
+  text-align: left;
+  color: var(--muted);
+}
+.hs-table thead th {
+  width: 31%;
+  padding-bottom: 4px;
+  font-size: 13px;
+  vertical-align: bottom;
+}
+.hs-team {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  max-width: 100%;
+}
+.hs-team__dot {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  background: var(--team);
+  border-radius: 50%;
+}
+.hs-team__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hs-table tbody tr + tr {
+  border-top: 1px solid #eadfc9;
+}
+.hs-table .hs-row--mult td {
+  color: var(--muted);
+}
+.hs-table .hs-row--hand {
+  border-top: 2px solid var(--ink);
+}
+.hs-table .hs-row--hand th,
+.hs-table .hs-row--hand td {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.hs-table td.hs-best {
+  color: #1f5a3d;
+}
+.hs-table .hs-row--total th,
+.hs-table .hs-row--total td {
+  padding-top: 9px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.hs-target {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+.hs-next {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 12px;
+  background: var(--red);
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+.hs-next:active {
+  transform: scale(0.98);
+}
+.hs-next:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet.hs-sheet {
+    animation: none;
   }
 }
