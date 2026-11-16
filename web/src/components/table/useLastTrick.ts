@@ -6,15 +6,35 @@ export type LastTrickData = {
   winnerId: number;
 };
 
-// Remembers the most recently completed trick of the current hand (single-player).
-// `collect` is set by the game while a full trick is being collected; `reset` clears the memory
-// (new hand, no game running).
+const KEY = 'jassLastTrick';
+
+const load = (): LastTrickData | null => {
+  try {
+    const v = JSON.parse(localStorage.getItem(KEY) || 'null');
+    return v && Array.isArray(v.cards) && typeof v.winnerId === 'number' ? v : null;
+  } catch {
+    return null;
+  }
+};
+
+const store = (v: LastTrickData | null) => {
+  try {
+    if (v) localStorage.setItem(KEY, JSON.stringify(v));
+    else localStorage.removeItem(KEY);
+  } catch {
+    /* storage full or blocked: the memory copy still works */
+  }
+};
+
+// Remembers the most recently completed trick of the current hand (single-player), also across a
+// page reload. `collect` is set by the game while a full trick is being collected; `reset` clears
+// the memory (a new hand's trump selection starts).
 export function useLastTrick(
   currentTrick: any[] | undefined,
   collect: { winnerId: number } | null,
   reset: boolean,
 ): LastTrickData | null {
-  const [last, setLast] = useState<LastTrickData | null>(null);
+  const [last, setLast] = useState<LastTrickData | null>(load);
 
   // The collection that was already snapshotted, so each trick is captured exactly once.
   const snapped = useRef<unknown>(null);
@@ -29,12 +49,15 @@ export function useLastTrick(
     }
     if (snapped.current === collect || !currentTrick || currentTrick.length !== 4) return;
     snapped.current = collect;
-    setLast({ cards: currentTrick.map((c) => ({ ...c })), winnerId: collect.winnerId });
+    const next = { cards: currentTrick.map((c) => ({ ...c })), winnerId: collect.winnerId };
+    store(next);
+    setLast(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collect, count]);
 
   useEffect(() => {
     if (reset) {
+      store(null);
       setLast(null);
       snapped.current = null;
     }

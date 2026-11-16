@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import CardCredits from './components/CardCredits';
 import ScoreBar from './components/table/ScoreBar';
 import { trumpName } from './components/table/SuitBadge';
@@ -81,7 +81,22 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const tm = messages(lang).mp;
   const [gameId, setGameId] = useState<string | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [isLocal, setIsLocal] = useState<boolean>(false);
+  const [rawPlayers, setPlayers] = useState<Player[]>([]);
+  // Single-player: your own seat is named in the UI language, bots without their "(bot)" suffix.
+  const players = useMemo(
+    () =>
+      isLocal
+        ? rawPlayers.map((p) => ({
+            ...p,
+            name:
+              p.id === 0 && p.name === 'You'
+                ? messages(lang).seat.you
+                : p.name.replace(/\s*\(bot\)$/i, ''),
+          }))
+        : rawPlayers,
+    [rawPlayers, isLocal, lang],
+  );
   const [hand, setHand] = useState<any[]>([]);
   const [legalCards, setLegalCards] = useState<any[]>([]);
   const [orientedTrick, setOrientedTrick] = useState<any[]>([]); // cards positioned by perspective
@@ -126,7 +141,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   });
   // The bots for the next local match, shown on the setup screen.
   const [botNames, setBotNames] = useState<string[]>(() => Schieber.pickBotNames());
-  const [isLocal, setIsLocal] = useState<boolean>(false);
   const [chosenTrump, setChosenTrump] = useState<string | null>(null);
   const [playDelayMs, setPlayDelayMs] = useState<number>(450);
   const [animatingSwoop, setAnimatingSwoop] = useState<{
@@ -283,7 +297,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const lastTrick = useLastTrick(
     gameState?.currentTrick,
     collect,
-    !gameState || gameState.phase === 'trump_selection',
+    gameState?.phase === 'trump_selection', // not on "no game yet": a reload must keep it
   );
   // helper: map engine player id to a seat around the table
   const seatForId = (id: number) => {
@@ -337,7 +351,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
       return {
         id: p.id,
-        name: isLocal && p.id === 0 && p.name === 'You' ? messages(lang).seat.you : p.name,
+        name: p.name,
         hand: p.hand,
         team: p.team,
         teamName: teamNames[p.team] || `Team ${p.team}`,
@@ -478,7 +492,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       const processed: string[] = processedRaw ? JSON.parse(processedRaw) : [];
       if (gameId && processed.includes(gameId)) return; // already processed
 
-      updateTotalsFromGameState(gameState, players, gameId);
+      updateTotalsFromGameState(gameState, rawPlayers, gameId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);

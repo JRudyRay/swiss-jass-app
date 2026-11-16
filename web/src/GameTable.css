@@ -356,12 +356,12 @@
 /* Who named the contract: its suit on the opposite corner from the dealer mark. */
 .seat__chose {
   position: absolute;
-  top: -7px;
-  right: -3px;
+  top: -14px;
+  right: -4px;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   background: #f4ead2;
   border: 1px solid var(--gold);
   border-radius: 50%;
@@ -369,6 +369,13 @@
 }
 .seat--side .seat__chose {
   right: 1px;
+}
+@media (max-height: 500px) {
+  .seat-slot--north .seat__chose {
+    top: -12px;
+    width: 16px;
+    height: 16px;
+  }
 }
 
 .seat__thinking {
@@ -1102,6 +1109,38 @@
   }
 }
 
+/* Short portrait phones: the chooser must fit the (shorter) felt, also with the coach row on. */
+@media (max-width: 600px) and (max-height: 700px) and (orientation: portrait) {
+  .trump-sheet {
+    margin-top: 0;
+    padding: 6px 8px;
+  }
+  .trump-sheet__head {
+    margin-bottom: 4px;
+  }
+  .trump-sheet__title {
+    font-size: 15px;
+  }
+  .trump-sheet__grid {
+    gap: 5px;
+  }
+  .trump-btn {
+    min-height: 46px;
+    gap: 0;
+    padding: 2px;
+  }
+  .trump-btn img,
+  .trump-btn svg {
+    width: 26px;
+    height: 26px;
+  }
+  .trump-sheet__schieben {
+    min-height: 40px;
+    margin-top: 5px;
+    padding: 4px 12px;
+  }
+}
+
 @media (min-width: 400px) and (max-width: 600px) {
   .jass-screen {
     --g-card-w: 66px;
@@ -1179,7 +1218,7 @@
 
   /* ----- Game layout (welcome and setup keep the normal page flow) ----- */
   .jass-screen:has([data-jass-table]) {
-    --g-card-h: clamp(90px, 33dvh, 160px);
+    --g-card-h: clamp(90px, calc(33dvh - 6px), 160px);
     --g-card-w: calc(var(--g-card-h) * 74 / 112);
     --g-trick-h: clamp(84px, 30dvh, 150px);
     --g-trick-w: calc(var(--g-trick-h) * 74 / 112);
@@ -1368,7 +1407,7 @@
     align-items: flex-end;
     height: calc(var(--g-card-h) + 28px);
     min-height: 0;
-    padding: 18px 4px 6px;
+    padding: 18px 4px 12px;
     box-sizing: border-box;
   }
   .hand-card {
@@ -1431,11 +1470,12 @@
   .trump-sheet {
     position: absolute;
     left: 50%;
-    top: 50%;
     z-index: 8;
-    width: min(620px, calc(100% - 16px));
+    /* narrow enough to leave the side seats free, lowered below the coach bubble */
+    width: min(520px, calc(100% - 16px));
     margin: 0;
-    padding: 8px 10px;
+    padding: 6px 8px;
+    top: calc(50% + 10px);
     transform: translate(-50%, -50%);
     border-radius: 14px;
     animation: none;
@@ -1452,12 +1492,20 @@
     gap: 6px;
   }
   .trump-btn {
-    min-height: 56px;
+    min-height: 48px;
+    gap: 0;
+    padding: 2px;
     font-size: 12px;
   }
+  .trump-btn img,
+  .trump-btn svg {
+    width: 28px;
+    height: 28px;
+  }
   .trump-sheet__schieben {
-    min-height: 44px;
-    margin-top: 6px;
+    min-height: 40px;
+    margin-top: 5px;
+    padding: 4px 12px;
   }
 
   /* Victory dialog: centred card that fits the short height. */
@@ -2640,6 +2688,22 @@
     height: auto;
     min-height: 48px;
     margin: 6px 0 0 6px;
+  }
+  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .coach-bar {
+    grid-column: 1;
+  }
+  /* The corner buttons move to the opposite corner so the coach bubble does not cover them. */
+  .jass-screen--coach:not(.jass-screen--lefty) .sheet-btn {
+    left: auto;
+    right: 4px;
+  }
+  .jass-screen--coach:not(.jass-screen--lefty) .sheet-btn.set-btn {
+    left: auto;
+    right: 54px;
+  }
+  .jass-screen--coach:not(.jass-screen--lefty) .sheet-btn.rules-btn {
+    left: auto;
+    right: 104px;
   }
   .coach-bar__text {
     font-size: 12px;

@@ -2,7 +2,7 @@
 
 The rules the game implements. Agents: this file is the spec. Open questions
 wait for the owner; don't change behaviour for them without an answer. Both
-engines (`web/src/engine/schieber.ts`, `backend/src/gameEngine/SwissJassEngine.ts`)
+engines (`shared/engine/schieber.ts`, `backend/src/gameEngine/SwissJassEngine.ts`)
 implement everything below as of 2026-10-05.
 
 ## Settled basics
@@ -90,6 +90,18 @@ implement everything below as of 2026-10-05.
 ## Settled 2026-11-13 (owner answer)
 
 - Game target: 1000 stays the default; it remains adjustable. No code change.
+
+## Added 2026-11-16 (display of Weis, standard table practice; no scoring change)
+
+- A card may count in a sequence and in a four of a kind at the same time
+  (both engines always did this; now written down).
+- Weis is announced with a player's first card: the seat shows the points
+  from then on (your own from the start). Which Weis counts is shown once all
+  four have played. After the first trick the team with the best Weis shows
+  its cards; the other team shows only its best Weis in points, no cards.
+  Before, every Weis with its cards was listed as soon as trump was chosen.
+- Stöck is called at the seat when its second card is played.
+- Weis are still declared automatically: a player cannot hold one back.
 
 ## Open questions (owner)
 

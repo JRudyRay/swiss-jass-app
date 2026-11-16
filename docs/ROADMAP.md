@@ -108,6 +108,20 @@ So every later change can be verified.
       x1, no Weis or Stöck, wrong leader after a push), because
       `useLocalGame.submitTrump` set the phase before calling the engine.
       Browser-verified; no automated test covers the hook path yet.
+- [x] (2026-11-16) Rules and function audit (engine read line by line, six
+      matches played headless on a phone viewport): no scoring or legal-move
+      bug found. Fixed: Weis no longer gives away cards (announced with the
+      first card, shown after the first trick, the losing team without cards),
+      Weis names from the language files instead of "Vier Buben"/"Sequenz",
+      Stöck called at the seat, the seat that named the contract carries its
+      suit, own seat named in the UI language, closing the victory screen goes
+      to the welcome page, last trick survives a reload, trump panel fits
+      360x640, landscape with the coach no longer overlaps. Open: reload on
+      the victory screen loses the result; reload on the score sheet skips
+      it; no hint why a match ended mid-hand; declining a Weis; a Jasstafel
+      (Z-board) score view; multiplayer seats are mirrored (the next player
+      sits west, so play looks clockwise) and `compareCards` in the shared
+      engine has inconsistent signs (only used by a test).
 - [x] Stronger bots (card memory, partner play, smarter trump choice and
       schieben), 2026-10-06. `web/src/engine/bot.ts`; `npm run h2h` (duplicate
       deals vs the old bot): +6.5 points per hand (2.3 SE) over 1000 deals,
