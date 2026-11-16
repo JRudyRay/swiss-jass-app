@@ -10,6 +10,9 @@ export type GameState = {
   dealer?: number;
   forehand?: number | null;
   weis?: Record<number, any[]>; // playerId -> Weis declarations
+  declarer?: number | null; // who named the contract
+  weisWinner?: { playerId: number; teamId: number } | null; // holder of the best Weis
+  stoeck?: number[]; // players whose Stöck has counted this hand
 };
 
 export type Player = { id: number; name: string; hand: any[]; team: number; position: string };
@@ -31,6 +34,13 @@ export const toGameState = (st: Schieber.State): GameState => ({
   dealer: st.dealer,
   weis: st.weis,
   forehand: st.forehand ?? null,
+  declarer: st.declarer ?? null,
+  weisWinner: st.trump
+    ? Schieber.bestWeis(st.players, st.trump as Schieber.TrumpContract, st.forehand)
+    : null,
+  stoeck: Object.entries(st.stoeckPending || {})
+    .filter(([, s]) => s?.awarded)
+    .map(([id]) => Number(id)),
 });
 
 export const loadLocalState = (): Schieber.State | null => {

@@ -353,6 +353,23 @@
   top: -6px;
   left: 2px;
 }
+/* Who named the contract: its suit on the opposite corner from the dealer mark. */
+.seat__chose {
+  position: absolute;
+  top: -7px;
+  right: -3px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  background: #f4ead2;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.seat--side .seat__chose {
+  right: 1px;
+}
 
 .seat__thinking {
   display: inline-flex;

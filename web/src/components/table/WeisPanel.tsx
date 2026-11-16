@@ -1,21 +1,25 @@
 import React from 'react';
 import { TEAM_COLORS } from './ScoreBar';
 import { messages, type Lang } from '../../i18n';
+import { weisLabel } from './seatWeis';
 
 interface Props {
   lang: Lang;
   weis: Record<string, any[]> | undefined;
   players: { id: number; name: string; team: number }[];
   weisWinner: { playerId: number; teamId: number } | null | undefined;
+  // The first trick is done: Weis are shown now.
+  revealed: boolean;
 }
 
-// Compact list of announced Weis; hidden when nobody has any.
-export const WeisPanel: React.FC<Props> = ({ lang, weis, players, weisWinner }) => {
+// Weis after the first trick, as at the table: the team with the best Weis shows its cards, the
+// other team only what it announced (its best Weis in points). Hidden before that.
+export const WeisPanel: React.FC<Props> = ({ lang, weis, players, weisWinner, revealed }) => {
   const t = messages(lang).weis;
   const entries = Object.entries(weis || {}).filter(
     ([, arr]) => Array.isArray(arr) && arr.length > 0,
   );
-  if (entries.length === 0) return null;
+  if (!revealed || entries.length === 0) return null;
   const winnerName = weisWinner
     ? players.find((p) => p.id === weisWinner.playerId)?.name
     : undefined;
@@ -27,7 +31,10 @@ export const WeisPanel: React.FC<Props> = ({ lang, weis, players, weisWinner }) 
         {entries.flatMap(([pid, arr]) => {
           const player = players.find((p) => p.id === parseInt(pid));
           const counts = !weisWinner || weisWinner.teamId === player?.team;
-          return arr.map((w: any, i: number) => (
+          const shown = counts
+            ? arr
+            : [arr.reduce((best: any, w: any) => (w.points > best.points ? w : best), arr[0])];
+          return shown.map((w: any, i: number) => (
             <div
               key={`${pid}-${i}`}
               className={`weis-row${counts ? '' : ' weis-row--off'}`}
@@ -38,7 +45,7 @@ export const WeisPanel: React.FC<Props> = ({ lang, weis, players, weisWinner }) 
               <span className="weis-row__pts">
                 {w.points} {t.points}
               </span>
-              <span className="weis-row__desc">{w.description}</span>
+              {counts && <span className="weis-row__desc">{weisLabel(w, lang)}</span>}
               {!counts && <span className="weis-row__off">{t.notCounted}</span>}
             </div>
           ));

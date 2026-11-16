@@ -38,6 +38,7 @@ const en = {
   } as Record<string, string>,
   scoreBar: { trump: 'Trump', none: 'not chosen', us: 'us', pts: 'pts' },
   seat: {
+    you: 'You',
     dealer: 'Dealer',
     tricks: (n: number) => `${n} ${n === 1 ? 'trick' : 'tricks'}`,
     cards: 'cards left',
@@ -48,6 +49,9 @@ const en = {
     title: 'Weis (melds)',
     points: 'pts',
     notCounted: 'does not count',
+    sequence: (n: number, suit: string, from: string, to: string) =>
+      `${n} in a row: ${suit} ${from} to ${to}`,
+    four: (rank: string, key: string) => `Four of a kind: ${key === '9' ? 'Nell (9)' : rank}`,
     winner: (name: string) => `Best Weis: ${name}. Only their team scores Weis.`,
   },
   handSummary: {
@@ -446,8 +450,6 @@ const en = {
     noActiveGame: 'No active game. Start a new one.',
     localStarted: 'Local game started',
     roundFinished: 'Round finished, updating totals',
-    trumpWithWeis: (trump: string, name: string) => `Trump: ${trump}. Best Weis: ${name}`,
-    trumpNoWeis: (trump: string) => `Trump: ${trump}. No Weis`,
     notPlaying: 'Cards are not being played right now',
     illegalCard: 'You cannot play that card',
     mustFollowSuit: 'You must follow suit',

@@ -7,7 +7,7 @@ import * as Schieber from './engine/schieber';
 import InfoPanels from './components/table/InfoPanels';
 import WeisPanel from './components/table/WeisPanel';
 import RoundHistory from './components/table/RoundHistory';
-import { seatWeis } from './components/table/seatWeis';
+import { seatWeis, seatStoeck } from './components/table/seatWeis';
 import TrickArea from './components/table/TrickArea';
 import LastTrick from './components/table/LastTrick';
 import SettingsSheet from './components/table/SettingsSheet';
@@ -260,7 +260,11 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   useEffect(() => {
     writeSavedRounds(roundHistory);
   }, [roundHistory]);
-  const [weisWinner, setWeisWinner] = useState<{ playerId: number; teamId: number } | null>(null);
+  const [serverWeisWinner, setWeisWinner] = useState<{ playerId: number; teamId: number } | null>(
+    null,
+  );
+  // Single-player: derived from the engine state, so it survives a reload.
+  const weisWinner = gameState?.weisWinner ?? serverWeisWinner;
   const [weisCompetition, setWeisCompetition] = useState<{
     active: boolean;
     currentPlayer: number;
@@ -333,7 +337,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
       return {
         id: p.id,
-        name: p.name,
+        name: isLocal && p.id === 0 && p.name === 'You' ? messages(lang).seat.you : p.name,
         hand: p.hand,
         team: p.team,
         teamName: teamNames[p.team] || `Team ${p.team}`,
@@ -391,7 +395,19 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         isTurn={active && gameState?.currentPlayer === p.id}
         taking={collect?.winnerId === p.id}
         gain={collect?.winnerId === p.id ? collect.points : undefined}
-        weis={seatWeis(gameState?.weis as any, weisWinner as any, p as any, players as any)}
+        weis={seatWeis(
+          gameState?.weis as any,
+          weisWinner as any,
+          p as any,
+          players as any,
+          gameState?.currentTrick,
+        )}
+        stoeck={seatStoeck(gameState?.stoeck, gameState?.trumpSuit, p.id, gameState?.currentTrick)}
+        chose={
+          gameState?.phase !== 'trump_selection' && gameState?.declarer === p.id
+            ? gameState?.trumpSuit
+            : null
+        }
         thinking={active && gameState?.currentPlayer === p.id && pos !== 'south'}
         seat={pos}
         narrow={narrow}
@@ -1329,6 +1345,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           weis={gameState?.weis as any}
           players={players as any}
           weisWinner={weisWinner as any}
+          revealed={players.some((p: any) => (p.tricks?.length || 0) > 0)}
         />
 
         <RoundHistory lang={lang} rounds={roundHistory} />
@@ -1373,7 +1390,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               resetToWelcome();
             }
           }}
-          onClose={() => setShowVictory(false)}
+          onClose={() => (isLocal ? resetToWelcome() : setShowVictory(false))}
         />
       )}
 

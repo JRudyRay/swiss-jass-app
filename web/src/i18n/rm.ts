@@ -36,6 +36,7 @@ const rm: Messages = {
   },
   scoreBar: { trump: 'Trumf', none: 'betg tschernì', us: 'nus', pts: 'puncts' },
   seat: {
+    you: 'Ti',
     dealer: 'Partider',
     tricks: (n: number) => `${n} ${n === 1 ? 'stich' : 'stichs'}`,
     cards: 'cartas en maun',
@@ -46,6 +47,9 @@ const rm: Messages = {
     title: 'Weis',
     points: 'puncts',
     notCounted: 'na quinta betg',
+    sequence: (n: number, suit: string, from: string, to: string) =>
+      `Seria da ${n}: ${suit} ${from}–${to}`,
+    four: (rank: string) => `Quatter ${rank}`,
     winner: (name: string) => `Il meglier Weis: ${name}. Mo sia equipa quinta ils Weis.`,
   },
   handSummary: {
@@ -443,8 +447,6 @@ const rm: Messages = {
     noActiveGame: 'Nagin gieu en curs. Cumenza in nov.',
     localStarted: 'Gieu cumenzà',
     roundFinished: 'Runda terminada, ils puncts vegnan quintads',
-    trumpWithWeis: (trump: string, name: string) => `Trumf: ${trump}. Il meglier Weis: ${name}`,
-    trumpNoWeis: (trump: string) => `Trumf: ${trump}. Nagin Weis`,
     notPlaying: 'Ussa na vegnan naginas cartas giugadas',
     illegalCard: 'Questa carta na pos ti betg giugar',
     mustFollowSuit: 'Ti stos dar colur',

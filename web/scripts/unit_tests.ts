@@ -1,9 +1,43 @@
 import * as Schieber from '../src/engine/schieber';
 import * as Bot from '../src/engine/bot';
 import * as Coach from '../src/game/coach';
+import { seatStoeck, seatWeis, weisLabel } from '../src/components/table/seatWeis';
 
 function assert(cond: boolean, msg: string) {
   if (!cond) throw new Error(msg);
+}
+
+// Weis are announced with a player's first card, and named in the chosen language.
+function testWeisAnnouncedWithFirstCard() {
+  const weis = { 1: [{ points: 50 }], 0: [{ points: 20 }] } as any;
+  const fresh = [{ tricks: [] }, { tricks: [] }, { tricks: [] }, { tricks: [] }];
+  const bot = { id: 1, team: 2, position: 'west' };
+  const me = { id: 0, team: 1, position: 'south' };
+  const winner = { teamId: 2 };
+  assert(seatWeis(weis, winner, bot, fresh, []) === null, 'no Weis before the first card');
+  const mine = seatWeis(weis, winner, me, fresh, []);
+  assert(!!mine && mine.counts, 'own Weis is visible and not yet struck');
+  const one = [{ suit: 'rosen', rank: '6', playerId: 1 }];
+  assert(seatWeis(weis, winner, bot, fresh, one)?.points === 50, 'announced with the card');
+  const four = [1, 2, 3, 0].map((playerId) => ({ suit: 'rosen', rank: '6', playerId }));
+  assert(seatWeis(weis, winner, me, fresh, four)?.counts === false, 'settled after four cards');
+  const later = [{ tricks: [1, 2, 3, 4] }, { tricks: [] }, { tricks: [] }, { tricks: [] }];
+  assert(seatWeis(weis, winner, bot, later, one) === null, 'first trick only');
+}
+
+function testWeisLabelAndStoeck() {
+  const seq = { cards: ['9', '10', 'U'].map((rank) => ({ suit: 'rosen', rank })) };
+  assert(weisLabel(seq, 'de') === 'Dreiblatt: Rosen 9 bis Under', weisLabel(seq, 'de'));
+  const four = {
+    cards: ['eicheln', 'schellen', 'rosen', 'schilten'].map((suit) => ({ suit, rank: '9' })),
+  };
+  assert(weisLabel(four, 'ch') === 'Vier Näll', weisLabel(four, 'ch'));
+  for (const lang of ['en', 'ch', 'de', 'fr', 'it', 'rm'] as const)
+    assert(!/Buben|Damen|Sequenz/.test(weisLabel(seq, lang) + weisLabel(four, lang)), lang);
+  const trick = [{ suit: 'rosen', rank: 'K', playerId: 2 }];
+  assert(seatStoeck([2], 'rosen', 2, trick), 'Stöck called with its second card');
+  assert(!seatStoeck([2], 'rosen', 2, [{ suit: 'rosen', rank: 'A', playerId: 2 }]), 'not later');
+  assert(!seatStoeck([], 'rosen', 2, trick), 'not before it counts');
 }
 
 function testRankOrder() {
@@ -998,6 +1032,7 @@ function runAll() {
     testPushedTrumpLead,
     testCoachReadsThePlays,
   );
+  tests.push(testWeisAnnouncedWithFirstCard, testWeisLabelAndStoeck);
   let passed = 0;
   for (const t of tests) {
     try {

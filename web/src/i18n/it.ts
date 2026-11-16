@@ -35,6 +35,7 @@ const it: Messages = {
   },
   scoreBar: { trump: 'Briscola', none: 'non scelta', us: 'noi', pts: 'pt.' },
   seat: {
+    you: 'Tu',
     dealer: 'Mazziere',
     tricks: (n: number) => `${n} ${n === 1 ? 'presa' : 'prese'}`,
     cards: 'carte in mano',
@@ -45,6 +46,9 @@ const it: Messages = {
     title: 'Annunci (Weis)',
     points: 'pt.',
     notCounted: 'non conta',
+    sequence: (n: number, suit: string, from: string, to: string) =>
+      `Scala di ${n}: ${suit} ${from}–${to}`,
+    four: (rank: string) => `Quattro uguali: ${rank}`,
     winner: (name: string) => `Miglior annuncio: ${name}. Solo la sua squadra segna gli annunci.`,
   },
   handSummary: {
@@ -442,8 +446,6 @@ const it: Messages = {
     noActiveGame: 'Nessuna partita in corso. Iniziane una nuova.',
     localStarted: 'Partita iniziata',
     roundFinished: 'Mano finita, conteggio dei punti',
-    trumpWithWeis: (trump: string, name: string) => `Briscola: ${trump}. Miglior annuncio: ${name}`,
-    trumpNoWeis: (trump: string) => `Briscola: ${trump}. Nessun annuncio`,
     notPlaying: 'In questo momento non si giocano carte',
     illegalCard: 'Non puoi giocare questa carta',
     mustFollowSuit: 'Devi rispondere al seme',

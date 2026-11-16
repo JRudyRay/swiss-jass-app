@@ -64,7 +64,7 @@ export type State = {
   // Pending Stöck declarations (tracked once trump is known)
   stoeckPending?: Record<number, { remaining: number; awarded: boolean }>;
   // Swiss Jass authentic features
-  trumpMultiplier?: number; // 1x, 2x (Schellen/Schilten), 3x (Oben-abe), 4x (Unden-ufe)
+  trumpMultiplier?: number; // 1x, 2x (Schellen/Schilten), 3x (Oben-abe, Unden-ufe)
   matchBonus?: number; // 100 for taking all 9 tricks
   // player id who declared the contract (set during trump selection)
   declarer?: number | null;
@@ -533,7 +533,7 @@ export function getLegalCardsForPlayer(state: State, playerId: number): Card[] {
   // First card of trick - any card allowed
   if (state.currentTrick.length === 0) return player.hand.slice();
 
-  const leadSuit = state.trickLead!;
+  const leadSuit = state.trickLead ?? state.currentTrick[0].suit;
   const trumpContract = state.trump as TrumpContract | null | undefined;
 
   const hand = player.hand;
@@ -630,7 +630,7 @@ function winnerOfTrick(cards: Card[], trump?: string | null, leadSuit?: Suit | n
 // Return the absolute player id who would win the current trick (without mutating state)
 export function peekTrickWinner(state: State): number | null {
   if (!state.currentTrick || state.currentTrick.length !== 4) return null;
-  const lead = state.trickLead!;
+  const lead = state.trickLead ?? state.currentTrick[0].suit;
   // winnerOfTrick returns the index (0..3) of the winning card in the trick array.
   // Map that index to the absolute player id by reading the playerId stored on the card.
   const winnerIdx = winnerOfTrick(state.currentTrick as any, state.trump || undefined, lead);
@@ -914,7 +914,7 @@ export function resolveTrick(state: State): State {
     st.pendingResolve = false;
     return st;
   }
-  const lead = st.trickLead!;
+  const lead = st.trickLead ?? st.currentTrick[0].suit;
   const winnerIdx = winnerOfTrick(st.currentTrick as any, st.trump || undefined, lead);
   const winnerCard = st.currentTrick[winnerIdx];
   const winnerPlayer = winnerCard.playerId;

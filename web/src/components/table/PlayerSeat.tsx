@@ -2,6 +2,7 @@ import React from 'react';
 import { TEAM_COLORS } from './ScoreBar';
 import { messages, type Lang } from '../../i18n';
 import type { SeatWeis } from './seatWeis';
+import { SuitIcon, trumpName } from './SuitBadge';
 
 type Props = {
   lang: Lang;
@@ -19,6 +20,10 @@ type Props = {
   gain?: number;
   // Weis announced with the first card (first trick only).
   weis?: SeatWeis | null;
+  // Stöck called in the current trick.
+  stoeck?: boolean;
+  // Contract this player named (shown as a small badge), if any.
+  chose?: string | null;
   seat?: string;
   // West/east: a stacked chip so the trick keeps its room.
   narrow?: boolean;
@@ -37,10 +42,13 @@ const PlayerSeat: React.FC<Props> = ({
   taking,
   gain,
   weis,
+  stoeck,
+  chose,
   seat,
   narrow,
 }) => {
-  const t = messages(lang).seat;
+  const m = messages(lang);
+  const t = m.seat;
   const base: string = (import.meta as any).env?.BASE_URL || '/';
   const cls = ['seat', narrow && 'seat--side', isTurn && 'seat--turn', taking && 'seat--taking']
     .filter(Boolean)
@@ -73,12 +81,22 @@ const PlayerSeat: React.FC<Props> = ({
       </span>
       {weis && !taking && (
         <span className={`seat__weis${weis.counts ? '' : ' seat__weis--off'}`}>
-          {messages(lang).weis.short(weis.points)}
+          {m.weis.short(weis.points)}
         </span>
       )}
+      {stoeck && !weis && !taking && <span className="seat__weis">{m.handSummary.stoeck}</span>}
       {taking && !!gain && (
         <span className="seat__gain" aria-hidden="true">
           +{gain}
+        </span>
+      )}
+      {chose && (
+        <span
+          className="seat__chose"
+          title={`${m.scoreBar.trump}: ${trumpName(chose, lang)}`}
+          aria-label={`${m.scoreBar.trump}: ${trumpName(chose, lang)}`}
+        >
+          <SuitIcon trump={chose} size={14} />
         </span>
       )}
       {isDealer && (

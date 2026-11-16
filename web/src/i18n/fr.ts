@@ -35,6 +35,7 @@ const fr: Messages = {
   },
   scoreBar: { trump: 'Atout', none: 'pas choisi', us: 'nous', pts: 'pts' },
   seat: {
+    you: 'Toi',
     dealer: 'Donneur',
     tricks: (n: number) => `${n} ${n === 1 ? 'pli' : 'plis'}`,
     cards: 'cartes en main',
@@ -45,6 +46,9 @@ const fr: Messages = {
     title: 'Annonces',
     points: 'pts',
     notCounted: 'ne compte pas',
+    sequence: (n: number, suit: string, from: string, to: string) =>
+      `Suite de ${n} : ${suit} ${from} à ${to}`,
+    four: (rank: string) => `Carré : ${rank}`,
     winner: (name: string) => `Meilleure annonce : ${name}. Seule son équipe marque ses annonces.`,
   },
   handSummary: {
@@ -444,8 +448,6 @@ const fr: Messages = {
     noActiveGame: 'Aucune partie en cours. Commencez-en une nouvelle.',
     localStarted: 'Partie commencée',
     roundFinished: 'Manche terminée, décompte des points',
-    trumpWithWeis: (trump: string, name: string) => `Atout : ${trump}. Meilleure annonce : ${name}`,
-    trumpNoWeis: (trump: string) => `Atout : ${trump}. Pas d'annonce`,
     notPlaying: 'Aucune carte ne se joue en ce moment',
     illegalCard: 'Vous ne pouvez pas jouer cette carte',
     mustFollowSuit: 'Vous devez fournir la couleur',

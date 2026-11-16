@@ -432,14 +432,8 @@ export function useLocalGame(c: any) {
       setPlayers(mapPlayersWithSeats(updatedSt.players));
       setGameState(toGameState(updatedSt));
 
-      if (weisWinnerResult) {
-        const winnerName = updatedSt.players.find(
-          (p: any) => p.id === weisWinnerResult.playerId,
-        )?.name;
-        setMessage(t.trumpWithWeis(trumpName(choice, lang), winnerName || ''));
-      } else {
-        setMessage(t.trumpNoWeis(trumpName(choice, lang)));
-      }
+      // Weis stay unannounced until each player's first card.
+      setMessage(`${messages(lang).scoreBar.trump}: ${trumpName(choice, lang)}`);
       // start bots playing
       setTimeout(() => botsTakeTurns(), 200);
       return;

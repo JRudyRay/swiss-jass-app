@@ -35,6 +35,7 @@ const ch: Messages = {
   },
   scoreBar: { trump: 'Trumpf', none: 'no offe', us: 'mir', pts: 'Pkt.' },
   seat: {
+    you: 'Du',
     dealer: 'Gäber',
     tricks: (n: number) => `${n} Stich`,
     cards: 'Charte i dr Hand',
@@ -45,6 +46,9 @@ const ch: Messages = {
     title: 'Wiis',
     points: 'Pkt',
     notCounted: 'zellt nöd',
+    sequence: (n: number, suit: string, from: string, to: string) =>
+      `${['Drü', 'Vier', 'Füf', 'Sächs', 'Sibe', 'Acht', 'Nün'][n - 3] ?? n}blatt: ${suit} ${from} bis ${to}`,
+    four: (rank: string, key: string) => `Vier ${key === '9' ? 'Näll' : rank}`,
     winner: (name: string) => `Bescht Wiis: ${name}. Nur sis Team zellt.`,
   },
   handSummary: {
@@ -439,8 +443,6 @@ const ch: Messages = {
     noActiveGame: 'Kei Spiel am Laufe. Start es neus.',
     localStarted: 'Spiel gstartet',
     roundFinished: 'Rundi fertig, Pünkt wärded zellt',
-    trumpWithWeis: (trump: string, name: string) => `Trumpf: ${trump}. Bescht Wiis: ${name}`,
-    trumpNoWeis: (trump: string) => `Trumpf: ${trump}. Kei Wiis`,
     notPlaying: 'Grad wird kei Charte gspilt',
     illegalCard: 'Die Charte chasch nöd spile',
     mustFollowSuit: 'Du muesch Farb gä',

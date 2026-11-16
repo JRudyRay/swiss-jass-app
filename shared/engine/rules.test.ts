@@ -139,6 +139,17 @@ describe('legal cards', () => {
     expect(legalOn('rosen', [E('6'), R('7'), S('A')], [E('A')])).toEqual(ids([E('6'), R('7')]));
   });
 
+  it('a save without the led suit still makes you follow the first card', () => {
+    const st = table({
+      trump: 'rosen',
+      hands: [[E('6'), S('A'), Si('7')], [], [], []],
+      trick: [[1, E('A')]],
+      current: 0,
+    });
+    st.trickLead = null;
+    expect(ids(getLegalCardsForPlayer(st, 0))).toEqual(ids([E('6')]));
+  });
+
   it('with no card of the suit anything goes; trumping is never forced', () => {
     const hand = [S('6'), R('7'), Si('A')];
     expect(legalOn('rosen', hand, [E('A')])).toEqual(ids(hand));

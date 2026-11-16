@@ -35,6 +35,7 @@ const de: Messages = {
   },
   scoreBar: { trump: 'Trumpf', none: 'offen', us: 'wir', pts: 'Pkt.' },
   seat: {
+    you: 'Du',
     dealer: 'Geber',
     tricks: (n: number) => `${n} ${n === 1 ? 'Stich' : 'Stiche'}`,
     cards: 'Karten in der Hand',
@@ -45,6 +46,9 @@ const de: Messages = {
     title: 'Weis',
     points: 'Pkt.',
     notCounted: 'zählt nicht',
+    sequence: (n: number, suit: string, from: string, to: string) =>
+      `${['Drei', 'Vier', 'Fünf', 'Sechs', 'Sieben', 'Acht', 'Neun'][n - 3] ?? n}blatt: ${suit} ${from} bis ${to}`,
+    four: (rank: string, key: string) => `Vier ${key === '9' ? 'Nell' : rank}`,
     winner: (name: string) => `Bester Weis: ${name}. Nur dieses Team schreibt Weis.`,
   },
   handSummary: {
@@ -443,8 +447,6 @@ const de: Messages = {
     noActiveGame: 'Kein laufendes Spiel. Starte ein neues.',
     localStarted: 'Spiel gestartet',
     roundFinished: 'Runde beendet, Punkte werden gezählt',
-    trumpWithWeis: (trump: string, name: string) => `Trumpf: ${trump}. Bester Weis: ${name}`,
-    trumpNoWeis: (trump: string) => `Trumpf: ${trump}. Kein Weis`,
     notPlaying: 'Gerade werden keine Karten gespielt',
     illegalCard: 'Diese Karte darfst du nicht spielen',
     mustFollowSuit: 'Du musst Farbe bedienen',
