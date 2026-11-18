@@ -10,11 +10,13 @@ type Props = {
   lang: Lang;
   last: LastTrickData | null;
   players: { id: number; name: string; team?: number }[];
+  // Shown under the trick (the Weis list), which opens up with the first finished trick too.
+  extra?: React.ReactNode;
 };
 
 // "Last trick" review: a corner button on the table that opens a small dialog with the previous
 // trick (who played what, who took it). Disabled until the first trick of the hand is done.
-const LastTrick: React.FC<Props> = ({ lang, last, players }) => {
+const LastTrick: React.FC<Props> = ({ lang, last, players, extra }) => {
   const t = messages(lang).lastTrick;
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -68,6 +70,7 @@ const LastTrick: React.FC<Props> = ({ lang, last, players }) => {
           <p className="sheet__winner" role="status">
             {t.wonBy(nameOf(last.winnerId))}
           </p>
+          {extra}
         </Sheet>
       )}
     </>

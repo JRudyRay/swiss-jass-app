@@ -10,6 +10,8 @@ interface VictoryModalProps {
   teamNames: { 1: string; 2: string };
   finalScores: { team1: number; team2: number };
   roundHistory: Array<{ round: number; team1: number; team2: number; trump: string }>;
+  winner?: 1 | 2; // the team the engine declared the winner
+  endReason?: 'stoeck' | 'weis' | 'trick'; // set when the match ended before the hand was played out
   onPlayAgain: () => void;
   onClose: () => void;
 }
@@ -23,6 +25,8 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
   teamNames,
   finalScores,
   roundHistory,
+  winner: declared,
+  endReason,
   onPlayAgain,
   onClose,
 }) => {
@@ -61,7 +65,7 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
   const m = messages(lang);
   const v = m.victory;
   // Derived from the totals shown, so the headline can never disagree with the score.
-  const winner: 1 | 2 = finalScores.team2 > finalScores.team1 ? 2 : 1;
+  const winner: 1 | 2 = declared || (finalScores.team2 > finalScores.team1 ? 2 : 1);
 
   return (
     <div className="victory" onClick={onClose}>
@@ -76,10 +80,19 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
       >
         <div className="victory__scroll">
           <h2 id="victory-title" className="victory__title">
-            {m.game.teamWins(teamNames[winner] || `Team ${winner}`)}
+            {myTeam != null
+              ? myTeam === winner
+                ? v.youWon
+                : v.youLost
+              : m.game.teamWins(teamNames[winner] || `Team ${winner}`)}
           </h2>
           {myTeam != null && (
-            <p className="victory__sub">{myTeam === winner ? v.youWon : v.youLost}</p>
+            <p className="victory__sub">{m.game.teamWins(teamNames[winner] || `Team ${winner}`)}</p>
+          )}
+          {endReason && roundHistory.length > 0 && (
+            <p className="victory__sub" data-victory-decided>
+              {v.decided(roundHistory.length, endReason)}
+            </p>
           )}
 
           <div className="victory__scores">

@@ -3,6 +3,8 @@ import { messages, type Lang } from '../../i18n';
 import { TEAM_COLORS } from '../table/ScoreBar';
 import type { SavedGameSummary } from './savedGame';
 
+const clean = (n: string) => n.replace(/\s*\(bot\)$/, '');
+
 // "Continue game" card for a saved, unfinished single-player match.
 const ResumeCard: React.FC<{
   lang: Lang;
@@ -27,6 +29,11 @@ const ResumeCard: React.FC<{
           <span className="resume__pts">{saved.theirs}</span>
         </div>
       </div>
+      {saved.bots.length === 3 && saved.bots.every(Boolean) && (
+        <p className="resume__target" data-resume-lineup>
+          {t.lineup(clean(saved.bots[1]), clean(saved.bots[0]), clean(saved.bots[2]))}
+        </p>
+      )}
       <p className="resume__target">{t.target(saved.target)}</p>
       <div className="resume__actions">
         <button className="btn btn--primary" data-resume-continue onClick={onContinue}>

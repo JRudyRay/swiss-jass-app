@@ -72,6 +72,9 @@ export type State = {
   target?: number;
   // Set when the match is over: the team that reached the target first.
   matchWinner?: 1 | 2 | null;
+  // What took the winner over the target first, in the order the rules count it: Stöck, Weis, then
+  // the trick itself. Annotation only, the scores are not affected.
+  matchEndReason?: 'stoeck' | 'weis' | 'trick';
   // Every card played this hand, in order, with the suit that was led. Public
   // information that bots use as card memory. Missing in old saved games (treat as []).
   played?: PlayedCard[];
@@ -296,6 +299,7 @@ export function startGameLocal(
     trickLead: null,
     players,
     scores: { team1: 0, team2: 0 },
+    handStartScores: { team1: 0, team2: 0 },
     target,
     played: [],
   };
@@ -945,17 +949,20 @@ export function resolveTrick(state: State): State {
   // Stöck from this trick is already in st.scores; Weis counts with the first trick.
   let reachedBy: 1 | 2 | null = null;
   let reachedTotals: { team1: number; team2: number } | null = null;
-  const check = (withWeis: boolean) => {
+  let reachedWith: 'stoeck' | 'weis' | 'trick' | null = null;
+  const check = (withWeis: boolean, reason: 'stoeck' | 'weis' | 'trick') => {
     if (reachedBy || !st.target) return;
     const totals = runningTotals(st, withWeis);
     const team = teamAtTarget(totals, st.target);
     if (team) {
       reachedBy = team;
       reachedTotals = totals;
+      reachedWith = reason;
     }
   };
-  check(!isFirstTrick);
-  if (isFirstTrick) check(true);
+  // Later tricks: Weis already counted earlier, so only this trick's Stöck is new here.
+  check(!isFirstTrick, 'stoeck');
+  if (isFirstTrick) check(true, 'weis');
 
   if (winnerTeam === 1) st.scores.team1 += trickPoints;
   else st.scores.team2 += trickPoints;
@@ -980,11 +987,12 @@ export function resolveTrick(state: State): State {
     // The hand is over. The caller decides whether the match continues
     // (startNewHand) or someone reached the target score.
   } else {
-    if (!reachedBy) check(true);
+    if (!reachedBy) check(true, 'trick');
     if (reachedBy) {
       st.scores = reachedTotals!;
       st.phase = 'finished';
       st.matchWinner = reachedBy;
+      st.matchEndReason = reachedWith!;
       st.players.forEach((p) => (p.points = p.team === 1 ? st.scores.team1 : st.scores.team2));
     } else {
       st.phase = 'playing';

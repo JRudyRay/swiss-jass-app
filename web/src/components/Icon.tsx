@@ -55,6 +55,13 @@ const PATHS: Record<string, React.ReactNode> = {
       <path d="M20 20v-5h-5" />
     </>
   ),
+  deck: (
+    <>
+      <rect x="5" y="9" width="12" height="11" rx="2" />
+      <path d="M8 6.5h9.5a2 2 0 0 1 2 2V17" />
+      <path d="M11 4h6.5" />
+    </>
+  ),
   plus: <path d="M12 5v14M5 12h14" />,
   check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,

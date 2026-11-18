@@ -68,7 +68,6 @@ const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myT
         </div>
         <div className="score-team__points">
           <Points value={score} />
-          <span className="score-team__target"> / {target}</span>
         </div>
         <div className="score-team__track">
           <div className="score-team__fill" />
@@ -79,22 +78,27 @@ const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myT
   return (
     <div className="score-bar">
       {team(1)}
-      <div
-        data-testid="trump"
-        className={`trump-pill${trump ? '' : ' trump-pill--none'}`}
-        aria-label={`${t.trump}: ${trump ? trumpName(trump, lang) : t.none}`}
-      >
-        {trump ? (
-          <>
-            <SuitIcon trump={trump} size={24} />
-            <span>{trumpName(trump, lang)}</span>
-            {mult > 1 && <span className="trump-pill__mult">×{mult}</span>}
-          </>
-        ) : (
-          <span>
-            {t.trump}: {t.none}
-          </span>
-        )}
+      <div className="score-bar__mid">
+        <div
+          data-testid="trump"
+          className={`trump-pill${trump ? '' : ' trump-pill--none'}`}
+          aria-label={`${t.trump}: ${trump ? trumpName(trump, lang) : t.none}`}
+        >
+          {trump ? (
+            <>
+              <SuitIcon trump={trump} size={24} />
+              <span>{trumpName(trump, lang)}</span>
+              {mult > 1 && <span className="trump-pill__mult">×{mult}</span>}
+            </>
+          ) : (
+            <span>
+              {t.trump}: {t.none}
+            </span>
+          )}
+        </div>
+        <span className="score-bar__target" data-testid="target">
+          {t.toTarget(target)}
+        </span>
       </div>
       {team(2)}
     </div>

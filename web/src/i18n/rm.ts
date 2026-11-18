@@ -34,7 +34,13 @@ const rm: Messages = {
     'oben-abe': 'Obenabe',
     'unden-ufe': 'Undenufe',
   },
-  scoreBar: { trump: 'Trumf', none: 'betg tschernì', us: 'nus', pts: 'puncts' },
+  scoreBar: {
+    trump: 'Trumf',
+    none: 'betg tschernì',
+    us: 'nus',
+    pts: 'puncts',
+    toTarget: (n: number) => `fin ${n}`,
+  },
   seat: {
     you: 'Ti',
     dealer: 'Partider',
@@ -91,6 +97,7 @@ const rm: Messages = {
     wonBy: (name: string) => `${name} ha fatg il stich`,
   },
   settings: {
+    cancel: 'Interrumper',
     button: 'Parameters',
     title: 'Parameters',
     close: 'Serrar',
@@ -173,6 +180,7 @@ const rm: Messages = {
     ] as { title: string; items: string[] }[],
   },
   resume: {
+    lineup: (p: string, a: string, b: string) => `cun ${p} cunter ${a} & ${b}`,
     title: 'Partida en curs',
     yourTeam: 'Tia equipa',
     opponents: 'Adversaris',
@@ -182,11 +190,17 @@ const rm: Messages = {
     aria: 'Partida memorisada',
   },
   victory: {
+    decided: (n: number, how: 'stoeck' | 'weis' | 'trick') =>
+      how === 'stoeck'
+        ? `Decidì en la runda ${n} cun il Stöck`
+        : how === 'weis'
+          ? `Decidì en la runda ${n} cun in Weis`
+          : `Decidì en la runda ${n} cun ina stgisa`,
     colRound: 'Runda',
     colContract: 'Contract',
     roundNote: 'Puncts per runda, multiplicatur, Weis, Stöck e Match gia endamain.',
-    youWon: 'Vossa equipa gudogna la partida.',
-    youLost: 'Ils adversaris gudognan la partida.',
+    youWon: 'Ti has gudagnà!',
+    youLost: 'Ti has pers',
     rounds: 'Rundas',
     breakdown: 'Runda per runda',
     close: 'Serrar',
@@ -408,6 +422,7 @@ const rm: Messages = {
     start: 'Cumenzar la partida',
   },
   game: {
+    waitingForTrump: (n: string) => `Spetgar che ${n} tschernia il trumf...`,
     welcome: 'Bainvegni tar Swiss Jass!',
     noCardsPlayed: 'Anc naginas cartas giugadas',
     roundHistory: 'Rundas giugadas',

@@ -7,8 +7,8 @@
 //   1. localStorage 'jassApiUrl' (lets the owner point the public site at a
 //      private backend without rebuilding; set to '' to force offline)
 //   2. VITE_API_URL at build time
-//   3. localhost dev: http://localhost:3000
-//   4. anything else (e.g. GitHub Pages): no backend
+//   3. anything else (including localhost dev and GitHub Pages): no backend
+// For backend dev put VITE_API_URL=http://localhost:3000 in web/.env.development.local.
 const env = ((import.meta as any).env || {}) as Record<string, string | undefined>;
 
 function resolveApiUrl(): string {
@@ -18,12 +18,6 @@ function resolveApiUrl(): string {
     if (override !== null) return override.trim();
   } catch {}
   if (env.VITE_API_URL) return env.VITE_API_URL;
-  if (
-    typeof window !== 'undefined' &&
-    ['localhost', '127.0.0.1'].includes(window.location.hostname)
-  ) {
-    return 'http://localhost:3000';
-  }
   return '';
 }
 

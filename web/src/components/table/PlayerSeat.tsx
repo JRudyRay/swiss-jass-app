@@ -1,4 +1,5 @@
 import React from 'react';
+import Icon from '../Icon';
 import { TEAM_COLORS } from './ScoreBar';
 import { messages, type Lang } from '../../i18n';
 import type { SeatWeis } from './seatWeis';
@@ -101,7 +102,7 @@ const PlayerSeat: React.FC<Props> = ({
       )}
       {isDealer && (
         <span className="seat__dealer" title={t.dealer} aria-label={t.dealer}>
-          D
+          <Icon name="deck" size={12} />
         </span>
       )}
     </div>

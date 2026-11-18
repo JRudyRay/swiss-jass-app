@@ -33,7 +33,13 @@ const it: Messages = {
     'oben-abe': 'Obenabe',
     'unden-ufe': 'Undenufe',
   },
-  scoreBar: { trump: 'Briscola', none: 'non scelta', us: 'noi', pts: 'pt.' },
+  scoreBar: {
+    trump: 'Briscola',
+    none: 'non scelta',
+    us: 'noi',
+    pts: 'pt.',
+    toTarget: (n: number) => `a ${n}`,
+  },
   seat: {
     you: 'Tu',
     dealer: 'Mazziere',
@@ -90,6 +96,7 @@ const it: Messages = {
     wonBy: (name: string) => `${name} ha fatto la presa`,
   },
   settings: {
+    cancel: 'Annulla',
     button: 'Impostazioni',
     title: 'Impostazioni',
     close: 'Chiudi',
@@ -172,6 +179,7 @@ const it: Messages = {
     ] as { title: string; items: string[] }[],
   },
   resume: {
+    lineup: (p: string, a: string, b: string) => `con ${p} contro ${a} & ${b}`,
     title: 'Partita in corso',
     yourTeam: 'La tua squadra',
     opponents: 'Avversari',
@@ -181,11 +189,17 @@ const it: Messages = {
     aria: 'Partita salvata',
   },
   victory: {
+    decided: (n: number, how: 'stoeck' | 'weis' | 'trick') =>
+      how === 'stoeck'
+        ? `Deciso nella mano ${n} con lo Stöck`
+        : how === 'weis'
+          ? `Deciso nella mano ${n} con un Weis`
+          : `Deciso nella mano ${n} con una presa`,
     colRound: 'Mano',
     colContract: 'Contratto',
     roundNote: 'Punti per mano, moltiplicatore, annunci, Stöck e Match già inclusi.',
-    youWon: 'La vostra squadra vince la partita.',
-    youLost: 'Gli avversari vincono la partita.',
+    youWon: 'Hai vinto!',
+    youLost: 'Hai perso',
     rounds: 'Mani',
     breakdown: 'Mano per mano',
     close: 'Chiudi',
@@ -407,6 +421,7 @@ const it: Messages = {
     start: 'Inizia la partita',
   },
   game: {
+    waitingForTrump: (n: string) => `In attesa che ${n} scelga la briscola...`,
     welcome: 'Benvenuti a Swiss Jass!',
     noCardsPlayed: 'Nessuna carta giocata',
     roundHistory: 'Mani giocate',

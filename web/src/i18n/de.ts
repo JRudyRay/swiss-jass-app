@@ -33,7 +33,13 @@ const de: Messages = {
     'oben-abe': 'Obenabe',
     'unden-ufe': 'Undenufe',
   },
-  scoreBar: { trump: 'Trumpf', none: 'offen', us: 'wir', pts: 'Pkt.' },
+  scoreBar: {
+    trump: 'Trumpf',
+    none: 'offen',
+    us: 'wir',
+    pts: 'Pkt.',
+    toTarget: (n: number) => `bis ${n}`,
+  },
   seat: {
     you: 'Du',
     dealer: 'Geber',
@@ -90,6 +96,7 @@ const de: Messages = {
     wonBy: (name: string) => `${name} hat den Stich gemacht`,
   },
   settings: {
+    cancel: 'Abbrechen',
     button: 'Einstellungen',
     title: 'Einstellungen',
     close: 'Schliessen',
@@ -172,6 +179,7 @@ const de: Messages = {
     ] as { title: string; items: string[] }[],
   },
   resume: {
+    lineup: (p: string, a: string, b: string) => `mit ${p} gegen ${a} & ${b}`,
     title: 'Spiel läuft noch',
     yourTeam: 'Dein Team',
     opponents: 'Gegner',
@@ -181,11 +189,17 @@ const de: Messages = {
     aria: 'Gespeichertes Spiel',
   },
   victory: {
+    decided: (n: number, how: 'stoeck' | 'weis' | 'trick') =>
+      how === 'stoeck'
+        ? `Entschieden in Runde ${n} mit dem Stöck`
+        : how === 'weis'
+          ? `Entschieden in Runde ${n} mit einem Weis`
+          : `Entschieden in Runde ${n} mit einem Stich`,
     colRound: 'Runde',
     colContract: 'Spielart',
     roundNote: 'Punkte pro Runde, Multiplikator, Weis, Stöck und Match sind schon eingerechnet.',
-    youWon: 'Euer Team gewinnt die Partie.',
-    youLost: 'Die Gegner gewinnen die Partie.',
+    youWon: 'Du hast gewonnen!',
+    youLost: 'Du hast verloren',
     rounds: 'Runden',
     breakdown: 'Runde für Runde',
     close: 'Schliessen',
@@ -409,6 +423,7 @@ const de: Messages = {
     start: 'Partie starten',
   },
   game: {
+    waitingForTrump: (n: string) => `Warte, bis ${n} den Trumpf wählt...`,
     welcome: 'Willkommen bei Swiss Jass!',
     noCardsPlayed: 'Noch keine Karten gespielt',
     roundHistory: 'Gespielte Runden',

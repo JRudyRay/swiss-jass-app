@@ -18,7 +18,7 @@ const MULTIPLIERS: [string, number][] = [
 type Props = {
   lang: Lang;
   // Bot names by seat: [right opponent, partner, left opponent] (engine ids 1, 2, 3).
-  bots: string[];
+  bots?: string[]; // left out while a saved match is offered: the next match gets new opponents
   teamNames: { 1: string; 2: string };
   onTeamNames: (names: { 1: string; 2: string }) => void;
   target: number;
@@ -94,8 +94,8 @@ export const MatchSetup: React.FC<Props> = ({
               >
                 <span className="setup__team-meta">
                   <b>{team === 1 ? s.yourTeam : s.opponents}</b>
-                  {' · '}
-                  {team === 1 ? s.partner(bots[1]) : `${bots[0]} & ${bots[2]}`}
+                  {bots && ' · '}
+                  {bots && (team === 1 ? s.partner(bots[1]) : `${bots[0]} & ${bots[2]}`)}
                 </span>
                 <input
                   className="input"

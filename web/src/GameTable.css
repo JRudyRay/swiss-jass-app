@@ -26,7 +26,7 @@
   --muted: var(--color-muted, #6c6152);
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   touch-action: manipulation;
-  min-height: calc(100dvh - 56px);
+  flex: 1 0 auto; /* fills what the header leaves, whatever its height */
   /* the Stube at night, on every screen: paper cards and the felt sit on it */
   background: radial-gradient(120% 70% at 50% 0%, #24382c 0%, #14211a 55%, #0d1611 100%);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
@@ -99,16 +99,26 @@
   color: var(--muted);
 }
 .score-team__points {
-  font-size: 24px;
+  font-size: clamp(18px, 6.2vw, 24px);
   font-weight: 800;
+  white-space: nowrap;
   line-height: 1.05;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.score-team__target {
-  font-size: 11px;
-  font-weight: 600;
+.score-bar__mid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.score-bar__target {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .score-team__track {
   height: 3px;
@@ -339,15 +349,15 @@
   left: -2px;
   display: grid;
   place-items: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
+  width: 20px;
+  height: 20px;
   background: var(--gold);
-  border-radius: 9px;
-  font-size: 10px;
-  font-weight: 800;
+  border-radius: 50%;
   line-height: 1;
   color: var(--ink);
+}
+.seat__dealer svg {
+  display: block;
 }
 .seat--side .seat__dealer {
   top: -6px;
@@ -1260,10 +1270,6 @@
     grid-column: 2;
     grid-row: 2;
   }
-  .jass-screen:has([data-jass-table]) .jass-screen__area > .weis-panel {
-    grid-column: 2;
-    grid-row: 1;
-  }
 
   /* Rail: score and trump on top, message and menu button beside the hand. */
   .score-bar {
@@ -1293,8 +1299,10 @@
   .score-team__points {
     font-size: 20px;
   }
-  .score-bar .trump-pill {
+  .score-bar__mid {
     order: 3;
+  }
+  .score-bar .trump-pill {
     min-width: 0;
     min-height: 32px;
     padding-right: 8px;
@@ -1423,47 +1431,6 @@
   .hand-card--sel,
   .hand-card--sel:active {
     transform: translateY(-12px) scale(1.04);
-  }
-
-  /* Weis: small floating note in the table's bottom-right corner; the east card moves up. */
-  .weis-panel {
-    z-index: 7;
-    align-self: end;
-    justify-self: end;
-    box-sizing: border-box;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0 8px;
-    width: max-content;
-    max-width: min(300px, calc(50% - 70px));
-    max-height: 120px;
-    margin: 0 8px 7px 0;
-    padding: 4px 8px;
-    overflow-y: auto;
-    background: rgba(255, 250, 240, 0.95);
-    border-radius: 10px;
-  }
-  .weis-panel__title,
-  .weis-panel__winner {
-    margin-bottom: 1px;
-    font-size: 11px;
-  }
-  .weis-panel__list {
-    flex: 1 1 100%;
-    gap: 1px;
-  }
-  .weis-row {
-    gap: 0 6px;
-    font-size: 11px;
-    line-height: 1.25;
-  }
-  .jass-screen__area:has(> .weis-panel) .trick-card--east {
-    top: calc(var(--g-trick-h) / 2);
-  }
-  .jass-screen__area:has(> .weis-panel) .seat-slot--east {
-    top: 6px;
-    transform: none;
   }
 
   /* Trump chooser floats on the felt. */
@@ -1880,16 +1847,6 @@
   .jass-screen--lefty .sheet-btn.set-btn {
     right: 54px;
   }
-  .jass-screen--lefty .weis-panel {
-    justify-self: start;
-    margin: 0 0 7px 8px;
-  }
-  .jass-screen--lefty .jass-screen__area:has(> .weis-panel) .trick-card--east {
-    top: 50%;
-  }
-  .jass-screen--lefty .jass-screen__area:has(> .weis-panel) .trick-card--west {
-    top: calc(var(--g-trick-h) / 2);
-  }
   .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area {
     grid-template-columns: minmax(0, 1fr) var(--g-rail);
   }
@@ -1898,8 +1855,7 @@
     grid-column: 2;
   }
   .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .jass-stage,
-  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .hand-dock,
-  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .weis-panel {
+  .jass-screen.jass-screen--lefty:has([data-jass-table]) .jass-screen__area > .hand-dock {
     grid-column: 1;
   }
 }
@@ -2144,7 +2100,7 @@
   color: var(--chalk);
 }
 .jass-screen--play .score-team__us,
-.jass-screen--play .score-team__target {
+.jass-screen--play .score-bar__target {
   color: rgba(242, 237, 225, 0.62);
 }
 .jass-screen--play .score-team__dot {
@@ -2187,9 +2143,6 @@
   box-shadow:
     0 0 0 3px var(--gold),
     0 12px 22px rgba(0, 0, 0, 0.55);
-}
-.jass-screen--play .weis-panel {
-  margin-bottom: 12px;
 }
 
 /* ---------- New game: last row of the settings sheet ---------- */
@@ -2428,72 +2381,31 @@
   }
 }
 
-/* ---------- Panels below the hand: quiet on the dark room, paper once opened ---------- */
-.info-panels {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 10px;
-  align-items: start;
-  margin-top: 16px;
+/* ---------- Music row (settings sheet) ---------- */
+.music {
+  padding: 0 0 10px;
 }
-.info-panel {
-  padding: 0 14px;
-  background: rgba(242, 237, 225, 0.06);
-  border: 1px solid rgba(201, 162, 74, 0.35);
-  border-radius: 12px;
-  color: #f2ede1;
-}
-.info-panel--wide {
-  grid-column: 1 / -1;
-}
-.info-panel__summary {
-  padding: 12px 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: rgba(242, 237, 225, 0.86);
-  cursor: pointer;
-}
-.info-panel__summary:focus-visible {
-  outline: 3px solid var(--gold);
-  outline-offset: 2px;
-}
-.info-panel[open] {
-  padding-bottom: 12px;
-  background: var(--paper);
-  border-color: #e3d7bf;
-  color: var(--ink);
-}
-.info-panel[open] .info-panel__summary {
-  color: #3b2a14;
-}
-.round-history {
-  max-width: 700px;
-  margin: 16px auto 0;
-}
-.round-history__list {
+.music__controls {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
-.round-history__item {
-  min-width: 80px;
-  padding: 4px 8px;
+.music__btn {
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid #e0d2b3;
+  border-radius: 8px;
   background: #fff;
-  border: 1px solid #e5dcc8;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-.round-history__no {
   color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
-.round-history__trump {
-  font-size: 10px;
-  font-weight: 500;
-  color: #6b5f4d;
+.music__frame {
+  max-width: 280px;
+  overflow: hidden;
+  border-radius: 6px;
 }
 .card-credits {
   margin-top: 20px;
@@ -2509,23 +2421,6 @@
 }
 .card-credits a {
   color: inherit;
-}
-
-/* Weis list: same quiet panel; it also sits on the felt in landscape. */
-.jass-screen--play .weis-panel {
-  margin-top: 16px;
-  background: rgba(20, 30, 22, 0.88);
-  border-color: rgba(201, 162, 74, 0.35);
-  color: #f2ede1;
-}
-.jass-screen--play .weis-panel__winner {
-  color: #a8dcb8;
-}
-.jass-screen--play .weis-row__desc {
-  color: rgba(242, 237, 225, 0.72);
-}
-.jass-screen--play .weis-row__off {
-  color: #f3aaa1;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2721,4 +2616,34 @@
 .jass-screen--noanim .coach-bar__text,
 .jass-screen--noanim .hand-card.hand-card--hint .swiss-card {
   animation: none;
+}
+
+/* ---------- Confirm dialog (new game) ---------- */
+.confirm-sheet__text {
+  margin: 12px 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.confirm-sheet__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+.confirm-sheet__actions .set-newgame {
+  margin-top: 0;
+}
+.sheet .card-credits {
+  margin-top: 14px;
+  padding: 8px 0 0;
+  color: var(--muted);
+}
+.sheet .card-credits__title {
+  color: var(--ink);
+}
+
+.setup-footer {
+  max-width: 760px;
+  margin: 12px auto 0;
+  padding: 0 12px 16px;
 }

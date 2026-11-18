@@ -33,7 +33,13 @@ const ch: Messages = {
     'oben-abe': 'Obenabe',
     'unden-ufe': 'Undenufe',
   },
-  scoreBar: { trump: 'Trumpf', none: 'no offe', us: 'mir', pts: 'Pkt.' },
+  scoreBar: {
+    trump: 'Trumpf',
+    none: 'no offe',
+    us: 'mir',
+    pts: 'Pkt.',
+    toTarget: (n: number) => `bis ${n}`,
+  },
   seat: {
     you: 'Du',
     dealer: 'Gäber',
@@ -90,6 +96,7 @@ const ch: Messages = {
     wonBy: (name: string) => `${name} het dä Stich gmacht`,
   },
   settings: {
+    cancel: 'Abbräche',
     button: 'Iistellige',
     title: 'Iistellige',
     close: 'Zuemache',
@@ -172,6 +179,7 @@ const ch: Messages = {
     ] as { title: string; items: string[] }[],
   },
   resume: {
+    lineup: (p: string, a: string, b: string) => `mit ${p} gäge ${a} & ${b}`,
     title: 'Spiel lauft na',
     yourTeam: 'Eues Team',
     opponents: 'Gägner',
@@ -181,11 +189,17 @@ const ch: Messages = {
     aria: 'Gspeicherets Spiel',
   },
   victory: {
+    decided: (n: number, how: 'stoeck' | 'weis' | 'trick') =>
+      how === 'stoeck'
+        ? `Entschide i dr ${n}. Rundi mit em Stöck`
+        : how === 'weis'
+          ? `Entschide i dr ${n}. Rundi mit emene Wiis`
+          : `Entschide i dr ${n}. Rundi mit emene Stich`,
     colRound: 'Rundi',
     colContract: 'Spielart',
     roundNote: 'Pünkt pro Rundi, Multiplikator, Wiis, Stöck und Match sind scho iigrächnet.',
-    youWon: 'Eues Team gwünnt dä Match.',
-    youLost: 'D Gägner gwünned dä Match.',
+    youWon: 'Dir händ gwunne!',
+    youLost: 'Dir händ verlore',
     rounds: 'Runde',
     breakdown: 'Rundi für Rundi',
     close: 'Schliesse',
@@ -405,6 +419,7 @@ const ch: Messages = {
     start: 'Spiel starte',
   },
   game: {
+    waitingForTrump: (n: string) => `Warte, bis dr ${n} dr Trumpf wählt...`,
     welcome: 'Willkomme bim Swiss Jass!',
     noCardsPlayed: 'No kei Charte gspilt',
     roundHistory: 'Gspilti Runde',

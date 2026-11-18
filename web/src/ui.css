@@ -1,10 +1,13 @@
 /* Shared primitives for every screen outside the game table. */
 .app {
+  display: flex;
+  flex-direction: column;
   min-height: 100dvh;
   background: var(--color-cream);
   color: var(--color-ink);
 }
 .app-main {
+  flex: 1 0 auto;
   padding: 16px 0 32px;
 }
 .page {
@@ -229,6 +232,8 @@
 }
 
 .app-main:has(.jass-screen) {
+  display: flex;
+  flex-direction: column;
   padding: 0;
 }
 

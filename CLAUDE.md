@@ -62,7 +62,7 @@ its own folder.
 - `web/dist/` is untracked; `npm run build` output is not committed.
 - Backend tests in `backend/src/tests/` are hand-rolled scripts (`npm run
   smoke`, `npm run multi` in `backend/`) that hit the real SQLite DB.
-- Dev servers: `cd web && npm run dev`, `cd backend && npm run dev` (port 3000).
+- Dev servers: `cd web && npm run dev`, `cd backend && npm run dev` (port 3000). The web app is offline (no Sign in / Play online) unless `VITE_API_URL=http://localhost:3000` is set in `web/.env.development.local` (gitignored).
 
 ## Security (backend)
 

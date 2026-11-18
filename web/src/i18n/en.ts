@@ -36,7 +36,13 @@ const en = {
     K: 'King',
     A: 'Ace',
   } as Record<string, string>,
-  scoreBar: { trump: 'Trump', none: 'not chosen', us: 'us', pts: 'pts' },
+  scoreBar: {
+    trump: 'Trump',
+    none: 'not chosen',
+    us: 'us',
+    pts: 'pts',
+    toTarget: (n: number) => `to ${n}`,
+  },
   seat: {
     you: 'You',
     dealer: 'Dealer',
@@ -93,6 +99,7 @@ const en = {
     wonBy: (name: string) => `${name} took this trick`,
   },
   settings: {
+    cancel: 'Cancel',
     button: 'Settings',
     title: 'Settings',
     close: 'Close',
@@ -175,6 +182,7 @@ const en = {
     ] as { title: string; items: string[] }[],
   },
   resume: {
+    lineup: (p: string, a: string, b: string) => `with ${p} against ${a} & ${b}`,
     title: 'Match in progress',
     yourTeam: 'Your team',
     opponents: 'Opponents',
@@ -184,11 +192,17 @@ const en = {
     aria: 'Saved match',
   },
   victory: {
+    decided: (n: number, how: 'stoeck' | 'weis' | 'trick') =>
+      how === 'stoeck'
+        ? `Decided in hand ${n} with Stöck`
+        : how === 'weis'
+          ? `Decided in hand ${n} with a Weis`
+          : `Decided in hand ${n} with a trick`,
     colRound: 'Round',
     colContract: 'Contract',
     roundNote: 'Points per round, with multiplier, Weis, Stöck and Match already included.',
-    youWon: 'Your team wins the match.',
-    youLost: 'The opponents win the match.',
+    youWon: 'You won!',
+    youLost: 'You lost',
     rounds: 'Rounds',
     breakdown: 'Round by round',
     close: 'Close',
@@ -411,6 +425,7 @@ const en = {
     start: 'Start match',
   },
   game: {
+    waitingForTrump: (n: string) => `Waiting for ${n} to choose trump...`,
     welcome: 'Welcome to Swiss Jass!',
     noCardsPlayed: 'No cards played',
     roundHistory: 'Rounds played',

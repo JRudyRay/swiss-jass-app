@@ -13,6 +13,9 @@ export type GameState = {
   declarer?: number | null; // who named the contract
   weisWinner?: { playerId: number; teamId: number } | null; // holder of the best Weis
   stoeck?: number[]; // players whose Stöck has counted this hand
+  matchWinner?: 1 | 2 | null; // set once a team has reached the target
+  matchEndReason?: 'stoeck' | 'weis' | 'trick'; // what took it over the target
+  midHand?: boolean; // the match ended before the hand was played out
 };
 
 export type Player = { id: number; name: string; hand: any[]; team: number; position: string };
@@ -41,6 +44,9 @@ export const toGameState = (st: Schieber.State): GameState => ({
   stoeck: Object.entries(st.stoeckPending || {})
     .filter(([, s]) => s?.awarded)
     .map(([id]) => Number(id)),
+  matchWinner: st.matchWinner ?? null,
+  matchEndReason: st.matchEndReason,
+  midHand: st.phase === 'finished' && st.players.some((p) => (p.hand?.length || 0) > 0),
 });
 
 export const loadLocalState = (): Schieber.State | null => {

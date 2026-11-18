@@ -33,7 +33,13 @@ const fr: Messages = {
     'oben-abe': 'Obenabe',
     'unden-ufe': 'Undenufe',
   },
-  scoreBar: { trump: 'Atout', none: 'pas choisi', us: 'nous', pts: 'pts' },
+  scoreBar: {
+    trump: 'Atout',
+    none: 'pas choisi',
+    us: 'nous',
+    pts: 'pts',
+    toTarget: (n: number) => `jusqu’à ${n}`,
+  },
   seat: {
     you: 'Toi',
     dealer: 'Donneur',
@@ -90,6 +96,7 @@ const fr: Messages = {
     wonBy: (name: string) => `${name} a remporté le pli`,
   },
   settings: {
+    cancel: 'Annuler',
     button: 'Réglages',
     title: 'Réglages',
     close: 'Fermer',
@@ -172,6 +179,7 @@ const fr: Messages = {
     ] as { title: string; items: string[] }[],
   },
   resume: {
+    lineup: (p: string, a: string, b: string) => `avec ${p} contre ${a} & ${b}`,
     title: 'Partie en cours',
     yourTeam: 'Votre équipe',
     opponents: 'Adversaires',
@@ -181,11 +189,17 @@ const fr: Messages = {
     aria: 'Partie sauvegardée',
   },
   victory: {
+    decided: (n: number, how: 'stoeck' | 'weis' | 'trick') =>
+      how === 'stoeck'
+        ? `Décidé à la manche ${n} par le Stöck`
+        : how === 'weis'
+          ? `Décidé à la manche ${n} par une annonce`
+          : `Décidé à la manche ${n} par un pli`,
     colRound: 'Donne',
     colContract: 'Contrat',
     roundNote: 'Points par donne, multiplicateur, annonces, Stöck et Match déjà inclus.',
-    youWon: 'Votre équipe remporte la partie.',
-    youLost: 'Les adversaires remportent la partie.',
+    youWon: 'Vous avez gagné !',
+    youLost: 'Vous avez perdu',
     rounds: 'Manches',
     breakdown: 'Manche par manche',
     close: 'Fermer',
@@ -408,6 +422,7 @@ const fr: Messages = {
     start: 'Commencer la partie',
   },
   game: {
+    waitingForTrump: (n: string) => `En attente du choix de l’atout par ${n}...`,
     welcome: 'Bienvenue sur Swiss Jass !',
     noCardsPlayed: 'Aucune carte jouée',
     roundHistory: 'Manches jouées',

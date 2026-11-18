@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import Icon from '../Icon';
 import { messages, type Lang } from '../../i18n';
 import Sheet from './Sheet';
+import CardValues from './CardValues';
+import CardCredits from '../CardCredits';
 
 type Props = {
   lang: Lang;
@@ -66,6 +68,11 @@ const RulesSheet: React.FC<Props> = ({ lang, variant = 'table' }) => {
                 </ul>
               </details>
             ))}
+            <details className="rules-sec">
+              <summary>{messages(lang).info.scoring}</summary>
+              <CardValues lang={lang} />
+            </details>
+            <CardCredits lang={lang} />
           </div>
         </Sheet>
       )}

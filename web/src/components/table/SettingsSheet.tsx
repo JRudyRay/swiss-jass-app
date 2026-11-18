@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import Icon from '../Icon';
 import { messages, type Lang } from '../../i18n';
 import Sheet from './Sheet';
+import MusicPlayer from './MusicPlayer';
 import { hapticsSupported, type Settings, type Speed } from './useSettings';
 
 type Props = {
@@ -20,6 +21,8 @@ const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel
   const t = messages(lang).settings;
   const coach = messages(lang).coach;
   const [open, setOpen] = useState(false);
+  const [musicOpen, setMusicOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const toggle = (
@@ -90,19 +93,61 @@ const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel
           {toggle('coach', coach.setting, coach.settingHint)}
           {toggle('leftHanded', t.leftHanded, t.leftHandedHint)}
           {toggle('suitMarks', t.suitMarks, t.suitMarksHint)}
+          <div className="set-row set-row--stack">
+            <div className="set-row__text">
+              <span className="set-row__label">{messages(lang).info.music}</span>
+            </div>
+            {musicOpen ? (
+              <MusicPlayer lang={lang} />
+            ) : (
+              <button
+                type="button"
+                className="music__btn"
+                data-music-open
+                onClick={() => setMusicOpen(true)}
+              >
+                {messages(lang).info.play}
+              </button>
+            )}
+          </div>
           {onNewGame && (
             <button
               type="button"
               className="set-newgame"
               data-new-game
+              onClick={() => setConfirming(true)}
+            >
+              {newGameLabel}
+            </button>
+          )}
+        </Sheet>
+      )}
+      {open && confirming && onNewGame && (
+        <Sheet
+          title={newGameLabel || ''}
+          closeLabel={t.close}
+          onClose={() => setConfirming(false)}
+          returnFocusRef={btnRef}
+          className="confirm-sheet"
+        >
+          <p className="confirm-sheet__text">{messages(lang).game.confirmNewGame}</p>
+          <div className="confirm-sheet__actions">
+            <button type="button" className="music__btn" onClick={() => setConfirming(false)}>
+              {t.cancel}
+            </button>
+            <button
+              type="button"
+              className="set-newgame"
+              data-new-game-confirm
               onClick={() => {
+                setConfirming(false);
                 setOpen(false);
                 onNewGame();
               }}
             >
               {newGameLabel}
             </button>
-          )}
+          </div>
         </Sheet>
       )}
     </>

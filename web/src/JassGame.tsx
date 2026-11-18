@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import CardCredits from './components/CardCredits';
 import ScoreBar from './components/table/ScoreBar';
 import { trumpName } from './components/table/SuitBadge';
 import PlayerSeat from './components/table/PlayerSeat';
 import * as Schieber from './engine/schieber';
-import InfoPanels from './components/table/InfoPanels';
 import WeisPanel from './components/table/WeisPanel';
-import RoundHistory from './components/table/RoundHistory';
+import CardCredits from './components/CardCredits';
 import { seatWeis, seatStoeck } from './components/table/seatWeis';
 import TrickArea from './components/table/TrickArea';
 import LastTrick from './components/table/LastTrick';
@@ -16,6 +14,8 @@ import ResumeCard from './components/setup/ResumeCard';
 import {
   readSavedGame,
   writeSavedRounds,
+  readBots,
+  writeBots,
   clearSavedRounds,
   type SavedGameSummary,
 } from './components/setup/savedGame';
@@ -34,6 +34,7 @@ import Toast from './components/Toast';
 import { messages, type Lang } from './i18n';
 import { authFetch } from './authFetch';
 import { useScrollTopOnEnter } from './hooks/useScrollTopOnEnter';
+import { useWakeLock } from './hooks/useWakeLock';
 import { useLocalGame } from './hooks/useLocalGame';
 import { useMultiplayerSocket } from './hooks/useMultiplayerSocket';
 import { sortHandForDisplay } from './game/handSort';
@@ -140,7 +141,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     }
   });
   // The bots for the next local match, shown on the setup screen.
-  const [botNames, setBotNames] = useState<string[]>(() => Schieber.pickBotNames());
+  const [botNames, setBotNames] = useState<string[]>(() => {
+    const kept = readBots();
+    if (kept) return kept;
+    const fresh = Schieber.pickBotNames();
+    writeBots(fresh);
+    return fresh;
+  });
+  // New opponents, for the next match started from the setup (a rematch keeps them).
+  const rollBots = () => {
+    const fresh = Schieber.pickBotNames();
+    writeBots(fresh);
+    setBotNames(fresh);
+    return fresh;
+  };
   const [chosenTrump, setChosenTrump] = useState<string | null>(null);
   const [playDelayMs, setPlayDelayMs] = useState<number>(450);
   const [animatingSwoop, setAnimatingSwoop] = useState<{
@@ -446,7 +460,17 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
 
     // A saved, unfinished local match is offered on the welcome screen (Continue / New game).
     const saved = readSavedGame(maxPoints);
-    if (saved) setSavedGame(saved);
+    if (saved) {
+      // The setup page, the table and the resume card all show the opponents of this match.
+      setBotNames(saved.bots);
+      writeBots(saved.bots);
+      // A decided match has nothing to continue: its result comes back at once.
+      if (saved.finished) {
+        continueSavedGame();
+        return;
+      }
+      setSavedGame(saved);
+    }
 
     // No active game: show options to start a new one and clear transient UI state
     setOptionsVisible(true);
@@ -577,6 +601,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     setOptionsVisible(true);
     setSetupChoice(ONLINE_ENABLED ? 'welcome' : 'single');
     setIsLocal(false);
+    rollBots();
 
     // Clear localStorage (and the Continue card that mirrors it)
     try {
@@ -795,7 +820,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     setShowVictory,
     setMatchFinished,
     setAnimatingSwoop,
-    setBotNames,
+    rollBots,
+    savedGame,
     setSavedGame,
     setMode,
     setMaxPoints,
@@ -1165,6 +1191,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
       : gameState.currentPlayer === 0);
   const showPlaySurface = !optionsVisible || (mode === 'multi' && !!gameState);
   useScrollTopOnEnter(showPlaySurface);
+  useWakeLock(showPlaySurface && isLocal && !matchFinished);
 
   return (
     <div
@@ -1197,7 +1224,20 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               <div className="seat-slot seat-slot--east">{renderSeat('east', true)}</div>
               <div className="seat-slot seat-slot--south">{renderSeat('south')}</div>
               {mode === 'single' && (
-                <LastTrick lang={lang} last={lastTrick} players={players as any} />
+                <LastTrick
+                  lang={lang}
+                  last={lastTrick}
+                  players={players as any}
+                  extra={
+                    <WeisPanel
+                      lang={lang}
+                      weis={gameState?.weis as any}
+                      players={players as any}
+                      weisWinner={weisWinner as any}
+                      revealed={players.some((p: any) => (p.tricks?.length || 0) > 0)}
+                    />
+                  }
+                />
               )}
               {mode === 'single' && (
                 <SettingsSheet
@@ -1205,9 +1245,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
                   settings={settings}
                   onChange={updateSettings}
                   newGameLabel={t.newGame}
-                  onNewGame={() => {
-                    if (confirm(t.confirmNewGame)) resetToWelcome();
-                  }}
+                  onNewGame={resetToWelcome}
                 />
               )}
               {mode === 'single' && <RulesSheet lang={lang} />}
@@ -1288,7 +1326,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           <div style={{ marginTop: 4 }}>
             <MatchSetup
               lang={lang}
-              bots={botNames.map((n) => n.replace(/\s*\(bot\)$/, ''))}
+              bots={savedGame ? undefined : botNames.map((n) => n.replace(/\s*\(bot\)$/, ''))}
               teamNames={teamNames}
               onTeamNames={setTeamNames}
               target={maxPoints}
@@ -1309,6 +1347,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             blurb={t.multiTablesBlurb}
             onBack={() => setSetupChoice('welcome')}
           />
+        )}
+
+        {optionsVisible && !showPlaySurface && (
+          <footer className="setup-footer">
+            <CardCredits lang={lang} />
+          </footer>
         )}
 
         {coachOn && showPlaySurface && gameState && (
@@ -1353,20 +1397,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             } else playCard(card.id);
           }}
         />
-
-        <WeisPanel
-          lang={lang}
-          weis={gameState?.weis as any}
-          players={players as any}
-          weisWinner={weisWinner as any}
-          revealed={players.some((p: any) => (p.tricks?.length || 0) > 0)}
-        />
-
-        <RoundHistory lang={lang} rounds={roundHistory} />
-
-        <InfoPanels lang={lang} />
-
-        <CardCredits lang={lang} />
       </div>
 
       {handSheet.summary && showPlaySurface && (
@@ -1393,6 +1423,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             team2: gameState?.scores?.team2 || 0,
           }}
           roundHistory={roundHistory}
+          winner={gameState?.matchWinner || undefined}
+          endReason={gameState?.midHand ? gameState.matchEndReason : undefined}
           onPlayAgain={() => {
             setShowVictory(false);
             setMatchFinished(false);

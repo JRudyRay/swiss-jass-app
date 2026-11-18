@@ -466,6 +466,7 @@ describe('reaching the target: Stöck, Weis, Stich', () => {
     // Team 1 takes the trick with the Puur (24 points), but team 2's Stöck came first.
     expect(end.matchWinner).toBe(2);
     expect(end.scores).toEqual({ team1: 990, team2: 1010 });
+    expect(end.matchEndReason).toBe('stoeck');
   });
 
   it('Weis counts with the first trick, before its points', () => {
@@ -481,6 +482,7 @@ describe('reaching the target: Stöck, Weis, Stich', () => {
     const end = playOut(st);
     expect(end.matchWinner).toBe(1);
     expect(end.scores).toEqual({ team1: 1000, team2: 990 });
+    expect(end.matchEndReason).toBe('weis');
   });
 
   it('the trick points decide when neither Stöck nor Weis does, and the match stops mid-hand', () => {
@@ -501,6 +503,7 @@ describe('reaching the target: Stöck, Weis, Stich', () => {
     const end = playOut(st);
     expect(end.matchWinner).toBe(2);
     expect(end.scores).toEqual({ team1: 995, team2: 1001 });
+    expect(end.matchEndReason).toBe('trick');
     expect(end.players[0].hand).toHaveLength(1); // the second trick is never played
   });
 });

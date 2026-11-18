@@ -4,7 +4,7 @@ import * as Schieber from '../engine/schieber';
 import * as Bot from '../engine/bot';
 import { trumpName } from '../components/table/SuitBadge';
 import { COLLECT_MS } from '../components/table/TrickArea';
-import { readSavedRounds, clearSavedRounds } from '../components/setup/savedGame';
+import { readSavedRounds, clearSavedRounds, writeBots } from '../components/setup/savedGame';
 import { messages } from '../i18n';
 import { API_URL } from '../config';
 import { loadLocalState, saveLocalState, toGameState } from '../game/localState';
@@ -41,7 +41,7 @@ export function useLocalGame(c: any) {
     setShowVictory,
     setMatchFinished,
     setAnimatingSwoop,
-    setBotNames,
+    rollBots,
     setSavedGame,
     setMode,
     setMaxPoints,
@@ -143,7 +143,9 @@ export function useLocalGame(c: any) {
           // Callers continue their bot loop with the fresh hand, so don't start another one here.
           if (fresh.currentPlayer !== 0) {
             setMessage(
-              `Waiting for ${fresh.players.find((p) => p.id === fresh.currentPlayer)?.name || 'dealer'} to choose trump...`,
+              messages(lang).game.waitingForTrump(
+                fresh.players.find((p) => p.id === fresh.currentPlayer)?.name || '',
+              ),
             );
           } else {
             setMessage(t.pleaseChooseTrump);
@@ -185,10 +187,10 @@ export function useLocalGame(c: any) {
   }, []);
 
   // --- Local play with simple bots ---
-  const startLocalGame = () => {
+  const startLocalGame = (names: string[] = botNames) => {
     loopGenRef.current++;
-    const st = Schieber.startGameLocal(undefined, botNames, maxPoints);
-    setBotNames(Schieber.pickBotNames());
+    const st = Schieber.startGameLocal(undefined, names, maxPoints);
+    writeBots(names); // the same opponents for the setup page, a rematch and a resumed match
     // map engine players to our UI players
     setPlayers(mapPlayersWithSeats(st.players));
     setGameState(toGameState(st));
@@ -200,8 +202,9 @@ export function useLocalGame(c: any) {
   };
 
   // Resume the saved local match chosen on the welcome screen.
-  const continueSavedGame = () => {
+  const continueSavedGame = async () => {
     loopGenRef.current++;
+    const gen = loopGenRef.current;
     setSavedGame(null);
     setMode('single');
     try {
@@ -211,44 +214,55 @@ export function useLocalGame(c: any) {
         if (Number.isFinite(Number(st.target)) && Number(st.target) > 0)
           setMaxPoints(Number(st.target));
         else st.target = maxPoints; // games saved before the target lived in the state
-        // Old saves have no rounds: the table then starts empty and fills from here on.
-        const rounds = readSavedRounds(st.scores);
-        setRoundHistory(rounds);
         // A trick that was waiting for its resolve animation when the page closed
         if (st.pendingResolve) {
           st = Schieber.resolveTrick(st);
           saveLocalState(st);
         }
+        // Old saves have no rounds: the table then starts empty and fills from here on.
+        const rounds = readSavedRounds(st.scores);
+        if (st.phase === 'finished') {
+          // The hand ended before the page closed. Its round is only missing from the saved
+          // rounds when they add up to the scores at the start of the hand; otherwise it was
+          // already recorded (e.g. the score sheet was open) and must not be added twice.
+          const base = st.handStartScores || { team1: 0, team2: 0 };
+          const sum = (k: 'team1' | 'team2') => rounds.reduce((a, r) => a + r[k], 0);
+          if (sum('team1') === base.team1 && sum('team2') === base.team2) {
+            rounds.push({
+              round: rounds.length + 1,
+              team1: (st.scores.team1 || 0) - base.team1,
+              team2: (st.scores.team2 || 0) - base.team2,
+              trump: String(st.trump || ''),
+            });
+          }
+        }
+        setRoundHistory(rounds);
         const matchOver =
           st.phase === 'finished' &&
           (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
-        if (st.phase === 'finished' && !matchOver) {
-          // The hand ended just before the page closed: record it, then deal a fresh one.
-          const base = st.handStartScores || { team1: 0, team2: 0 };
-          setRoundHistory((h) => [
-            ...h,
-            {
-              round: h.length + 1,
-              team1: (st!.scores.team1 || 0) - base.team1,
-              team2: (st!.scores.team2 || 0) - base.team2,
-              trump: String(st!.trump || ''),
-            },
-          ]);
-          st = Schieber.startNewHand(st);
-          saveLocalState(st);
-        }
-        setPlayers(mapPlayersWithSeats(st.players));
-        setGameState(toGameState(st));
-        setHand(st.players.find((p: any) => p.id === 0)?.hand || []);
-        setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
+        const show = (s: Schieber.State) => {
+          setPlayers(mapPlayersWithSeats(s.players));
+          setGameState(toGameState(s));
+          setHand(s.players.find((p: any) => p.id === 0)?.hand || []);
+          setLegalCards(Schieber.getLegalCardsForPlayer(s, 0));
+        };
+        show(st);
         setOptionsVisible(false);
         setIsLocal(true);
         if (matchOver) {
-          // The saved match was already decided: show the result instead of dropping it.
+          // The saved match was already decided: show the result again instead of dropping it.
           setMatchFinished(true);
           setShowVictory(true);
-          botsTakeTurns(); // counts the totals once; the loop is skipped for a finished state
           return;
+        }
+        if (st.phase === 'finished') {
+          // The score sheet comes back before the next deal, as it was when the page closed.
+          setMessage(t.roundFinished);
+          await c.showHandSummary(Schieber.handSummary(st));
+          if (gen !== loopGenRef.current) return;
+          st = Schieber.startNewHand(st);
+          saveLocalState(st);
+          show(st);
         }
         setMessage(t.resumed);
         // bots don't wait for a click, so restart their loop if it's their turn
@@ -270,6 +284,7 @@ export function useLocalGame(c: any) {
     } catch {}
     clearSavedRounds();
     setSavedGame(null);
+    rollBots(); // a new match from the setup brings new opponents
   };
 
   const startLocalGameWithOptions = () => {
@@ -277,13 +292,16 @@ export function useLocalGame(c: any) {
     try {
       localStorage.setItem('jassLocalOptions', JSON.stringify({ gameType, maxPoints }));
     } catch {}
+    // A match still offered for Continue is replaced by a new one with new opponents; a rematch
+    // (nothing offered) keeps the bots, team names and target.
+    const names = live.current.savedGame ? rollBots() : botNames;
     // if a previous match finished, starting a new local game clears it
     setMatchFinished(false);
     setRoundHistory([]);
     clearSavedRounds();
     setSavedGame(null);
     setIsLocal(true);
-    startLocalGame();
+    startLocalGame(names);
     // let bots take over (they will auto-select trump if needed)
     setTimeout(() => {
       botsTakeTurns();
