@@ -6,6 +6,8 @@ import './setup.css';
 import { SuitIcon, trumpName } from '../table/SuitBadge';
 
 const TARGETS = [1000, 1500, 2500];
+// The slate and the score bar are made for totals of this size.
+export const MAX_TARGET = 5000;
 const MULTIPLIERS: [string, number][] = [
   ['eicheln', 1],
   ['rosen', 1],
@@ -54,7 +56,7 @@ export const MatchSetup: React.FC<Props> = ({
   // Typed text for the custom target; only clamped when the field loses focus.
   const [draft, setDraft] = useState(String(target));
   const commitDraft = () => {
-    const n = Math.max(100, Math.round(Number(draft) || 0));
+    const n = Math.min(MAX_TARGET, Math.max(100, Math.round(Number(draft) || 0)));
     setDraft(String(n));
     onTarget(n);
   };
@@ -141,13 +143,14 @@ export const MatchSetup: React.FC<Props> = ({
               type="number"
               inputMode="numeric"
               min={100}
+              max={MAX_TARGET}
               step={100}
               value={draft}
               autoFocus
               onChange={(e) => {
                 setDraft(e.target.value);
                 const n = Number(e.target.value);
-                if (n >= 100) onTarget(Math.round(n));
+                if (n >= 100) onTarget(Math.min(MAX_TARGET, Math.round(n)));
               }}
               onBlur={commitDraft}
             />

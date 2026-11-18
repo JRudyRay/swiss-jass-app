@@ -39,47 +39,64 @@ const BAR_TOP = 86;
 const BAR_BOTTOM = 172;
 const X0 = 16;
 const X1 = 124;
-const ROW = 26;
-const PER_ROW = 5;
+// Room above the top bar for the rows of hundreds.
+const HEADROOM = 66;
 
-// One "Z": hundreds above the top bar, the fifty on the diagonal, twenties below the bottom bar,
-// the rest as digits in the lower right triangle.
+// One "Z", always drawn whole (top bar, diagonal, bottom bar). Hundreds are tally strokes crossing
+// the top bar (groups of five: four strokes and a slash; more rows stack upward), each fifty is a
+// short stroke crossing the diagonal, twenties are strokes crossing the bottom bar, and the rest
+// is written as digits in the lower right triangle.
 const Zed: React.FC<{ points: number; seed: number }> = ({ points, seed }) => {
   const { h, f, z, rest } = tafel(points);
   const groups = tallyGroups(h);
+  const frame: string[] = [
+    stroke(X0 - 6, BAR_TOP, X1 + 6, BAR_TOP, 7000 + seed),
+    stroke(X1, BAR_TOP, X0, BAR_BOTTOM, 9000 + seed),
+    stroke(X0 - 6, BAR_BOTTOM, X1 + 6, BAR_BOTTOM, 7100 + seed),
+  ];
   const d: string[] = [];
   let n = seed * 100;
 
-  // Hundreds: groups of five (four strokes and a slash), left to right, rows stacked upward.
+  // Hundreds. Rows share the width and (when there are many) squeeze together, so any total fits.
+  const perRow = Math.max(5, Math.ceil(groups.length / 4));
+  const rows = Math.ceil(groups.length / perRow);
+  const rowH = rows > 1 ? Math.min(26, HEADROOM / (rows - 1)) : 26;
+  const len = Math.min(21, rowH - 4);
+  const gw = Math.min(21.5, (X1 - X0 - 2) / perRow);
+  const sw = Math.min(5, gw / 4.4);
   groups.forEach((size, g) => {
-    const row = Math.floor(g / PER_ROW);
-    const col = g % PER_ROW;
-    const gx = X0 + 2 + col * 21.5;
-    const yb = BAR_TOP - 7 - row * ROW;
-    const yt = yb - 19;
-    const sticks = Math.min(size, 4);
-    for (let s = 0; s < sticks; s++) d.push(stroke(gx + s * 4.6, yt, gx + s * 4.6, yb, n++));
-    if (size === 5) d.push(stroke(gx - 3, yb - 3, gx + 17.5, yt + 3, n++));
+    const row = Math.floor(g / perRow);
+    const col = g % perRow;
+    const gx = X0 + 2 + col * gw;
+    const yb = BAR_TOP + len / 2 - row * rowH;
+    const yt = yb - len;
+    for (let s = 0; s < Math.min(size, 4); s++)
+      d.push(stroke(gx + s * sw, yt, gx + s * sw, yb, n++));
+    if (size === 5) d.push(stroke(gx - 3, yb - 3, gx + sw * 3 + 3, yt + 3, n++));
   });
 
-  // Fifty: the diagonal (drawn bold), a faint guide when there is none.
-  const diag = stroke(X1, BAR_TOP, X0, BAR_BOTTOM, 9000 + seed);
-  // Twenties: strokes hanging below the bottom bar.
+  // Fifty: one short stroke crossing the diagonal at its middle.
+  if (f) {
+    const mx = (X0 + X1) / 2;
+    const my = (BAR_TOP + BAR_BOTTOM) / 2;
+    d.push(stroke(mx - 8, my - 11, mx + 8, my + 11, n++));
+  }
+  // Twenties: strokes crossing the bottom bar.
   for (let s = 0; s < z; s++) {
-    const x = X0 + 14 + s * 11;
-    d.push(stroke(x, BAR_BOTTOM + 8, x, BAR_BOTTOM + 30, n++));
+    const x = X0 + 34 + s * 11;
+    d.push(stroke(x, BAR_BOTTOM - 11, x, BAR_BOTTOM + 13, n++));
   }
 
   // Rest: one or two hand-made digits.
   const text = rest > 0 ? String(rest) : '';
-  const scale = 2.1;
+  const scale = 1.9;
   const width = text.length * 11 * scale;
-  const dx = X1 - 6 - width;
+  const dx = X1 - 2 - width;
   const digits = [...text].map((ch, k) => (
     <path
       key={k}
       d={DIGITS[ch]}
-      transform={`translate(${r1(dx + k * 11 * scale)} ${r1(BAR_BOTTOM - 8 - 16 * scale)}) scale(${scale}) rotate(${r1(
+      transform={`translate(${r1(dx + k * 11 * scale)} ${r1(BAR_BOTTOM - 9 - 16 * scale)}) scale(${scale}) rotate(${r1(
         jitter(seed * 7 + k, 7) * 3,
       )} 5 8)`}
       vectorEffect="non-scaling-stroke"
@@ -88,20 +105,14 @@ const Zed: React.FC<{ points: number; seed: number }> = ({ points, seed }) => {
 
   return (
     <g>
-      <path className="tafel__bar" d={stroke(X0 - 6, BAR_TOP, X1 + 6, BAR_TOP, 7000 + seed)} />
-      <path
-        className="tafel__bar"
-        d={stroke(X0 - 6, BAR_BOTTOM, X1 + 6, BAR_BOTTOM, 7100 + seed)}
-      />
-      <path
-        className={f ? 'tafel__bar tafel__bar--fifty' : 'tafel__bar tafel__bar--ghost'}
-        d={diag}
-      />
+      {frame.map((p, i) => (
+        <path key={`f${i}`} className="tafel__bar" d={p} />
+      ))}
       {d.map((p, i) => (
         <path key={i} className="tafel__mark" d={p} />
       ))}
       <g className="tafel__grain">
-        {d.map((p, i) => (
+        {frame.concat(d).map((p, i) => (
           <path key={i} d={p} />
         ))}
       </g>

@@ -2702,17 +2702,8 @@
   opacity: 0.92;
 }
 .tafel__bar {
-  stroke-width: 3.6;
-  opacity: 0.8;
-}
-.tafel__bar--fifty {
-  stroke-width: 4.6;
-  opacity: 0.95;
-}
-.tafel__bar--ghost {
-  stroke-width: 2;
-  stroke-dasharray: 1 7;
-  opacity: 0.28;
+  stroke-width: 4;
+  opacity: 0.92;
 }
 .tafel__digits path {
   stroke-width: 2.2;

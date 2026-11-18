@@ -29,7 +29,7 @@ import TrumpChooser from './components/table/TrumpChooser';
 import { API_URL, ONLINE_ENABLED } from './config';
 import type { Socket } from 'socket.io-client';
 import { WelcomeCard, MultiInfoCard } from './components/setup/WelcomeCard';
-import MatchSetup from './components/setup/MatchSetup';
+import MatchSetup, { MAX_TARGET } from './components/setup/MatchSetup';
 import VictoryModal from './components/VictoryModal';
 import Toast from './components/Toast';
 import { messages, type Lang } from './i18n';
@@ -136,7 +136,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   const [maxPoints, setMaxPoints] = useState<number>(() => {
     try {
       const n = Number(JSON.parse(localStorage.getItem('jassLocalOptions') || '{}').maxPoints);
-      return n >= 100 ? n : 1000;
+      return n >= 100 ? Math.min(n, MAX_TARGET) : 1000;
     } catch {
       return 1000;
     }
