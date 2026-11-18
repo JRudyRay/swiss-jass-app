@@ -1,6 +1,7 @@
 import * as Schieber from '../src/engine/schieber';
 import * as Bot from '../src/engine/bot';
 import { botPolicy, isBotLevel, type BotLevel } from '../src/game/botLevel';
+import { strongCardId } from '../src/engine/strongBot';
 
 // Head to head: the new bot (engine/bot.ts) against the old baseline bot
 // (chooseBotTrump/chooseBotCard in schieber.ts). Duplicate format: every dealt
@@ -39,21 +40,29 @@ type Policy = {
   trump: (s: Schieber.State, seat: number) => any;
   card: (s: Schieber.State, seat: number) => string | null;
 };
-const levelOpt = (name: string): BotLevel | null => {
+// --worlds n fixes the strong bot's sampled deals per decision (default: its own budget).
+const WORLDS = opt('worlds', 0) || undefined;
+const STRONG_POLICY: Policy = {
+  trump: Bot.chooseTrump,
+  card: (s, seat) => strongCardId(s, seat, Bot.chooseCard, WORLDS),
+};
+const levelOpt = (name: string): BotLevel | 'strong' | null => {
   const i = args.indexOf('--' + name);
   if (i < 0) return null;
   const v = args[i + 1];
+  if (v === 'strong') return v;
   if (!isBotLevel(v)) throw new Error(`--${name}: unknown level ${v}`);
   return v;
 };
+const policyOf = (l: BotLevel | 'strong') => (l === 'strong' ? STRONG_POLICY : botPolicy(l));
 const LA = levelOpt('a'),
   LB = levelOpt('b');
 const OLD: Policy = LB
-  ? botPolicy(LB)
+  ? policyOf(LB)
   : { trump: Schieber.chooseBotTrump, card: Schieber.chooseBotCard };
 // --ntrump 0 / --ncard 0 give the "new" side the old trump or card logic (diagnosis only)
 const NEW: Policy = LA
-  ? botPolicy(LA)
+  ? policyOf(LA)
   : {
       trump: opt('ntrump', 1) ? Bot.chooseTrump : OLD.trump,
       card: opt('ncard', 1) ? Bot.chooseCard : OLD.card,
