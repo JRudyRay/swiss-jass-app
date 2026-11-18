@@ -105,7 +105,12 @@ implement everything below as of 2026-10-05.
 
 ## Open questions (owner)
 
-None at the moment. Add new ones as a table: topic, current code, notes.
+Add new ones as a table: topic, current code, notes.
+
+| Topic | Current code | Notes |
+| --- | --- | --- |
+| French-suited deck (Romandie, Ticino) | Not offered. Swiss-German suits only; Schellen and Schilten count double. | A deck option needs a suit mapping. The usual picture mapping is Schellen=Carreau, Rosen=Coeur, Schilten=Pique, Eicheln=Trèfle, which would double Carreau and Pique; French-deck tables often double the black suits (Pique, Trèfle) instead. Which one? (2026-11-19) |
+| Declining a Weis | Every Weis is announced automatically. | At the table a player may keep a Weis quiet. Offer a choice, or keep automatic? (2026-11-16) |
 
 When the owner answers, move the row into a "Settled" section (with the date)
 and fix both engines and their tests in the same change.

@@ -31,11 +31,22 @@ enforces it).
   `web/src/engine/`, which re-exports it). Imported by relative path, no build
   step; Vitest tests live next to it. Backend adoption is roadmap M2.
 - `web/` React 18 + Vite + Tailwind, no router; `App.tsx` switches views.
-  - `src/engine/schieber.ts`: pure, immutable rules engine for single-player.
-  - `src/JassGame.tsx`: **2.9k-line god file** (game UI, bot loop, multiplayer
-    sockets, profile, stats). Don't
-    grow it: put new code in new hooks/components and extract what you touch.
-  - `src/config.ts`: API URL, hardcoded to `https://192.168.1.141` on Pages.
+  - `src/engine/`: `schieber.ts` re-exports the shared engine; `bot.ts` is the
+    normal bot, `fastsim.ts` + `strongBot.ts` the Monte Carlo bot (public
+    information only; `scripts/strong_tests.ts` has an honesty test).
+  - `src/hooks/useLocalGame.ts`: drives a single-player match (bot loop,
+    persistence, undo in training mode, stats and sound hooks).
+  - `src/game/`: `botLevel.ts` (easy / normal / strong), `coach.ts`,
+    `stats.ts`, `jasstafel.ts`, `sound.ts`. UI in `src/components/`
+    (`table/`, `setup/`, `VictoryModal.tsx`).
+  - `src/JassGame.tsx`: **1.5k-line god file** (view wiring, multiplayer
+    sockets, profile). Don't grow it: put new code in new hooks/components
+    and extract what you touch.
+  - `src/config.ts`: API URL from `VITE_API_URL` or the `jassApiUrl`
+    localStorage override. With neither, the build is offline-only and hides
+    login and multiplayer (this is what Pages serves).
+  - localStorage keys: `jassLocalState`, `jassBots`, `jassStats.v1`,
+    `jassCurrentMatch`, `jassLastTrick`, `jassTapHintDone`, `jassApiUrl`.
 - `backend/` Express + Socket.IO + Prisma on SQLite.
   - `src/gameEngine/SwissJassEngine.ts`: separate class-based engine, the
     authority for multiplayer, driven by `src/gameHub.ts`.

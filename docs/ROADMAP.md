@@ -122,6 +122,29 @@ So every later change can be verified.
       (Z-board) score view; multiplayer seats are mirrored (the next player
       sits west, so play looks clockwise) and `compareCards` in the shared
       engine has inconsistent signs (only used by a test).
+- [x] (2026-11-19) "Best Jass app" round, single-player: the table is one
+      screen without scrolling (card values, music, credits and Weis moved
+      into the rules, settings and last-trick sheets), offline by default (no
+      localhost API fallback, so no dead "Sign in"/"Play online"), bot names
+      kept from setup to rematch (`jassBots`), score sheet and victory survive
+      a reload, victory says "You won/lost" and how a mid-hand end was decided
+      (`matchEndReason` in the shared engine, annotation only). New: Jasstafel
+      (`game/jasstafel.ts`, `components/table/Jasstafel.tsx`, opened from the
+      score bar), local statistics (`game/stats.ts`, key `jassStats.v1`),
+      synthesised sounds (`game/sound.ts`), deal animation, card-back fans,
+      bigger trick cards, confetti, Matsch stamp, one-tap setting, undo in
+      training mode, screen wake lock, the 36 cards precached for offline
+      play, tablet/desktop scaling. Bot levels on the setup page
+      (`game/botLevel.ts`): easy (old bot + 15% random), normal, and strong
+      (`engine/fastsim.ts`, `engine/strongBot.ts`: 200 sampled deals per move
+      from public information only, ~3 ms a move). `npm run h2h` on 300
+      duplicate deals: strong vs normal +60.6 points per hand (SE 4.5), 45 of
+      60 matches; normal vs easy +26.7 (SE 3.2) over 1000 deals. Open: strong
+      bot's trump choice is still the normal bot's; sounds were never heard by
+      a person (headless checks only); slate tallies are crowded near 5000;
+      French deck and declining a Weis wait on the owner (`docs/RULES.md`);
+      variants (Coiffeur, Differenzler) not started; Romansh needs a native
+      review.
 - [x] Stronger bots (card memory, partner play, smarter trump choice and
       schieben), 2026-10-06. `web/src/engine/bot.ts`; `npm run h2h` (duplicate
       deals vs the old bot): +6.5 points per hand (2.3 SE) over 1000 deals,
@@ -136,3 +159,5 @@ So every later change can be verified.
 ## Waiting on the owner
 
 - Where should the multiplayer backend live, if anywhere public?
+- French deck: which suits count double? Declining a Weis? (`docs/RULES.md`, open questions)
+- Variants next (Coiffeur, Differenzler)?
