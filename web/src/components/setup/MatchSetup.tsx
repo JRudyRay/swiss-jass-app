@@ -18,6 +18,19 @@ const MULTIPLIERS: [string, number][] = [
   ['unden-ufe', 3],
 ];
 
+// Arrow keys move through a radiogroup; with `select` the focused option is chosen too.
+const arrowNav = (select: boolean) => (e: React.KeyboardEvent<HTMLElement>) => {
+  const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+  if (!d) return;
+  const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role=radio]'));
+  const at = items.indexOf(document.activeElement as HTMLElement);
+  if (at < 0) return;
+  e.preventDefault();
+  const next = items[(at + d + items.length) % items.length];
+  next.focus();
+  if (select) next.click();
+};
+
 type Props = {
   lang: Lang;
   // Bot names by seat: [right opponent, partner, left opponent] (engine ids 1, 2, 3).
@@ -118,7 +131,12 @@ export const MatchSetup: React.FC<Props> = ({
 
         <section className="setup__section">
           <h3 className="setup__label">{m.game.targetScore}</h3>
-          <div role="radiogroup" className="segmented">
+          <div
+            role="radiogroup"
+            aria-label={m.game.targetScore}
+            className="segmented"
+            onKeyDown={arrowNav(false)}
+          >
             {TARGETS.map((n) => (
               <button
                 key={n}
@@ -166,7 +184,13 @@ export const MatchSetup: React.FC<Props> = ({
 
         <section className="setup__section">
           <h3 className="setup__label">{s.botLevel}</h3>
-          <div role="radiogroup" aria-label={s.botLevel} className="segmented" data-bot-level>
+          <div
+            role="radiogroup"
+            aria-label={s.botLevel}
+            className="segmented"
+            data-bot-level
+            onKeyDown={arrowNav(true)}
+          >
             {LEVELS.map((l) => (
               <button
                 key={l}

@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef } from 'react';
 import type React from 'react';
 
-const FOCUSABLE = 'button:not([disabled]), summary';
+const FOCUSABLE =
+  'button:not([disabled]), summary, input:not([disabled]), select:not([disabled]), a[href]';
 
 // Shared modal-dialog behaviour: Esc closes, Tab stays inside, focus moves to the close button on
 // open and returns to `returnFocusRef` on close, and `titleId` labels the dialog.
