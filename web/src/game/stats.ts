@@ -1,4 +1,5 @@
 import * as Schieber from '../engine/schieber';
+import { DEFAULT_LEVEL, isBotLevel, type BotLevel } from './botLevel';
 
 // Local statistics for single-player matches, kept in localStorage under `jassStats.v1`.
 // Storage holds the last MAX_MATCHES finished matches and running counters; every figure shown
@@ -18,6 +19,8 @@ export type MatchRecord = {
   target: number;
   hands: number;
   coach: boolean;
+  level: BotLevel;
+  undo: boolean; // a card was taken back: the match does not count for the streak
 };
 
 type ContractCount = { n: number; pts: number };
@@ -87,6 +90,8 @@ function load(): Stored {
         target: num(m.target),
         hands: num(m.hands),
         coach: m.coach === true,
+        level: isBotLevel(m.level) ? m.level : DEFAULT_LEVEL,
+        undo: m.undo === true,
       }))
       .slice(-MAX_MATCHES);
     s.seenMatches = strs(raw.seenMatches);
@@ -131,8 +136,36 @@ const remember = (list: string[], id: string) => {
 
 const newId = () => `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
-export function startNewMatch(): string {
+// What the current match was played with: the bot level it started with, and whether a card was
+// taken back (training mode). Kept apart from the engine state, like the match id.
+const META_KEY = 'jassMatchMeta';
+export type MatchMeta = { level: BotLevel; undo: boolean };
+
+export function readMatchMeta(): MatchMeta {
+  try {
+    const raw = JSON.parse(localStorage.getItem(META_KEY) || 'null');
+    return {
+      level: isBotLevel(raw?.level) ? raw.level : DEFAULT_LEVEL,
+      undo: raw?.undo === true,
+    };
+  } catch {
+    return { level: DEFAULT_LEVEL, undo: false };
+  }
+}
+
+function writeMatchMeta(meta: MatchMeta) {
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+  } catch {
+    // ignore
+  }
+}
+
+export const markMatchUndo = () => writeMatchMeta({ ...readMatchMeta(), undo: true });
+
+export function startNewMatch(level: BotLevel = DEFAULT_LEVEL): string {
   const id = newId();
+  writeMatchMeta({ level, undo: false });
   try {
     localStorage.setItem(CURRENT_KEY, id);
   } catch {
@@ -196,6 +229,8 @@ export type MatchResult = {
   target: number;
   hands: number;
   coach?: boolean;
+  level?: BotLevel;
+  undo?: boolean;
   at?: number;
 };
 
@@ -205,12 +240,15 @@ export function finishMatch(id: string, r: MatchResult): boolean {
   if (s.seenMatches.includes(id)) return false;
   remember(s.seenMatches, id);
   s.played += 1;
+  // A match with a card taken back is played and won, but leaves the winning streak as it was.
   if (r.won) {
     s.won += 1;
-    s.streak += 1;
-    s.bestStreak = Math.max(s.bestStreak, s.streak);
+    if (!r.undo) {
+      s.streak += 1;
+      s.bestStreak = Math.max(s.bestStreak, s.streak);
+    }
     s.biggestWin = Math.max(s.biggestWin, r.us - r.them);
-  } else s.streak = 0;
+  } else if (!r.undo) s.streak = 0;
   s.matches.push({
     id,
     at: r.at ?? Date.now(),
@@ -220,6 +258,8 @@ export function finishMatch(id: string, r: MatchResult): boolean {
     target: r.target,
     hands: r.hands,
     coach: r.coach === true,
+    level: r.level ?? DEFAULT_LEVEL,
+    undo: r.undo === true,
   });
   if (s.matches.length > MAX_MATCHES) s.matches.splice(0, s.matches.length - MAX_MATCHES);
   save(s);
@@ -246,7 +286,8 @@ export function finishMatchOf(
   const us = myTeam === 1 ? a : b;
   const them = myTeam === 1 ? b : a;
   const won = st.matchWinner ? st.matchWinner === myTeam : us > them;
-  return finishMatch(id, { won, us, them, target: st.target || 0, hands, coach });
+  const { level, undo } = readMatchMeta();
+  return finishMatch(id, { won, us, them, target: st.target || 0, hands, coach, level, undo });
 }
 
 // --- Reading ---

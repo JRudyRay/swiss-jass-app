@@ -1,14 +1,14 @@
 import { trickGain } from '../game/trickGain';
 import { useEffect, useRef } from 'react';
 import * as Schieber from '../engine/schieber';
-import * as Bot from '../engine/bot';
 import { trumpName } from '../components/table/SuitBadge';
 import { COLLECT_MS } from '../components/table/TrickArea';
 import { readSavedRounds, clearSavedRounds, writeBots } from '../components/setup/savedGame';
 import { messages } from '../i18n';
 import { API_URL } from '../config';
 import { cueForPlay } from '../game/sound';
-import { finishMatchOf, recordHandOf, startNewMatch } from '../game/stats';
+import { finishMatchOf, readMatchMeta, recordHandOf, startNewMatch } from '../game/stats';
+import { botPolicy } from '../game/botLevel';
 import { loadLocalState, saveLocalState, toGameState } from '../game/localState';
 
 // Local (single-player) game flow: bot loop, trick resolve/collect, trump and card play,
@@ -315,7 +315,7 @@ export function useLocalGame(c: any) {
     clearSavedRounds();
     setSavedGame(null);
     setIsLocal(true);
-    startNewMatch();
+    startNewMatch(live.current.botLevel);
     startLocalGame(names);
     // let bots take over (they will auto-select trump if needed)
     setTimeout(() => {
@@ -330,6 +330,8 @@ export function useLocalGame(c: any) {
     const stale = () => gen !== loopGenRef.current;
     let st = loadLocalState();
     if (!st) return;
+    // The level the match was started with (a resumed match keeps it, whatever the setting says now).
+    const policy = botPolicy(readMatchMeta().level);
     // A completed trick that was never resolved (tab closed, loop superseded): finish it first.
     if (st.pendingResolve && st.phase !== 'finished') {
       setUiPendingResolve(true);
@@ -351,7 +353,7 @@ export function useLocalGame(c: any) {
         }
         // let engine pick a smart trump for bots
         const chooser = st.players.find((p) => p.id === st.currentPlayer);
-        const chosen = Bot.chooseTrump(st, st.currentPlayer);
+        const chosen = policy.trump(st, st.currentPlayer);
         const newState = Schieber.setTrumpAndDetectWeis(st, chosen);
         st = newState;
         if (chosen === 'schieben') {
@@ -375,7 +377,7 @@ export function useLocalGame(c: any) {
       } // if it's a bot's turn (0 is our south player), let bots play automatically
       if (st.currentPlayer !== 0) {
         const id = st.currentPlayer;
-        const pick = Bot.chooseCard(st, id);
+        const pick = policy.card(st, id);
         if (!pick) break;
         const before = st;
         const first = (before.players.find((p) => p.id === id)?.hand.length || 0) === 9;

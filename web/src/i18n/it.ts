@@ -128,6 +128,7 @@ const it: Messages = {
     resetConfirm: 'Eliminare tutte le statistiche su questo dispositivo? Non si può annullare.',
     resetDo: 'Elimina',
     cancel: 'Annulla',
+    undoMark: 'annullamento usato',
   },
   trick: { takes: (name: string) => `${name} fa la presa`, youTake: 'Fai la presa' },
   lastTrick: {
@@ -463,6 +464,12 @@ const it: Messages = {
     targetHint: (n: number) => `Vince la prima squadra a ${n} punti`,
     multipliers: 'Moltiplicatori',
     start: 'Inizia la partita',
+    botLevel: 'Livello dei bot',
+    botLevels: { easy: 'Tranquillo', normal: 'Normale' },
+    botLevelHints: {
+      easy: 'Tranquillo: i bot giocano semplice e ogni tanto sbagliano.',
+      normal: 'I bot contano le carte, leggono il tavolo e giocano per vincere.',
+    },
   },
   game: {
     waitingForTrump: (n: string) => `In attesa che ${n} scelga la briscola...`,

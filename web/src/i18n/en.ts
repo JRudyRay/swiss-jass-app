@@ -1,3 +1,4 @@
+import type { BotLevel } from '../game/botLevel';
 import type { CoachKey } from '../game/coach';
 
 // Values the coach texts can mention, already translated.
@@ -131,6 +132,7 @@ const en = {
     resetConfirm: 'Delete all statistics on this device? This cannot be undone.',
     resetDo: 'Delete statistics',
     cancel: 'Cancel',
+    undoMark: 'undo used',
   },
   trick: { takes: (name: string) => `${name} takes the trick`, youTake: 'You take the trick' },
   lastTrick: {
@@ -467,6 +469,12 @@ const en = {
     targetHint: (n: number) => `First team to ${n} points wins`,
     multipliers: 'Multipliers',
     start: 'Start match',
+    botLevel: 'Bot level',
+    botLevels: { easy: 'Easy', normal: 'Normal' } as Record<BotLevel, string>,
+    botLevelHints: {
+      easy: 'Relaxed: the bots play simply and slip up now and then.',
+      normal: 'The bots count cards, read the table and play to win.',
+    } as Record<BotLevel, string>,
   },
   game: {
     waitingForTrump: (n: string) => `Waiting for ${n} to choose trump...`,

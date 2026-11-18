@@ -130,6 +130,7 @@ const rm: Messages = {
       'Stizzar tut la statistica da quest apparat? Questa acziun na po betg vegnir revocada.',
     resetDo: 'Stizzar',
     cancel: 'Interrumper',
+    undoMark: 'annullaziun duvrada',
   },
   trick: { takes: (name: string) => `${name} fa il stich`, youTake: 'Ti fas il stich' },
   lastTrick: {
@@ -465,6 +466,12 @@ const rm: Messages = {
     targetHint: (n: number) => `L'emprima equipa cun ${n} puncts gudogna`,
     multipliers: 'Multiplicaturs',
     start: 'Cumenzar la partida',
+    botLevel: 'Nivel dals bots',
+    botLevels: { easy: 'Calm', normal: 'Normal' },
+    botLevelHints: {
+      easy: 'Calm: ils bots giogan simplamain e sbaglian ina giada.',
+      normal: 'Ils bots quintan las cartas, legian la maisa e giogan per gudagnar.',
+    },
   },
   game: {
     waitingForTrump: (n: string) => `Spetgar che ${n} tschernia il trumf...`,

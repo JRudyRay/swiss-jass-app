@@ -128,6 +128,7 @@ const ch: Messages = {
     resetConfirm: 'Alli Statistik uf dem Gerät lösche? Das cha me nöd rückgängig mache.',
     resetDo: 'Statistik lösche',
     cancel: 'Abbräche',
+    undoMark: 'Undo bruucht',
   },
   trick: { takes: (name: string) => `${name} macht dä Stich`, youTake: 'Du machsch dä Stich' },
   lastTrick: {
@@ -461,6 +462,12 @@ const ch: Messages = {
     targetHint: (n: number) => `Wer zerscht ${n} Pünkt hät, gwünnt`,
     multipliers: 'Zählig',
     start: 'Spiel starte',
+    botLevel: 'Bot-Stärchi',
+    botLevels: { easy: 'Gmüetlich', normal: 'Normal' },
+    botLevelHints: {
+      easy: 'Gmüetlich: d Bots spiled eifach und verlüred emal de Fade.',
+      normal: 'D Bots zähled d Charte, läsed de Tisch und spiled uf Sieg.',
+    },
   },
   game: {
     waitingForTrump: (n: string) => `Warte, bis dr ${n} dr Trumpf wählt...`,

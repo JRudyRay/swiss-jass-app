@@ -1,11 +1,13 @@
 import * as Schieber from '../src/engine/schieber';
 import * as Bot from '../src/engine/bot';
+import { botPolicy, isBotLevel, type BotLevel } from '../src/game/botLevel';
 
 // Head to head: the new bot (engine/bot.ts) against the old baseline bot
 // (chooseBotTrump/chooseBotCard in schieber.ts). Duplicate format: every dealt
 // state is played twice, with the new bot on team 1 and then on team 2.
 // Exits non-zero on an illegal card or a hand total other than 157.
-// Usage: npm run h2h -- [--deals 1000] [--matches 300] [--seed 1]
+// Usage: npm run h2h -- [--deals 1000] [--matches 300] [--seed 1] [--a easy --b normal]
+// --a / --b pick the bot levels of the two sides (game/botLevel.ts) instead of new against old.
 
 const args = process.argv.slice(2);
 const opt = (name: string, def: number) => {
@@ -37,12 +39,27 @@ type Policy = {
   trump: (s: Schieber.State, seat: number) => any;
   card: (s: Schieber.State, seat: number) => string | null;
 };
-const OLD: Policy = { trump: Schieber.chooseBotTrump, card: Schieber.chooseBotCard };
-// --ntrump 0 / --ncard 0 give the "new" side the old trump or card logic (diagnosis only)
-const NEW: Policy = {
-  trump: opt('ntrump', 1) ? Bot.chooseTrump : OLD.trump,
-  card: opt('ncard', 1) ? Bot.chooseCard : OLD.card,
+const levelOpt = (name: string): BotLevel | null => {
+  const i = args.indexOf('--' + name);
+  if (i < 0) return null;
+  const v = args[i + 1];
+  if (!isBotLevel(v)) throw new Error(`--${name}: unknown level ${v}`);
+  return v;
 };
+const LA = levelOpt('a'),
+  LB = levelOpt('b');
+const OLD: Policy = LB
+  ? botPolicy(LB)
+  : { trump: Schieber.chooseBotTrump, card: Schieber.chooseBotCard };
+// --ntrump 0 / --ncard 0 give the "new" side the old trump or card logic (diagnosis only)
+const NEW: Policy = LA
+  ? botPolicy(LA)
+  : {
+      trump: opt('ntrump', 1) ? Bot.chooseTrump : OLD.trump,
+      card: opt('ncard', 1) ? Bot.chooseCard : OLD.card,
+    };
+const NAME_A = LA ?? 'new',
+  NAME_B = LB ?? 'old';
 
 let failures = 0;
 function fail(msg: string) {
@@ -111,10 +128,10 @@ const m = mean(diffs),
   se = sd(diffs) / Math.sqrt(diffs.length);
 console.log(`Duplicate deals: ${DEALS}`);
 console.log(
-  `  mean margin per hand (new - old): ${m.toFixed(2)} points, SE ${se.toFixed(2)} (${(m / se).toFixed(1)} SE)`,
+  `  mean margin per hand (${NAME_A} - ${NAME_B}): ${m.toFixed(2)} points, SE ${se.toFixed(2)} (${(m / se).toFixed(1)} SE)`,
 );
 console.log(
-  `  new outscored old in ${((100 * better) / DEALS).toFixed(1)}% of deals, old in ${((100 * worse) / DEALS).toFixed(1)}%, level ${((100 * (DEALS - better - worse)) / DEALS).toFixed(1)}%`,
+  `  ${NAME_A} outscored ${NAME_B} in ${((100 * better) / DEALS).toFixed(1)}% of deals, ${NAME_B} in ${((100 * worse) / DEALS).toFixed(1)}%, level ${((100 * (DEALS - better - worse)) / DEALS).toFixed(1)}%`,
 );
 
 // 2. 1000-point matches, new bot alternating between the teams
@@ -133,7 +150,7 @@ for (let i = 0; i < MATCHES; i++) {
 const rate = wins / MATCHES,
   rse = Math.sqrt((rate * (1 - rate)) / MATCHES);
 console.log(
-  `Matches to 1000: ${MATCHES}, new bot won ${wins} (${(100 * rate).toFixed(1)}%, SE ${(100 * rse).toFixed(1)}%)`,
+  `Matches to 1000: ${MATCHES}, ${NAME_A} won ${wins} (${(100 * rate).toFixed(1)}%, SE ${(100 * rse).toFixed(1)}%)`,
 );
 console.log(`Elapsed ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 if (failures) {

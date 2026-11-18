@@ -129,6 +129,7 @@ const de: Messages = {
       'Alle Statistiken auf diesem Gerät löschen? Das lässt sich nicht rückgängig machen.',
     resetDo: 'Statistik löschen',
     cancel: 'Abbrechen',
+    undoMark: 'Rückgängig benutzt',
   },
   trick: { takes: (name: string) => `${name} macht den Stich`, youTake: 'Du machst den Stich' },
   lastTrick: {
@@ -466,6 +467,12 @@ const de: Messages = {
     targetHint: (n: number) => `Wer zuerst ${n} Punkte hat, gewinnt`,
     multipliers: 'Multiplikatoren',
     start: 'Partie starten',
+    botLevel: 'Bot-Stärke',
+    botLevels: { easy: 'Gemütlich', normal: 'Normal' },
+    botLevelHints: {
+      easy: 'Gemütlich: Die Bots spielen einfach und machen ab und zu einen Fehler.',
+      normal: 'Die Bots zählen Karten, lesen den Tisch und spielen auf Sieg.',
+    },
   },
   game: {
     waitingForTrump: (n: string) => `Warte, bis ${n} den Trumpf wählt...`,

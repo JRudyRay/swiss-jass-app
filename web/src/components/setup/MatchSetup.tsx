@@ -4,6 +4,7 @@ import { TEAM_COLORS } from '../table/ScoreBar';
 import Icon from '../Icon';
 import './setup.css';
 import { SuitIcon, trumpName } from '../table/SuitBadge';
+import { LEVELS, type BotLevel } from '../../game/botLevel';
 
 const TARGETS = [1000, 1500, 2500];
 // The slate and the score bar are made for totals of this size.
@@ -28,6 +29,9 @@ type Props = {
   // Training mode: the coach gives tips and explains the plays.
   coach: boolean;
   onCoach: (on: boolean) => void;
+  // How well the bots play.
+  level: BotLevel;
+  onLevel: (level: BotLevel) => void;
   onStart: () => void;
   onBack?: () => void;
   backLabel?: string;
@@ -46,6 +50,8 @@ export const MatchSetup: React.FC<Props> = ({
   onTarget,
   coach,
   onCoach,
+  level,
+  onLevel,
   onStart,
   onBack,
   backLabel,
@@ -156,6 +162,24 @@ export const MatchSetup: React.FC<Props> = ({
             />
           )}
           <p className="setup__hint">{s.targetHint(target)}</p>
+        </section>
+
+        <section className="setup__section">
+          <h3 className="setup__label">{s.botLevel}</h3>
+          <div role="radiogroup" aria-label={s.botLevel} className="segmented" data-bot-level>
+            {LEVELS.map((l) => (
+              <button
+                key={l}
+                role="radio"
+                aria-checked={level === l}
+                data-level={l}
+                onClick={() => onLevel(l)}
+              >
+                {s.botLevels[l]}
+              </button>
+            ))}
+          </div>
+          <p className="setup__hint">{s.botLevelHints[level]}</p>
         </section>
 
         <section className="setup__section">

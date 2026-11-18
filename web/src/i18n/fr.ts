@@ -129,6 +129,7 @@ const fr: Messages = {
       'Supprimer toutes les statistiques de cet appareil ? Cette action est irréversible.',
     resetDo: 'Supprimer',
     cancel: 'Annuler',
+    undoMark: 'annulation utilisée',
   },
   trick: { takes: (name: string) => `${name} remporte le pli`, youTake: 'Vous remportez le pli' },
   lastTrick: {
@@ -465,6 +466,12 @@ const fr: Messages = {
     targetHint: (n: number) => `La première équipe à ${n} points gagne`,
     multipliers: 'Multiplicateurs',
     start: 'Commencer la partie',
+    botLevel: 'Niveau des bots',
+    botLevels: { easy: 'Tranquille', normal: 'Normal' },
+    botLevelHints: {
+      easy: 'Tranquille : les bots jouent simplement et se trompent de temps en temps.',
+      normal: 'Les bots comptent les cartes, lisent la table et jouent pour gagner.',
+    },
   },
   game: {
     waitingForTrump: (n: string) => `En attente du choix de l’atout par ${n}...`,

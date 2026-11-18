@@ -54,6 +54,7 @@ const Ring: React.FC<{ value: number; label: string }> = ({ value, label }) => {
 // Statistics screen: figures kept on this device only (see game/stats.ts).
 const StatsSheet: React.FC<{ lang: Lang }> = ({ lang }) => {
   const t = messages(lang).stats;
+  const setupT = messages(lang).setup;
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [, bump] = useState(0);
@@ -148,7 +149,9 @@ const StatsSheet: React.FC<{ lang: Lang }> = ({ lang }) => {
                       </span>
                       <span className="stats-recent__target">
                         {t.toTarget(n(m.target))}
+                        {` · ${setupT.botLevels[m.level]}`}
                         {m.coach ? ` · ${t.coachMark}` : ''}
+                        {m.undo ? ` · ${t.undoMark}` : ''}
                       </span>
                     </li>
                   ))}

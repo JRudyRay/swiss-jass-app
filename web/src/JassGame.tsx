@@ -795,6 +795,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     roundHistory,
     sfx,
     coach: settings.coach,
+    botLevel: settings.botLevel,
     showHandSummary: handSheet.show,
     optionsVisible,
     lang,
@@ -1338,6 +1339,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               onTarget={setMaxPoints}
               coach={settings.coach}
               onCoach={(on) => updateSettings({ coach: on })}
+              level={settings.botLevel}
+              onLevel={(botLevel) => updateSettings({ botLevel })}
               onStart={startLocalGameWithOptions}
               onBack={ONLINE_ENABLED ? () => setSetupChoice('welcome') : undefined}
               backLabel={messages(lang).header.home}

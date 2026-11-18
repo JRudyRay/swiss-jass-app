@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { DEFAULT_LEVEL, isBotLevel, type BotLevel } from '../../game/botLevel';
 import { installSoundUnlock, playSound, type SoundKind } from '../../game/sound';
 
 export type Speed = 'normal' | 'fast' | 'off';
@@ -11,6 +12,10 @@ export type Settings = {
   suitMarks: boolean;
   // Training mode (single-player): the coach bar with tips and explanations.
   coach: boolean;
+  // How well the bots play in a new single-player match.
+  botLevel: BotLevel;
+  // Play a card with one tap instead of select, then tap again.
+  oneTap: boolean;
 };
 
 const KEY = 'jassSettings';
@@ -21,6 +26,8 @@ const DEFAULTS: Settings = {
   leftHanded: false,
   suitMarks: false,
   coach: false,
+  botLevel: DEFAULT_LEVEL,
+  oneTap: false,
 };
 // Multiplier for the trick and bot pauses. "Off" switches the CSS animations off and shrinks the
 // pauses to 10% (never 0: the bot loop and trick collection still need a tick to let React render
@@ -43,6 +50,8 @@ function load(): Settings {
       leftHanded: raw.leftHanded === true,
       suitMarks: raw.suitMarks === true,
       coach: raw.coach === true,
+      botLevel: isBotLevel(raw.botLevel) ? raw.botLevel : DEFAULTS.botLevel,
+      oneTap: raw.oneTap === true,
     };
   } catch {
     return { ...DEFAULTS };
