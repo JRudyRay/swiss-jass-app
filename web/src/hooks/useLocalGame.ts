@@ -188,8 +188,11 @@ export function useLocalGame(c: any) {
       }
       return newSt;
     } finally {
-      setCollect(null);
-      setAnimatingSwoop(null);
+      // A superseded run (undo, restart) must not clear the collect of a newer one.
+      if (gen === loopGenRef.current) {
+        setCollect(null);
+        setAnimatingSwoop(null);
+      }
     }
   }
 
@@ -223,6 +226,8 @@ export function useLocalGame(c: any) {
   const startLocalGame = (names: string[] = botNames) => {
     loopGenRef.current++;
     dropUndo();
+    setCollect(null);
+    setUiPendingResolve(false);
     markDeal();
     const st = Schieber.startGameLocal(undefined, names, maxPoints);
     writeBots(names); // the same opponents for the setup page, a rematch and a resumed match
@@ -240,6 +245,8 @@ export function useLocalGame(c: any) {
   const continueSavedGame = async () => {
     loopGenRef.current++;
     dropUndo();
+    setCollect(null);
+    setUiPendingResolve(false);
     const gen = loopGenRef.current;
     setSavedGame(null);
     setMode('single');
@@ -369,7 +376,7 @@ export function useLocalGame(c: any) {
       try {
         st = await startSwoopAndResolve(st);
       } finally {
-        setUiPendingResolve(false);
+        if (gen === loopGenRef.current) setUiPendingResolve(false);
       }
       if (stale()) return;
     }
@@ -429,7 +436,7 @@ export function useLocalGame(c: any) {
             // compute animation positions and perform swoop then resolve and retrieve resulting state
             st = await startSwoopAndResolve(st);
           } finally {
-            setUiPendingResolve(false);
+            if (gen === loopGenRef.current) setUiPendingResolve(false);
           }
           if (stale()) return;
           continue;
@@ -557,7 +564,7 @@ export function useLocalGame(c: any) {
         setHand(resolved.players.find((p) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(resolved, 0));
       } finally {
-        setUiPendingResolve(false);
+        if (gen === loopGenRef.current) setUiPendingResolve(false);
       }
       // after resolution, let bots continue
       setTimeout(() => botsTakeTurns(), 80);
