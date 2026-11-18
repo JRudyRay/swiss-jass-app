@@ -183,18 +183,18 @@ export const MatchSetup: React.FC<Props> = ({
           <p className="setup__hint">{s.botsFair}</p>
         </section>
 
-        <section className="setup__section">
-          <h3 className="setup__label">{s.multipliers}</h3>
-          <div className="setup__mult">
+        <details className="setup__info">
+          <summary>{s.multipliers}</summary>
+          <ul className="setup__mult">
             {MULTIPLIERS.map(([trump, x]) => (
-              <div key={trump} className="setup__mult-item">
-                <SuitIcon trump={trump} size={20} />
+              <li key={trump} className="setup__mult-item">
+                <SuitIcon trump={trump} size={16} />
                 <span className="setup__mult-name">{trumpName(trump, lang)}</span>
                 <b className="tabular">×{x}</b>
-              </div>
+              </li>
             ))}
-          </div>
-        </section>
+          </ul>
+        </details>
 
         <section className="setup__section setup__coach">
           <div>

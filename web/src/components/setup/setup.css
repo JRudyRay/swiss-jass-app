@@ -129,8 +129,8 @@
 }
 .setup__hero {
   position: relative;
-  min-height: 84px;
-  padding: 14px 16px;
+  min-height: 72px;
+  padding: 10px 16px;
   background: var(--color-wood);
   color: var(--color-cream);
   border-bottom: 3px solid var(--color-gold);
@@ -169,12 +169,12 @@
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
 }
 .setup__body {
-  padding: 14px 16px 16px;
+  padding: 12px 16px 14px;
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 .setup__label {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -187,7 +187,7 @@
 }
 .setup__team {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   padding-left: 12px;
   border-left: 4px solid var(--color-wood);
 }
@@ -229,8 +229,12 @@
 .setup__custom {
   margin-top: 10px;
 }
+.setup__team .input {
+  min-height: 44px;
+  padding: 6px 12px;
+}
 .setup__hint {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   font-size: 0.85rem;
   color: var(--color-muted);
 }
@@ -246,23 +250,54 @@
 .setup__coach .setup__hint {
   margin: 0;
 }
+/* Display-only: a quiet disclosure, nothing here is tappable. */
+.setup__info {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+.setup__info summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+.setup__info summary::-webkit-details-marker {
+  display: none;
+}
+.setup__info summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 150ms ease;
+}
+.setup__info[open] summary::before {
+  transform: rotate(45deg);
+}
+.setup__info summary:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
 .setup__mult {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
 }
 .setup__mult-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: var(--color-cream);
-  font-size: 0.9rem;
+  gap: 5px;
+  min-height: 24px;
 }
 .setup__mult-name {
-  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
   line-height: 1.2;
@@ -270,7 +305,7 @@
 .setup__actions {
   display: grid;
   gap: 8px;
-  padding-top: 14px;
+  padding-top: 10px;
   border-top: 1px solid rgb(107 74 47 / 0.2);
 }
 .setup__foot {
