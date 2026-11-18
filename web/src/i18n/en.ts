@@ -475,11 +475,13 @@ const en = {
     multipliers: 'Multipliers',
     start: 'Start match',
     botLevel: 'Bot level',
-    botLevels: { easy: 'Easy', normal: 'Normal' } as Record<BotLevel, string>,
+    botLevels: { easy: 'Easy', normal: 'Normal', strong: 'Strong' } as Record<BotLevel, string>,
     botLevelHints: {
       easy: 'Relaxed: the bots play simply and slip up now and then.',
       normal: 'The bots count cards, read the table and play to win.',
+      strong: 'The bots think through many possible deals before every card.',
     } as Record<BotLevel, string>,
+    botsFair: 'Bots never see your cards: they only know what has been played.',
   },
   game: {
     waitingForTrump: (n: string) => `Waiting for ${n} to choose trump...`,

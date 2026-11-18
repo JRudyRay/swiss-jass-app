@@ -180,6 +180,7 @@ export const MatchSetup: React.FC<Props> = ({
             ))}
           </div>
           <p className="setup__hint">{s.botLevelHints[level]}</p>
+          <p className="setup__hint">{s.botsFair}</p>
         </section>
 
         <section className="setup__section">

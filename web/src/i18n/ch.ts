@@ -468,11 +468,13 @@ const ch: Messages = {
     multipliers: 'Zählig',
     start: 'Spiel starte',
     botLevel: 'Bot-Stärchi',
-    botLevels: { easy: 'Gmüetlich', normal: 'Normal' },
+    botLevels: { easy: 'Gmüetlich', normal: 'Normal', strong: 'Stark' },
     botLevelHints: {
       easy: 'Gmüetlich: d Bots spiled eifach und verlüred emal de Fade.',
       normal: 'D Bots zähled d Charte, läsed de Tisch und spiled uf Sieg.',
+      strong: 'D Bots rächned vor jedere Charte vill möglichi Verteilige dure.',
     },
+    botsFair: 'D Bots gsehnd dini Charte nie: si wüssed nur, was scho gspillt isch.',
   },
   game: {
     waitingForTrump: (n: string) => `Warte, bis dr ${n} dr Trumpf wählt...`,

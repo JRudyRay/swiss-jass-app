@@ -472,11 +472,13 @@ const rm: Messages = {
     multipliers: 'Multiplicaturs',
     start: 'Cumenzar la partida',
     botLevel: 'Nivel dals bots',
-    botLevels: { easy: 'Calm', normal: 'Normal' },
+    botLevels: { easy: 'Calm', normal: 'Normal', strong: 'Ferm' },
     botLevelHints: {
       easy: 'Calm: ils bots giogan simplamain e sbaglian ina giada.',
       normal: 'Ils bots quintan las cartas, legian la maisa e giogan per gudagnar.',
+      strong: 'Avant mintga carta examineschan ils bots bleras distribuziuns pussaivlas.',
     },
+    botsFair: 'Ils bots na vesan mai tias cartas: els san mo quai ch’è vegnì giugà.',
   },
   game: {
     waitingForTrump: (n: string) => `Spetgar che ${n} tschernia il trumf...`,

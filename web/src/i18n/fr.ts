@@ -472,11 +472,13 @@ const fr: Messages = {
     multipliers: 'Multiplicateurs',
     start: 'Commencer la partie',
     botLevel: 'Niveau des bots',
-    botLevels: { easy: 'Tranquille', normal: 'Normal' },
+    botLevels: { easy: 'Tranquille', normal: 'Normal', strong: 'Fort' },
     botLevelHints: {
       easy: 'Tranquille : les bots jouent simplement et se trompent de temps en temps.',
       normal: 'Les bots comptent les cartes, lisent la table et jouent pour gagner.',
+      strong: 'Avant chaque carte, les bots étudient de nombreuses donnes possibles.',
     },
+    botsFair: 'Les bots ne voient jamais vos cartes : ils savent seulement ce qui a été joué.',
   },
   game: {
     waitingForTrump: (n: string) => `En attente du choix de l’atout par ${n}...`,

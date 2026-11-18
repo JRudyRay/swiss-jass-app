@@ -470,11 +470,13 @@ const it: Messages = {
     multipliers: 'Moltiplicatori',
     start: 'Inizia la partita',
     botLevel: 'Livello dei bot',
-    botLevels: { easy: 'Tranquillo', normal: 'Normale' },
+    botLevels: { easy: 'Tranquillo', normal: 'Normale', strong: 'Forte' },
     botLevelHints: {
       easy: 'Tranquillo: i bot giocano semplice e ogni tanto sbagliano.',
       normal: 'I bot contano le carte, leggono il tavolo e giocano per vincere.',
+      strong: 'Prima di ogni carta i bot esaminano molte distribuzioni possibili.',
     },
+    botsFair: 'I bot non vedono mai le tue carte: sanno solo cosa è stato giocato.',
   },
   game: {
     waitingForTrump: (n: string) => `In attesa che ${n} scelga la briscola...`,

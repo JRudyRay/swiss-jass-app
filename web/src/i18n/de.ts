@@ -473,11 +473,13 @@ const de: Messages = {
     multipliers: 'Multiplikatoren',
     start: 'Partie starten',
     botLevel: 'Bot-Stärke',
-    botLevels: { easy: 'Gemütlich', normal: 'Normal' },
+    botLevels: { easy: 'Gemütlich', normal: 'Normal', strong: 'Stark' },
     botLevelHints: {
       easy: 'Gemütlich: Die Bots spielen einfach und machen ab und zu einen Fehler.',
       normal: 'Die Bots zählen Karten, lesen den Tisch und spielen auf Sieg.',
+      strong: 'Die Bots rechnen vor jeder Karte viele mögliche Verteilungen durch.',
     },
+    botsFair: 'Die Bots sehen deine Karten nie: Sie wissen nur, was gespielt wurde.',
   },
   game: {
     waitingForTrump: (n: string) => `Warte, bis ${n} den Trumpf wählt...`,
