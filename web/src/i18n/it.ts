@@ -144,6 +144,8 @@ const it: Messages = {
     close: 'Chiudi',
     haptics: 'Vibrazione',
     hapticsHint: 'Una breve vibrazione quando giochi una carta',
+    sound: 'Suoni',
+    soundHint: 'Rumori di carte e prese, piccole melodie',
     speed: 'Velocità delle animazioni',
     speeds: { normal: 'Normale', fast: 'Veloce', off: 'Nessuna' } as Record<
       'normal' | 'fast' | 'off',

@@ -7,6 +7,7 @@ import { COLLECT_MS } from '../components/table/TrickArea';
 import { readSavedRounds, clearSavedRounds, writeBots } from '../components/setup/savedGame';
 import { messages } from '../i18n';
 import { API_URL } from '../config';
+import { cueForPlay } from '../game/sound';
 import { finishMatchOf, recordHandOf, startNewMatch } from '../game/stats';
 import { loadLocalState, saveLocalState, toGameState } from '../game/localState';
 
@@ -53,6 +54,7 @@ export function useLocalGame(c: any) {
     setUiPendingResolve,
     mapPlayersWithSeats,
     completeGame,
+    sfx,
     selectTrump,
   } = c;
   const loopGenRef: { current: number } = c.loopGenRef;
@@ -78,6 +80,7 @@ export function useLocalGame(c: any) {
         winner === 0 ? tr.youTake : tr.takes(st.players.find((p) => p.id === winner)?.name || ''),
       );
       setCollect({ winnerId: winner, points: trickGain(st) });
+      sfx('trick');
       await new Promise((r) => setTimeout(r, COLLECT_MS * speedScale()));
       if (gen !== loopGenRef.current) return st; // game was reset or restarted meanwhile
       const newSt = Schieber.resolveTrick(st);
@@ -98,6 +101,7 @@ export function useLocalGame(c: any) {
         const handNo = (live.current.roundHistory?.length || 0) + 1;
         recordHandOf(newSt, handNo);
         if (Schieber.handSummary(newSt).match.team1 + Schieber.handSummary(newSt).match.team2 > 0)
+          sfx('matsch');
         setRoundHistory((h) => [
           ...h,
           {
@@ -122,6 +126,7 @@ export function useLocalGame(c: any) {
               ? t1 > t2
               : t2 > t1;
           finishMatchOf(newSt, handNo, !!live.current.coach);
+          sfx(won ? 'win' : 'lose');
 
           // Update backend stats if this is an online game
           if (gameId && API_URL) {
@@ -372,7 +377,12 @@ export function useLocalGame(c: any) {
         const id = st.currentPlayer;
         const pick = Bot.chooseCard(st, id);
         if (!pick) break;
+        const before = st;
+        const first = (before.players.find((p) => p.id === id)?.hand.length || 0) === 9;
         st = Schieber.playCardLocal(st, id, pick);
+        sfx('card');
+        const cue = cueForPlay(before as any, st as any, id, first);
+        if (cue) sfx(cue);
         saveLocalState(st);
         setGameState(toGameState(st));
         setPlayers(mapPlayersWithSeats(st.players));
@@ -402,6 +412,7 @@ export function useLocalGame(c: any) {
         setGameState(toGameState(st));
         setHand(st.players.find((p) => p.id === 0)?.hand || []);
         setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
+        if (st.phase === 'playing' && !st.pendingResolve) sfx('turn');
         break;
       }
     }
@@ -483,7 +494,11 @@ export function useLocalGame(c: any) {
     const legal = Schieber.getLegalCardsForPlayer(st, 0).map((c) => c.id);
     if (!legal.includes(cardId)) return setMessage(t.illegalCard);
     const gen = loopGenRef.current;
+    const first = (st.players.find((p) => p.id === 0)?.hand.length || 0) === 9;
     const newSt = Schieber.playCardLocal(st, 0, cardId);
+    sfx('card');
+    const cue = cueForPlay(st as any, newSt as any, 0, first);
+    if (cue) sfx(cue);
     // if this play completes a trick, the engine will set pendingResolve
     if (newSt.pendingResolve) {
       setUiPendingResolve(true);

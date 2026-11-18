@@ -26,7 +26,7 @@ const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const toggle = (
-    key: 'haptics' | 'leftHanded' | 'suitMarks' | 'coach',
+    key: 'haptics' | 'sound' | 'leftHanded' | 'suitMarks' | 'coach',
     label: string,
     hint: string,
   ) => (
@@ -71,6 +71,7 @@ const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel
           returnFocusRef={btnRef}
           className="set-sheet"
         >
+          {toggle('sound', t.sound, t.soundHint)}
           {hapticsSupported() && toggle('haptics', t.haptics, t.hapticsHint)}
           <div className="set-row set-row--stack" role="radiogroup" aria-label={t.speed}>
             <span className="set-row__label">{t.speed}</span>

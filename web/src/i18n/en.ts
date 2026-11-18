@@ -147,6 +147,8 @@ const en = {
     close: 'Close',
     haptics: 'Vibration',
     hapticsHint: 'A short buzz when you play a card',
+    sound: 'Sound',
+    soundHint: 'Card sounds, tricks and small jingles',
     speed: 'Animation speed',
     speeds: { normal: 'Normal', fast: 'Fast', off: 'Off' } as Record<
       'normal' | 'fast' | 'off',

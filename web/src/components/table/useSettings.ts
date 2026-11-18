@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { installSoundUnlock, playSound, type SoundKind } from '../../game/sound';
 
 export type Speed = 'normal' | 'fast' | 'off';
 export type Settings = {
   haptics: boolean;
+  // Synthesized sound effects (card, trick, Weis, match result).
+  sound: boolean;
   speed: Speed;
   leftHanded: boolean;
   suitMarks: boolean;
@@ -13,6 +16,7 @@ export type Settings = {
 const KEY = 'jassSettings';
 const DEFAULTS: Settings = {
   haptics: true,
+  sound: true,
   speed: 'normal',
   leftHanded: false,
   suitMarks: false,
@@ -34,6 +38,7 @@ function load(): Settings {
     const raw = parsed && typeof parsed === 'object' ? parsed : {};
     return {
       haptics: typeof raw.haptics === 'boolean' ? raw.haptics : DEFAULTS.haptics,
+      sound: typeof raw.sound === 'boolean' ? raw.sound : DEFAULTS.sound,
       speed: isSpeed(raw.speed) ? raw.speed : DEFAULTS.speed,
       leftHanded: raw.leftHanded === true,
       suitMarks: raw.suitMarks === true,
@@ -44,7 +49,7 @@ function load(): Settings {
   }
 }
 
-// Display and feel preferences, kept in localStorage. `buzz` and `scale` read a ref, so they stay
+// Display and feel preferences, kept in localStorage. `buzz`, `sfx` and `scale` read a ref, so they stay
 // current inside the long-running bot loop.
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(load);
@@ -78,7 +83,13 @@ export function useSettings() {
     }
   }, []);
 
+  // Sound effects: event code calls this, so the setting is read from the ref at that moment.
+  const sfx = useCallback((kind: SoundKind) => {
+    if (ref.current.sound) playSound(kind);
+  }, []);
+  useEffect(() => installSoundUnlock(), []);
+
   const scale = useCallback(() => SPEED_SCALE[ref.current.speed] ?? 1, []);
 
-  return { settings, update, buzz, scale };
+  return { settings, update, buzz, sfx, scale };
 }

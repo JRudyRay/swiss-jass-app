@@ -146,6 +146,8 @@ const rm: Messages = {
     close: 'Serrar',
     haptics: 'Vibraziun',
     hapticsHint: 'Curta vibraziun cur che ti giegas ina carta',
+    sound: 'Tun',
+    soundHint: 'Canera da cartas e da stgetgs, pitschens motivs',
     speed: "Svelteza da l'animaziun",
     speeds: { normal: 'Normala', fast: 'Svelta', off: 'Nagina' } as Record<
       'normal' | 'fast' | 'off',

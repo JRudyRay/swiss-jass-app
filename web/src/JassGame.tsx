@@ -305,7 +305,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     bestWeis: null,
     declarations: [],
   });
-  const { settings, update: updateSettings, buzz, scale: speedScale } = useSettings();
+  const { settings, update: updateSettings, buzz, sfx, scale: speedScale } = useSettings();
   // Training mode (single-player only)
   const coachOn = isLocal && settings.coach;
   const coach = useCoach(coachOn, gameState, !!collect);
@@ -793,6 +793,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   } = useLocalGame({
     loopGenRef,
     roundHistory,
+    sfx,
     coach: settings.coach,
     showHandSummary: handSheet.show,
     optionsVisible,

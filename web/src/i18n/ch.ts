@@ -144,6 +144,8 @@ const ch: Messages = {
     close: 'Zuemache',
     haptics: 'Vibration',
     hapticsHint: 'Churzes Vibriere, wenn du e Charte spielsch',
+    sound: 'Ton',
+    soundHint: 'Chartegeräusch, Stich und chliini Melodie',
     speed: 'Animations-Tempo',
     speeds: { normal: 'Normal', fast: 'Schnäll', off: 'Us' } as Record<
       'normal' | 'fast' | 'off',
