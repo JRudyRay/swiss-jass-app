@@ -10,6 +10,7 @@ import TrickArea from './components/table/TrickArea';
 import LastTrick from './components/table/LastTrick';
 import SettingsSheet from './components/table/SettingsSheet';
 import RulesSheet from './components/table/RulesSheet';
+import StatsSheet from './components/table/StatsSheet';
 import ResumeCard from './components/setup/ResumeCard';
 import {
   readSavedGame,
@@ -791,6 +792,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     playLocalCard,
   } = useLocalGame({
     loopGenRef,
+    roundHistory,
+    coach: settings.coach,
     showHandSummary: handSheet.show,
     optionsVisible,
     lang,
@@ -1302,6 +1305,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
         )}
         {optionsVisible && (setupChoice === 'welcome' || setupChoice === 'single') && (
           <div className="rules-row">
+            <StatsSheet lang={lang} />
             <RulesSheet lang={lang} variant="inline" />
           </div>
         )}

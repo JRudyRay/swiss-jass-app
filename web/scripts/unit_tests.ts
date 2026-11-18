@@ -2,6 +2,7 @@ import * as Schieber from '../src/engine/schieber';
 import * as Bot from '../src/engine/bot';
 import * as Coach from '../src/game/coach';
 import { tafel, tallyGroups } from '../src/game/jasstafel';
+import * as Stats from '../src/game/stats';
 import { seatStoeck, seatWeis, weisLabel } from '../src/components/table/seatWeis';
 
 function assert(cond: boolean, msg: string) {
@@ -987,6 +988,20 @@ function testCoachReadsThePlays() {
   assert(Coach.readContract(st, 0) === null, 'my own contract is not a signal');
 }
 
+function memStorage() {
+  const storage: Record<string, string> = {};
+  (global as any).localStorage = {
+    getItem: (k: string) => storage[k] ?? null,
+    setItem: (k: string, v: string) => {
+      storage[k] = v;
+    },
+    removeItem: (k: string) => {
+      delete storage[k];
+    },
+  };
+  return storage;
+}
+
 function testTafelSums() {
   for (let n = 0; n <= 6000; n++) {
     const { h, f, z, rest } = tafel(n);
@@ -997,6 +1012,56 @@ function testTafelSums() {
   if (g.join() !== '5,5,2') throw new Error('tally groups ' + g.join());
 }
 
+const facts = (mine: number, matsch = 0, weis = 0, stoeck = 0) =>
+  ({
+    trump: 'oben',
+    hand: { team1: mine, team2: 157 - mine },
+    weis: { team1: weis, team2: 0 },
+    stoeck: { team1: stoeck, team2: 0 },
+    match: { team1: matsch, team2: 0 },
+  }) as any;
+
+function testStatsAggregate() {
+  memStorage();
+  const id = Stats.startNewMatch();
+  Stats.recordHand(id, 1, facts(120, 0, 50, 20), 1, 1);
+  Stats.recordHand(id, 2, facts(157, 100), 1, 2);
+  Stats.finishMatch(id, { won: true, us: 1200, them: 800, target: 1000, hands: 2 });
+  const s = Stats.readStats();
+  if (s.played !== 1 || s.won !== 1 || s.winRate !== 1) throw new Error('match counters');
+  if (s.hands !== 2 || s.bestHand !== 157 || s.matschMade !== 1) throw new Error('hand counters');
+  if (s.weisPoints !== 50 || s.stoeck !== 1 || s.biggestWin !== 400) throw new Error('bonus');
+  if (s.contracts.length !== 1 || s.contracts[0].n !== 1) throw new Error('contracts');
+  if (s.recent.length !== 1 || s.streak !== 1) throw new Error('recent');
+}
+
+function testStatsIdempotent() {
+  memStorage();
+  const id = Stats.startNewMatch();
+  if (!Stats.recordHand(id, 1, facts(100), 1, 1)) throw new Error('first hand not recorded');
+  if (Stats.recordHand(id, 1, facts(100), 1, 1)) throw new Error('hand recorded twice');
+  const r = { won: false, us: 900, them: 1000, target: 1000, hands: 1 };
+  if (!Stats.finishMatch(id, r)) throw new Error('first match not recorded');
+  if (Stats.finishMatch(id, r)) throw new Error('match recorded twice');
+  const s = Stats.readStats();
+  if (s.played !== 1 || s.hands !== 1 || s.streak !== 0) throw new Error('double count');
+}
+
+function testStatsCorruptAndCap() {
+  const storage = memStorage();
+  storage['jassStats.v1'] = '{not json';
+  const s0 = Stats.readStats();
+  if (s0.played !== 0 || s0.recent.length !== 0) throw new Error('corrupt storage not empty');
+  storage['jassStats.v1'] = JSON.stringify({ v: 99, played: 5 });
+  if (Stats.readStats().played !== 0) throw new Error('wrong version not ignored');
+  for (let i = 0; i < 60; i++)
+    Stats.finishMatch('m' + i, { won: true, us: 1000, them: 0, target: 1000, hands: 1 });
+  const s = Stats.readStats();
+  if (s.played !== 60 || s.recent.length !== 50) throw new Error('cap: ' + s.recent.length);
+  if (s.recent[0].id !== 'm59') throw new Error('recent not newest first');
+  Stats.resetStats();
+  if (Stats.readStats().played !== 0) throw new Error('reset failed');
+}
 
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
@@ -1045,7 +1110,7 @@ function runAll() {
     testCoachReadsThePlays,
   );
   tests.push(testWeisAnnouncedWithFirstCard, testWeisLabelAndStoeck);
-  tests.push(testTafelSums);
+  tests.push(testTafelSums, testStatsAggregate, testStatsIdempotent, testStatsCorruptAndCap);
   let passed = 0;
   for (const t of tests) {
     try {

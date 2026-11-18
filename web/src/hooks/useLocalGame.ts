@@ -7,6 +7,7 @@ import { COLLECT_MS } from '../components/table/TrickArea';
 import { readSavedRounds, clearSavedRounds, writeBots } from '../components/setup/savedGame';
 import { messages } from '../i18n';
 import { API_URL } from '../config';
+import { finishMatchOf, recordHandOf, startNewMatch } from '../game/stats';
 import { loadLocalState, saveLocalState, toGameState } from '../game/localState';
 
 // Local (single-player) game flow: bot loop, trick resolve/collect, trump and card play,
@@ -52,7 +53,6 @@ export function useLocalGame(c: any) {
     setUiPendingResolve,
     mapPlayersWithSeats,
     completeGame,
-    updateTotalsFromGameState,
     selectTrump,
   } = c;
   const loopGenRef: { current: number } = c.loopGenRef;
@@ -91,12 +91,13 @@ export function useLocalGame(c: any) {
         // short pause on the empty table before the next deal
         await new Promise((r) => setTimeout(r, 900));
         if (gen !== loopGenRef.current) return newSt;
-        // Totals are updated once by the end-of-round flow (botsTakeTurns) using updateTotalsFromGameState.
-        // Do not update totals here to avoid double-counting when the same finished state is processed elsewhere.
         // if maxPoints reached by either team, stop; else start a fresh local round
         const t1 = newSt.scores.team1 || 0;
         const t2 = newSt.scores.team2 || 0;
         const base = newSt.handStartScores || { team1: 0, team2: 0 };
+        const handNo = (live.current.roundHistory?.length || 0) + 1;
+        recordHandOf(newSt, handNo);
+        if (Schieber.handSummary(newSt).match.team1 + Schieber.handSummary(newSt).match.team2 > 0)
         setRoundHistory((h) => [
           ...h,
           {
@@ -115,6 +116,12 @@ export function useLocalGame(c: any) {
           setShowVictory(true);
           setMatchFinished(true);
           setGameState({ ...toGameState(newSt), phase: 'finished' });
+          const won = newSt.matchWinner
+            ? newSt.players.find((p) => p.id === 0)?.team === newSt.matchWinner
+            : newSt.players.find((p) => p.id === 0)?.team === 1
+              ? t1 > t2
+              : t2 > t1;
+          finishMatchOf(newSt, handNo, !!live.current.coach);
 
           // Update backend stats if this is an online game
           if (gameId && API_URL) {
@@ -237,6 +244,7 @@ export function useLocalGame(c: any) {
           }
         }
         setRoundHistory(rounds);
+        if (st.phase === 'finished' && rounds.length > 0) recordHandOf(st, rounds.length);
         const matchOver =
           st.phase === 'finished' &&
           (!!st.matchWinner || Math.max(st.scores.team1 || 0, st.scores.team2 || 0) >= st.target);
@@ -253,6 +261,7 @@ export function useLocalGame(c: any) {
           // The saved match was already decided: show the result again instead of dropping it.
           setMatchFinished(true);
           setShowVictory(true);
+          finishMatchOf(st, rounds.length, !!live.current.coach);
           return;
         }
         if (st.phase === 'finished') {
@@ -301,6 +310,7 @@ export function useLocalGame(c: any) {
     clearSavedRounds();
     setSavedGame(null);
     setIsLocal(true);
+    startNewMatch();
     startLocalGame(names);
     // let bots take over (they will auto-select trump if needed)
     setTimeout(() => {
@@ -398,17 +408,6 @@ export function useLocalGame(c: any) {
 
     if (st.phase !== 'finished') return;
     setMessage(t.roundFinished);
-    // compute per-player points based on st.scores distribution
-    updateTotalsFromGameState(
-      {
-        phase: 'finished',
-        currentPlayer: st.currentPlayer,
-        trumpSuit: st.trump,
-        scores: st.scores,
-      },
-      st.players as any,
-      'local-' + Date.now(),
-    );
   };
 
   botsRef.current = botsTakeTurns;
