@@ -4,6 +4,7 @@ import { TEAM_COLORS } from './ScoreBar';
 import { messages, type Lang } from '../../i18n';
 import type { SeatWeis } from './seatWeis';
 import { SuitIcon, trumpName } from './SuitBadge';
+import SeatFan from './SeatFan';
 
 type Props = {
   lang: Lang;
@@ -28,6 +29,10 @@ type Props = {
   seat?: string;
   // West/east: a stacked chip so the trick keeps its room.
   narrow?: boolean;
+  // Other seats show their hand as a fan of face-down cards; `dealSeq` replays the deal.
+  fan?: boolean;
+  dealSeq?: number;
+  dealScale?: number;
 };
 
 // Compact chip on the felt: initial avatar, name, cards left. The gold ring marks whose turn it is.
@@ -47,6 +52,9 @@ const PlayerSeat: React.FC<Props> = ({
   chose,
   seat,
   narrow,
+  fan,
+  dealSeq,
+  dealScale,
 }) => {
   const m = messages(lang);
   const t = m.seat;
@@ -68,9 +76,16 @@ const PlayerSeat: React.FC<Props> = ({
       </span>
       <span className="seat__name">{name}</span>
       <span className="seat__meta">
-        <span className="seat__count" title={`${cardsLeft} ${t.cards} · ${t.tricks(tricks)}`}>
-          <img src={`${base}assets/cards/back.webp`} alt="" width={8} height={12} />
-          {cardsLeft}
+        <span
+          className={`seat__count${fan ? ' seat__count--fan' : ''}`}
+          title={`${cardsLeft} ${t.cards} · ${t.tricks(tricks)}`}
+        >
+          {fan ? (
+            <SeatFan count={cardsLeft} dealSeq={dealSeq} dealScale={dealScale} />
+          ) : (
+            <img src={`${base}assets/cards/back.webp`} alt="" width={8} height={12} />
+          )}
+          <span>{cardsLeft}</span>
         </span>
         {thinking && (
           <span className="seat__thinking" aria-hidden="true">

@@ -26,7 +26,7 @@ const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel
   const btnRef = useRef<HTMLButtonElement>(null);
 
   const toggle = (
-    key: 'haptics' | 'sound' | 'leftHanded' | 'suitMarks' | 'coach',
+    key: 'haptics' | 'sound' | 'leftHanded' | 'suitMarks' | 'coach' | 'oneTap',
     label: string,
     hint: string,
   ) => (
@@ -92,6 +92,7 @@ const SettingsSheet: React.FC<Props> = ({ lang, settings, onChange, newGameLabel
             </div>
           </div>
           {toggle('coach', coach.setting, coach.settingHint)}
+          {toggle('oneTap', t.oneTap, t.oneTapHint)}
           {toggle('leftHanded', t.leftHanded, t.leftHandedHint)}
           {toggle('suitMarks', t.suitMarks, t.suitMarksHint)}
           <div className="set-row set-row--stack">

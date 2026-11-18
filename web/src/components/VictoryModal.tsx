@@ -3,6 +3,7 @@ import { messages, type Lang } from '../i18n';
 import { TEAM_COLORS } from './table/ScoreBar';
 import { trumpName } from './table/SuitBadge';
 import Jasstafel from './table/Jasstafel';
+import { Confetti, motionAllowed, useCountUp } from './Confetti';
 
 interface VictoryModalProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface VictoryModalProps {
   roundHistory: Array<{ round: number; team1: number; team2: number; trump: string }>;
   winner?: 1 | 2; // the team the engine declared the winner
   endReason?: 'stoeck' | 'weis' | 'trick'; // set when the match ended before the hand was played out
+  // Party on a win (confetti, score count-up); calm otherwise. False with animation speed Off.
+  animate?: boolean;
   onPlayAgain: () => void;
   onClose: () => void;
 }
@@ -28,6 +31,7 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
   roundHistory,
   winner: declared,
   endReason,
+  animate = true,
   onPlayAgain,
   onClose,
 }) => {
@@ -62,6 +66,15 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
     }
   };
 
+  const won =
+    myTeam != null &&
+    myTeam === (declared || (finalScores.team2 > finalScores.team1 ? 2 : 1)) &&
+    isOpen &&
+    animate &&
+    motionAllowed();
+  const shown1 = useCountUp(finalScores.team1, won);
+  const shown2 = useCountUp(finalScores.team2, won);
+
   if (!isOpen) return null;
   const m = messages(lang);
   const v = m.victory;
@@ -70,6 +83,7 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
 
   return (
     <div className="victory" onClick={onClose}>
+      {won && <Confetti />}
       <div
         ref={cardRef}
         className="victory__card"
@@ -105,9 +119,7 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
                   style={{ '--team': TEAM_COLORS[team] } as React.CSSProperties}
                 >
                   <div className="victory__team-name">{teamNames[team]}</div>
-                  <div className="victory__team-score">
-                    {team === 1 ? finalScores.team1 : finalScores.team2}
-                  </div>
+                  <div className="victory__team-score">{team === 1 ? shown1 : shown2}</div>
                   <div className="victory__team-bar" />
                 </div>
               </React.Fragment>

@@ -5,9 +5,9 @@ import { SwissCard } from '../../SwissCard';
 const TRICK_ROT: Record<string, number> = { south: 3, north: -4, west: -4, east: 4, center: 0 };
 
 // Trick collection timing: a short pause with the winner highlighted, then the pile slides to the winner.
-export const HIGHLIGHT_MS = 600;
-export const SLIDE_MS = 420;
-export const COLLECT_MS = HIGHLIGHT_MS + SLIDE_MS + 60;
+export const HIGHLIGHT_MS = 350;
+export const SLIDE_MS = 380;
+export const COLLECT_MS = HIGHLIGHT_MS + SLIDE_MS + 40;
 
 export type TrickCard = { card: any; seat: string };
 export type Collect = { winnerSeat: string; winningCardId: string } | null;
@@ -79,6 +79,7 @@ export const TrickArea: React.FC<Props> = ({
         el.animate(
           [
             { transform: tr(0, 0, win ? 0 : rot, win ? 1.08 : 1), opacity: 1 },
+            { opacity: 1, offset: 0.65 },
             { transform: tr(t.x - c.x, t.y - c.y, 0, 0.45), opacity: 0 },
           ],
           {

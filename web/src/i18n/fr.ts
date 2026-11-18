@@ -157,6 +157,9 @@ const fr: Messages = {
     leftHandedHint: 'Inverse les places latérales et la colonne de gauche',
     suitMarks: 'Formes des couleurs',
     suitMarksHint: 'Ajoute une forme à côté du symbole de la couleur',
+    oneTap: "Jouer les cartes d'un seul appui",
+    oneTapHint: 'Sans sélection : un appui joue la carte.',
+    tapHint: 'Touchez une carte pour la sélectionner, touchez-la encore pour la jouer.',
   },
   rules: {
     button: 'Règles',
@@ -394,6 +397,8 @@ const fr: Messages = {
     settingHint: 'Un coach donne des conseils et explique les coups. Le décompte reste le même.',
     tip: 'Conseil',
     tipAria: 'Demander un conseil au coach',
+    undo: 'Annuler',
+    undoAria: 'Reprendre votre dernière carte',
     idle: 'Un doute ? Touchez Conseil.',
     idleTrump: "Un doute sur l'atout ? Touchez Conseil.",
     push: 'Chibrer',

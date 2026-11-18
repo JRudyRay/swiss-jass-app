@@ -22,6 +22,7 @@ import {
 } from './components/setup/savedGame';
 import { useSettings } from './components/table/useSettings';
 import { useLastTrick } from './components/table/useLastTrick';
+import { useTapHint } from './components/table/useTapHint';
 import Hand from './components/table/Hand';
 import CoachBar from './components/table/CoachBar';
 import { useCoach } from './components/table/useCoach';
@@ -309,11 +310,16 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   // Training mode (single-player only)
   const coachOn = isLocal && settings.coach;
   const coach = useCoach(coachOn, gameState, !!collect);
+  const [lastTrickRewind, setLastTrickRewind] = useState<{ id: number; to: any } | null>(null);
   const lastTrick = useLastTrick(
     gameState?.currentTrick,
     collect,
     gameState?.phase === 'trump_selection', // not on "no game yet": a reload must keep it
+    lastTrickRewind,
   );
+  // Deal animation: bumped by the game each time a fresh hand is dealt (not on a reload).
+  const [dealSeq, setDealSeq] = useState(0);
+  const tapHint = useTapHint();
   // helper: map engine player id to a seat around the table
   const seatForId = (id: number) => {
     const seats = ['south', 'west', 'north', 'east'];
@@ -438,6 +444,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             : null
         }
         thinking={active && gameState?.currentPlayer === p.id && pos !== 'south'}
+        fan={pos !== 'south'}
+        dealSeq={dealSeq}
+        dealScale={speedScale()}
         seat={pos}
         narrow={narrow}
       />
@@ -784,6 +793,8 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
   };
 
   const {
+    canUndo,
+    undo,
     clearSavedGame,
     continueSavedGame,
     startLocalGameWithOptions,
@@ -796,6 +807,9 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     sfx,
     coach: settings.coach,
     botLevel: settings.botLevel,
+    lastTrick,
+    rewindLastTrick: (to: any) => setLastTrickRewind((r) => ({ id: (r?.id || 0) + 1, to })),
+    setDealSeq,
     showHandSummary: handSheet.show,
     optionsVisible,
     lang,
@@ -1373,10 +1387,23 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               (players.find((p) => p.id === seat)?.name || '').replace(/\s*\(bot\)$/, '')
             }
             onTip={coach.askTip}
+            canUndo={canUndo && !showVictory && !handSheet.summary}
+            onUndo={() => {
+              setSelectedCard(null);
+              undo();
+            }}
           />
         )}
         <Hand
           lang={lang}
+          dealSeq={dealSeq}
+          dealFrom={positionForPlayerId(gameState?.dealer ?? 0)}
+          dealScale={speedScale()}
+          tapHint={
+            isLocal && !settings.oneTap && !tapHint.done && gameState?.phase === 'playing'
+              ? messages(lang).settings.tapHint
+              : null
+          }
           hintCard={coachOn ? coach.hintCardId : null}
           hintLabel={messages(lang).coach.tip}
           cards={sortHandForDisplay(hand, chosenTrump)}
@@ -1394,11 +1421,12 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
               if (reason) showNotice(reason);
               return;
             }
-            if (selectedCard !== card.id) {
+            if (selectedCard !== card.id && !settings.oneTap) {
               setSelectedCard(card.id);
               return;
             }
             setSelectedCard(null);
+            tapHint.dismiss();
             if (isLocal) {
               buzz();
               playLocalCard(card.id);
@@ -1414,6 +1442,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
           round={roundHistory.length}
           players={players}
           youId={isLocal ? 0 : null}
+          myTeam={players.find((p) => p.position === 'south')?.team}
           teamNames={teamNames}
           target={maxPoints}
           onNext={handSheet.dismiss}
@@ -1431,6 +1460,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             team2: gameState?.scores?.team2 || 0,
           }}
           roundHistory={roundHistory}
+          animate={settings.speed !== 'off'}
           winner={gameState?.matchWinner || undefined}
           endReason={gameState?.midHand ? gameState.matchEndReason : undefined}
           onPlayAgain={() => {

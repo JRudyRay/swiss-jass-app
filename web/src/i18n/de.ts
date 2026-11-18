@@ -157,6 +157,9 @@ const de: Messages = {
     leftHandedHint: 'Spiegelt die seitlichen Plätze und die Seitenleiste',
     suitMarks: 'Formen für die Farben',
     suitMarksHint: 'Zeigt neben dem Farbsymbol eine Form an',
+    oneTap: 'Karten mit einem Tipp spielen',
+    oneTapHint: 'Ohne Auswählen: ein Tipp spielt die Karte.',
+    tapHint: 'Karte antippen zum Auswählen, nochmal antippen zum Spielen.',
   },
   rules: {
     button: 'Regeln',
@@ -395,6 +398,8 @@ const de: Messages = {
     settingHint: 'Ein Coach gibt Tipps und erklärt die Spielzüge. Die Wertung bleibt gleich.',
     tip: 'Tipp',
     tipAria: 'Den Coach um einen Tipp bitten',
+    undo: 'Zurück',
+    undoAria: 'Letzte Karte zurücknehmen',
     idle: 'Unsicher? Tippe auf Tipp.',
     idleTrump: 'Unsicher beim Trumpf? Tippe auf Tipp.',
     push: 'Schieben',

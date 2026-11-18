@@ -12,7 +12,7 @@
   --g-table-min: 250px;
   --g-table-h: clamp(var(--g-table-min), calc(100dvh - 340px - var(--g-coach-h)), 560px);
   /* trick card width: grows with the table, always smaller than a hand card */
-  --g-trick-w: clamp(52px, calc(var(--g-table-h) * 0.15), min(66px, 17vw));
+  --g-trick-w: clamp(56px, calc(var(--g-table-h) * 0.2), min(92px, 24vw));
   --g-seat-v: 46px; /* space kept free above/below the trick for the seat chips */
   --g-seat-h: 78px; /* space kept free left/right of the trick for the side chips */
   --felt: #1f5a3d;
@@ -1154,7 +1154,7 @@
 @media (min-width: 400px) and (max-width: 600px) {
   .jass-screen {
     --g-card-w: 66px;
-    --g-trick-w: clamp(54px, calc(var(--g-table-h) * 0.15), 72px);
+    --g-trick-w: clamp(60px, calc(var(--g-table-h) * 0.2), 94px);
   }
 }
 
@@ -1162,7 +1162,7 @@
   .jass-screen {
     --g-card-w: 84px;
     --g-table-h: clamp(300px, calc(100dvh - 390px - var(--g-coach-h)), 600px);
-    --g-trick-w: clamp(68px, calc(var(--g-table-h) * 0.16), 88px);
+    --g-trick-w: clamp(80px, calc(var(--g-table-h) * 0.19), 112px);
     --g-seat-v: 52px;
     --g-seat-h: 96px;
   }
@@ -1200,7 +1200,7 @@
 @media (min-width: 900px) and (min-height: 760px) {
   .jass-screen {
     --g-card-w: 94px;
-    --g-trick-w: clamp(76px, calc(var(--g-table-h) * 0.16), 92px);
+    --g-trick-w: clamp(92px, calc(var(--g-table-h) * 0.19), 124px);
   }
 }
 
@@ -2912,4 +2912,214 @@
 }
 .tafel--compact .tafel__captions {
   display: none;
+}
+
+/* ==========================================================================
+   Game feel: the deal, the seats' card fans, the one-time tap hint, undo.
+   Everything moves with transform/opacity only and is off under reduced motion
+   (and with the speed setting "off", see .jass-screen--noanim).
+   ========================================================================== */
+
+/* The deal: the player's cards fly in from the dealer's seat, one after another. Two identical
+   keyframe sets alternate by deal so a card dealt again restarts its animation. */
+.hand--deal-a .hand-card {
+  animation: dealA calc(260ms * var(--deal-k, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 50ms * var(--deal-k, 1));
+}
+.hand--deal-b .hand-card {
+  animation: dealB calc(260ms * var(--deal-k, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 50ms * var(--deal-k, 1));
+}
+@keyframes dealA {
+  from {
+    transform: translate(var(--deal-x, 0), var(--deal-y, -200px)) rotate(-14deg) scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes dealB {
+  from {
+    transform: translate(var(--deal-x, 0), var(--deal-y, -200px)) rotate(-14deg) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Other seats: a fan of face-down cards, one fewer per card played. */
+.seat__count--fan {
+  gap: 5px;
+  padding: 2px 6px 2px 4px;
+}
+.fan {
+  --fw: 12px;
+  display: inline-flex;
+  align-items: flex-end;
+  height: 21px;
+  padding-right: 2px;
+}
+.fan i {
+  --d: calc(var(--i) - (var(--n) - 1) / 2);
+  flex: none;
+  width: var(--fw);
+  height: calc(var(--fw) * 1.52);
+  margin-left: -7px;
+  background: var(--back) center / cover no-repeat;
+  border-radius: 2px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.55);
+  transform-origin: 50% 160%;
+  transform: translateY(calc(var(--d) * var(--d) * 0.12px)) rotate(calc(var(--d) * 4.5deg));
+}
+.fan i:first-child {
+  margin-left: 0;
+}
+.fan--deal-a i {
+  animation: fanA calc(260ms * var(--deal-k, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 50ms * var(--deal-k, 1));
+}
+.fan--deal-b i {
+  animation: fanB calc(260ms * var(--deal-k, 1)) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i) * 50ms * var(--deal-k, 1));
+}
+@keyframes fanA {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.6);
+  }
+}
+@keyframes fanB {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.6);
+  }
+}
+
+/* One-time tip above the hand */
+.hand-dock {
+  position: relative;
+}
+.hand-tip {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 7;
+  max-width: calc(100% - 24px);
+  padding: 5px 12px;
+  background: rgba(10, 18, 14, 0.9);
+  border: 1px solid rgba(240, 200, 105, 0.55);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  color: #efe6d2;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  animation: tipIn 300ms var(--ease-out) 400ms backwards;
+}
+@keyframes tipIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 6px));
+  }
+}
+
+/* Undo sits next to Tip in the coach bar. */
+.coach-bar__undo {
+  background: rgba(240, 200, 105, 0.16);
+  color: #f0c869;
+  box-shadow: inset 0 0 0 1px rgba(240, 200, 105, 0.5);
+}
+.coach-bar__undo:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.coach-bar__undo:disabled:active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hand--deal-a .hand-card,
+  .hand--deal-b .hand-card,
+  .fan--deal-a i,
+  .fan--deal-b i,
+  .hand-tip {
+    animation: none;
+  }
+}
+
+/* "Match!" stamp on the score sheet when the player's team made a Matsch. */
+.hs-tablewrap {
+  position: relative;
+}
+.hs-stamp {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 2px 14px;
+  border: 3px solid #c0392b;
+  border-radius: 8px;
+  background: rgba(255, 250, 240, 0.12);
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #c0392b;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-9deg);
+  animation: stampIn 1900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes stampIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-9deg) scale(2.2);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-9deg) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-9deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-9deg) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-stamp {
+    animation: none;
+  }
+}
+
+/* Victory confetti: ~24 paper pieces, ~1.6 s, transform/opacity only. */
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+.confetti i {
+  position: absolute;
+  top: -4%;
+  border-radius: 1px;
+  opacity: 0;
+  animation: confettiFall var(--dur, 1400ms) cubic-bezier(0.3, 0.6, 0.5, 1) var(--delay, 0ms) both;
+}
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx, 0), 78dvh, 0) rotate(var(--rot, 360deg));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
 }

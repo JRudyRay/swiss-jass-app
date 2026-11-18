@@ -156,6 +156,9 @@ const ch: Messages = {
     leftHandedHint: 'Spiegled d Siitesitz und d Siitelisten',
     suitMarks: 'Farb-Form uf de Charte',
     suitMarksHint: 'Zeigt e Form näbed em Farbsymbol',
+    oneTap: 'Charte mit eim Tipp spile',
+    oneTapHint: 'Ohni Uswähle: ei Tipp spilt d Charte.',
+    tapHint: 'Tipp d Charte a zum Uswähle, nomal tippe zum Spile.',
   },
   rules: {
     button: 'Regle',
@@ -393,6 +396,8 @@ const ch: Messages = {
     settingHint: 'En Coach git Tipps und erklärt d Spielzüg. D Wertig bliibt gliich.',
     tip: 'Tipp',
     tipAria: 'De Coach um en Tipp frage',
+    undo: 'Zrugg',
+    undoAria: 'Di letschti Charte zrugg näh',
     idle: 'Unsicher? Tipp uf Tipp.',
     idleTrump: 'Unsicher bim Trumpf? Tipp uf Tipp.',
     push: 'Schiebe',

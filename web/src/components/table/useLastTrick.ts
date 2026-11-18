@@ -33,6 +33,8 @@ export function useLastTrick(
   currentTrick: any[] | undefined,
   collect: { winnerId: number } | null,
   reset: boolean,
+  // Undo: put the memory back to what it was (`to`); a new `id` restores again.
+  rewind?: { id: number; to: LastTrickData | null } | null,
 ): LastTrickData | null {
   const [last, setLast] = useState<LastTrickData | null>(load);
 
@@ -54,6 +56,13 @@ export function useLastTrick(
     setLast(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collect, count]);
+
+  useEffect(() => {
+    if (!rewind) return;
+    store(rewind.to);
+    setLast(rewind.to);
+    snapped.current = null;
+  }, [rewind?.id]);
 
   useEffect(() => {
     if (reset) {

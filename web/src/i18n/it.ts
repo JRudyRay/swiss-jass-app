@@ -156,6 +156,9 @@ const it: Messages = {
     leftHandedHint: 'Inverte i posti laterali e il pannello laterale',
     suitMarks: 'Forme dei semi',
     suitMarksHint: 'Aggiunge una forma accanto al simbolo del seme',
+    oneTap: 'Gioca le carte con un solo tocco',
+    oneTapHint: 'Senza selezione: un tocco gioca la carta.',
+    tapHint: 'Tocca una carta per sceglierla, toccala di nuovo per giocarla.',
   },
   rules: {
     button: 'Regole',
@@ -393,6 +396,8 @@ const it: Messages = {
     settingHint: 'Un coach dà consigli e spiega le giocate. Il punteggio non cambia.',
     tip: 'Consiglio',
     tipAria: 'Chiedi un consiglio al coach',
+    undo: 'Annulla',
+    undoAria: "Riprendi l'ultima carta",
     idle: 'Un dubbio? Tocca Consiglio.',
     idleTrump: 'Un dubbio sulla briscola? Tocca Consiglio.',
     push: 'Schieben',

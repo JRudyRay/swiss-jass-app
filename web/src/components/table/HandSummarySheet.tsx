@@ -11,6 +11,8 @@ type Props = {
   round: number;
   players: { id: number; name: string }[];
   youId: number | null;
+  // The player's team: a Matsch by it gets a stamp.
+  myTeam?: number;
   teamNames: Record<number, string>;
   target: number;
   onNext: () => void;
@@ -23,6 +25,7 @@ const HandSummarySheet: React.FC<Props> = ({
   round,
   players,
   youId,
+  myTeam,
   teamNames,
   target,
   onNext,
@@ -69,38 +72,49 @@ const HandSummarySheet: React.FC<Props> = ({
           </span>
         )}
       </div>
-      <table className="hs-table">
-        <thead>
-          <tr>
-            <td />
-            {head(1)}
-            {head(2)}
-          </tr>
-        </thead>
-        <tbody>
-          {row(t.cards, summary.cards, 'cards')}
-          {any(summary.weis) && row(t.weis, summary.weis, 'weis')}
-          {any(summary.stoeck) && row(t.stoeck, summary.stoeck, 'stoeck')}
-          {any(summary.match) && row(t.match, summary.match, 'match')}
-          {mult > 1 && (
-            <tr data-row="multiplier" className="hs-row--mult">
-              <th scope="row">{t.multiplier}</th>
-              <td>×{mult}</td>
-              <td>×{mult}</td>
+      <div className="hs-tablewrap">
+        <table className="hs-table">
+          <thead>
+            <tr>
+              <td />
+              {head(1)}
+              {head(2)}
             </tr>
-          )}
-          <tr data-row="hand" className="hs-row--hand">
-            <th scope="row">{t.hand}</th>
-            <td className={lead === 1 ? 'hs-best' : undefined}>{cell(summary.hand.team1, true)}</td>
-            <td className={lead === 2 ? 'hs-best' : undefined}>{cell(summary.hand.team2, true)}</td>
-          </tr>
-          <tr data-row="total" className="hs-row--total">
-            <th scope="row">{t.total}</th>
-            <td>{summary.totals.team1}</td>
-            <td>{summary.totals.team2}</td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {row(t.cards, summary.cards, 'cards')}
+            {any(summary.weis) && row(t.weis, summary.weis, 'weis')}
+            {any(summary.stoeck) && row(t.stoeck, summary.stoeck, 'stoeck')}
+            {any(summary.match) && row(t.match, summary.match, 'match')}
+            {mult > 1 && (
+              <tr data-row="multiplier" className="hs-row--mult">
+                <th scope="row">{t.multiplier}</th>
+                <td>×{mult}</td>
+                <td>×{mult}</td>
+              </tr>
+            )}
+            <tr data-row="hand" className="hs-row--hand">
+              <th scope="row">{t.hand}</th>
+              <td className={lead === 1 ? 'hs-best' : undefined}>
+                {cell(summary.hand.team1, true)}
+              </td>
+              <td className={lead === 2 ? 'hs-best' : undefined}>
+                {cell(summary.hand.team2, true)}
+              </td>
+            </tr>
+            <tr data-row="total" className="hs-row--total">
+              <th scope="row">{t.total}</th>
+              <td>{summary.totals.team1}</td>
+              <td>{summary.totals.team2}</td>
+            </tr>
+          </tbody>
+        </table>
+        {myTeam != null && (myTeam === 1 ? summary.match.team1 : summary.match.team2) > 0 && (
+          <div className="hs-stamp" data-matsch-stamp>
+            {t.match}!
+          </div>
+        )}
+      </div>
       <div className="hs-target">{t.target(target)}</div>
       <button type="button" className="hs-next" data-next-hand onClick={onNext}>
         {t.next}

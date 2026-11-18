@@ -1,13 +1,20 @@
 import { trickGain } from '../game/trickGain';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Schieber from '../engine/schieber';
 import { trumpName } from '../components/table/SuitBadge';
 import { COLLECT_MS } from '../components/table/TrickArea';
+import { DEAL_MS } from '../components/table/Hand';
 import { readSavedRounds, clearSavedRounds, writeBots } from '../components/setup/savedGame';
 import { messages } from '../i18n';
 import { API_URL } from '../config';
 import { cueForPlay } from '../game/sound';
-import { finishMatchOf, readMatchMeta, recordHandOf, startNewMatch } from '../game/stats';
+import {
+  finishMatchOf,
+  markMatchUndo,
+  readMatchMeta,
+  recordHandOf,
+  startNewMatch,
+} from '../game/stats';
 import { botPolicy } from '../game/botLevel';
 import { loadLocalState, saveLocalState, toGameState } from '../game/localState';
 
@@ -63,6 +70,16 @@ export function useLocalGame(c: any) {
   const botsRef = useRef<() => Promise<void>>(async () => {});
   const progressKey = useRef('');
   const lastProgressAt = useRef<number>(Date.now());
+  // Training mode: the position before the human's latest card, for one step of undo.
+  const undoRef = useRef<{ st: Schieber.State; last: any } | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const dropUndo = () => {
+    undoRef.current = null;
+    setCanUndo(false);
+  };
+  // A fresh deal: the table animates it, and the bots wait for it to finish.
+  const dealWait = () => DEAL_MS * speedScale();
+  const markDeal = () => live.current.setDealSeq?.((n: number) => n + 1);
 
   const schobenMsg = (st: Schieber.State) =>
     st.currentPlayer === 0
@@ -91,6 +108,7 @@ export function useLocalGame(c: any) {
       setLegalCards(Schieber.getLegalCardsForPlayer(newSt, 0));
       // if round finished, show lastTrick for 2s then clear and award totals
       if (newSt.phase === 'finished') {
+        dropUndo(); // the hand is over: no taking cards back
         // short pause on the empty table before the next deal
         await new Promise((r) => setTimeout(r, 900));
         if (gen !== loopGenRef.current) return newSt;
@@ -152,6 +170,7 @@ export function useLocalGame(c: any) {
           setGameState(toGameState(fresh));
           setHand(fresh.players.find((p) => p.id === 0)?.hand || []);
           setLegalCards(Schieber.getLegalCardsForPlayer(fresh, 0));
+          markDeal();
           // Callers continue their bot loop with the fresh hand, so don't start another one here.
           if (fresh.currentPlayer !== 0) {
             setMessage(
@@ -162,6 +181,8 @@ export function useLocalGame(c: any) {
           } else {
             setMessage(t.pleaseChooseTrump);
           }
+          await new Promise((r) => setTimeout(r, dealWait()));
+          if (gen !== loopGenRef.current) return fresh;
           return fresh;
         }
       }
@@ -201,6 +222,8 @@ export function useLocalGame(c: any) {
   // --- Local play with simple bots ---
   const startLocalGame = (names: string[] = botNames) => {
     loopGenRef.current++;
+    dropUndo();
+    markDeal();
     const st = Schieber.startGameLocal(undefined, names, maxPoints);
     writeBots(names); // the same opponents for the setup page, a rematch and a resumed match
     // map engine players to our UI players
@@ -216,11 +239,13 @@ export function useLocalGame(c: any) {
   // Resume the saved local match chosen on the welcome screen.
   const continueSavedGame = async () => {
     loopGenRef.current++;
+    dropUndo();
     const gen = loopGenRef.current;
     setSavedGame(null);
     setMode('single');
     try {
       let st = loadLocalState();
+      let dealt = false;
       if (st) {
         // The match keeps its own target, whatever the setup screen says now.
         if (Number.isFinite(Number(st.target)) && Number(st.target) > 0)
@@ -277,10 +302,13 @@ export function useLocalGame(c: any) {
           st = Schieber.startNewHand(st);
           saveLocalState(st);
           show(st);
+          markDeal();
+          dealt = true;
         }
         setMessage(t.resumed);
         // bots don't wait for a click, so restart their loop if it's their turn
-        if (st.currentPlayer !== 0) setTimeout(() => botsTakeTurns(), 300);
+        if (st.currentPlayer !== 0)
+          setTimeout(() => botsTakeTurns(), dealt ? Math.max(300, dealWait()) : 300);
         return;
       }
     } catch (e) {
@@ -318,9 +346,12 @@ export function useLocalGame(c: any) {
     startNewMatch(live.current.botLevel);
     startLocalGame(names);
     // let bots take over (they will auto-select trump if needed)
-    setTimeout(() => {
-      botsTakeTurns();
-    }, 200);
+    setTimeout(
+      () => {
+        botsTakeTurns();
+      },
+      Math.max(200, dealWait()),
+    );
     setOptionsVisible(false);
   };
 
@@ -496,6 +527,8 @@ export function useLocalGame(c: any) {
     const legal = Schieber.getLegalCardsForPlayer(st, 0).map((c) => c.id);
     if (!legal.includes(cardId)) return setMessage(t.illegalCard);
     const gen = loopGenRef.current;
+    undoRef.current = { st, last: live.current.lastTrick };
+    setCanUndo(true);
     const first = (st.players.find((p) => p.id === 0)?.hand.length || 0) === 9;
     const newSt = Schieber.playCardLocal(st, 0, cardId);
     sfx('card');
@@ -540,7 +573,29 @@ export function useLocalGame(c: any) {
     setTimeout(() => botsTakeTurns(), 200);
   };
 
+  // Training mode: take the human's latest card back (and everything the bots did after it).
+  // Only within the hand; the match is marked so it does not count toward the streak.
+  const undo = () => {
+    const snap = undoRef.current;
+    if (!snap || live.current.matchFinished) return;
+    loopGenRef.current++; // stops the bot loop and a pending trick collection
+    dropUndo();
+    setCollect(null);
+    setUiPendingResolve(false);
+    setAnimatingSwoop(null);
+    const st = snap.st;
+    saveLocalState(st);
+    setGameState(toGameState(st));
+    setPlayers(mapPlayersWithSeats(st.players));
+    setHand(st.players.find((p) => p.id === 0)?.hand || []);
+    setLegalCards(Schieber.getLegalCardsForPlayer(st, 0));
+    live.current.rewindLastTrick?.(snap.last);
+    markMatchUndo();
+  };
+
   return {
+    canUndo,
+    undo,
     startLocalGame,
     continueSavedGame,
     clearSavedGame,

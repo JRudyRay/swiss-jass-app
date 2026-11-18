@@ -160,6 +160,9 @@ const en = {
     leftHandedHint: 'Mirrors the side seats and the side panel',
     suitMarks: 'Suit shapes on cards',
     suitMarksHint: 'Adds a shape next to the suit symbol',
+    oneTap: 'Play cards with one tap',
+    oneTapHint: 'Skip the select step: one tap plays the card.',
+    tapHint: 'Tap a card to select it, tap again to play.',
   },
   rules: {
     button: 'Rules',
@@ -397,6 +400,8 @@ const en = {
     settingHint: 'A coach gives tips and explains the plays. Scoring is unchanged.',
     tip: 'Tip',
     tipAria: 'Ask the coach for a tip',
+    undo: 'Undo',
+    undoAria: 'Take back your last card',
     idle: 'Not sure what to play? Tap Tip.',
     idleTrump: 'Not sure which trump? Tap Tip.',
     push: 'Schieben',

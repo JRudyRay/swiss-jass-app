@@ -158,6 +158,9 @@ const rm: Messages = {
     leftHandedHint: 'Spleglia las plazzas laterala e la colonna laterala',
     suitMarks: 'Furmas per las colurs',
     suitMarksHint: 'Mussa ina furma sper il simbol da la colur',
+    oneTap: 'Giugar cartas cun ina suletta tutga',
+    oneTapHint: 'Senza tscherner: ina tutga gioga la carta.',
+    tapHint: "Tutga ina carta per l'tscherner, tutga anc ina giada per giugar.",
   },
   rules: {
     button: 'Reglas',
@@ -394,6 +397,8 @@ const rm: Messages = {
     settingHint: 'In coach dat tips e declera ils tratgs. La valitaziun resta la medema.',
     tip: 'Tip',
     tipAria: 'Dumandar in tip al coach',
+    undo: 'Revegnir',
+    undoAria: "Prender enavos l'ultima carta",
     idle: 'Malsegir? Tutga Tip.',
     idleTrump: 'Malsegir tar il trumf? Tutga Tip.',
     push: 'Schieben',

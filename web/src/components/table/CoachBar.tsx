@@ -13,6 +13,9 @@ type Props = {
   choosingTrump: boolean;
   nameOf: (seat: number) => string;
   onTip: () => void;
+  // Undo the last card (offered while there is one to take back).
+  canUndo?: boolean;
+  onUndo?: () => void;
 };
 
 // The coach's message in the player's language.
@@ -43,7 +46,16 @@ export function coachText(lang: Lang, msg: CoachMsg, nameOf: (seat: number) => s
 
 // Training mode: one reserved row between the table and the hand with the coach's latest
 // remark and, on the player's move, a Tip button.
-const CoachBar: React.FC<Props> = ({ lang, msg, canTip, choosingTrump, nameOf, onTip }) => {
+const CoachBar: React.FC<Props> = ({
+  lang,
+  msg,
+  canTip,
+  choosingTrump,
+  nameOf,
+  onTip,
+  canUndo,
+  onUndo,
+}) => {
   const t = messages(lang).coach;
   const idle = canTip ? (choosingTrump ? t.idleTrump : t.idle) : '';
   const tone = msg ? msg.tone : 'idle';
@@ -54,6 +66,18 @@ const CoachBar: React.FC<Props> = ({ lang, msg, canTip, choosingTrump, nameOf, o
           {msg ? coachText(lang, msg, nameOf) : idle}
         </p>
       </div>
+      {onUndo && (
+        <button
+          type="button"
+          className="coach-bar__tip coach-bar__undo"
+          data-coach-undo
+          aria-label={t.undoAria}
+          disabled={!canUndo}
+          onClick={onUndo}
+        >
+          {t.undo}
+        </button>
+      )}
       {canTip && (
         <button
           type="button"
