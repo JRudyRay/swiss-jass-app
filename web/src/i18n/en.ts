@@ -90,6 +90,17 @@ const en = {
     title: 'The cards',
     body: 'Swiss-German deck, hand-coloured lithograph from Hasle bei Burgdorf, late 19th century. Scans: British Museum, public domain:',
   },
+  tafel: {
+    button: 'Open the Jasstafel',
+    title: 'Jasstafel',
+    aria: (a: string, pa: number, b: string, pb: number) => `Jasstafel: ${a} ${pa}, ${b} ${pb}`,
+    hands: 'Hands so far',
+    hand: 'Hand',
+    contract: 'Contract',
+    empty: 'No hand has been finished yet.',
+    note: 'Hundreds on top, the fifty on the diagonal, twenties below, the rest as digits.',
+    close: 'Close',
+  },
   trick: { takes: (name: string) => `${name} takes the trick`, youTake: 'You take the trick' },
   lastTrick: {
     title: 'Last trick',

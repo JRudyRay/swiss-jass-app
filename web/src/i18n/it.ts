@@ -87,6 +87,17 @@ const it: Messages = {
     title: 'Le carte',
     body: 'Mazzo svizzero tedesco, litografia colorata a mano, Hasle bei Burgdorf, fine del XIX secolo. Scansioni: British Museum, pubblico dominio:',
   },
+  tafel: {
+    button: 'Apri la lavagna',
+    title: 'Lavagna dello jass',
+    aria: (a: string, pa: number, b: string, pb: number) => `Lavagna: ${a} ${pa}, ${b} ${pb}`,
+    hands: 'Mani giocate',
+    hand: 'Mano',
+    contract: 'Contratto',
+    empty: 'Nessuna mano ancora conclusa.',
+    note: 'Centinaia in alto, il cinquanta sulla diagonale, ventine in basso, il resto in cifre.',
+    close: 'Chiudi',
+  },
   trick: { takes: (name: string) => `${name} fa la presa`, youTake: 'Fai la presa' },
   lastTrick: {
     title: 'Ultima presa',

@@ -3,6 +3,12 @@ import React from 'react';
 // Small stroke icons (24x24, currentColor). Used instead of emoji so they render
 // the same on every device and take the colour of the text around them.
 const PATHS: Record<string, React.ReactNode> = {
+  slate: (
+    <>
+      <rect x="3.5" y="4" width="17" height="16" rx="2" />
+      <path d="M8 9h8l-8 6h8" />
+    </>
+  ),
   play: (
     <>
       <rect x="4" y="5" width="11" height="15" rx="2" />

@@ -87,6 +87,17 @@ const de: Messages = {
     title: 'Die Karten',
     body: 'Deutschschweizer Jasskarten, handkolorierte Lithografie aus Hasle bei Burgdorf, spätes 19. Jahrhundert. Scans: British Museum, gemeinfrei:',
   },
+  tafel: {
+    button: 'Jasstafel öffnen',
+    title: 'Jasstafel',
+    aria: (a: string, pa: number, b: string, pb: number) => `Jasstafel: ${a} ${pa}, ${b} ${pb}`,
+    hands: 'Bisherige Runden',
+    hand: 'Runde',
+    contract: 'Spielart',
+    empty: 'Noch keine Runde beendet.',
+    note: 'Hunderter oben, der Fünfziger auf der Diagonale, Zwanziger unten, der Rest als Ziffern.',
+    close: 'Schliessen',
+  },
   trick: { takes: (name: string) => `${name} macht den Stich`, youTake: 'Du machst den Stich' },
   lastTrick: {
     title: 'Letzter Stich',

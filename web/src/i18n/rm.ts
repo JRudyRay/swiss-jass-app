@@ -88,6 +88,17 @@ const rm: Messages = {
     title: 'Las cartas',
     body: 'Cartas da jass svizras tudestgas, litografia colurada a maun da Hasle bei Burgdorf, fin dal 19avel tschientaner. Scans: British Museum, domena publica:',
   },
+  tafel: {
+    button: 'Avrir la tavla',
+    title: 'Tavla da Jass',
+    aria: (a: string, pa: number, b: string, pb: number) => `Tavla: ${a} ${pa}, ${b} ${pb}`,
+    hands: 'Rundas gieghadas',
+    hand: 'Runda',
+    contract: 'Contract',
+    empty: 'Anc nagina runda terminada.',
+    note: 'Tschientaris sisum, la tschuncanta sin la diagonala, vegns sut, il rest en cifras.',
+    close: 'Serrar',
+  },
   trick: { takes: (name: string) => `${name} fa il stich`, youTake: 'Ti fas il stich' },
   lastTrick: {
     title: 'Ultim stich',

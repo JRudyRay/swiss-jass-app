@@ -87,6 +87,17 @@ const ch: Messages = {
     title: 'D Charte',
     body: 'Dütschschwizer Jasscharte, handkoloriert Lithografie us Hasle bi Burgdorf, spaats 19. Jahrhundert. Scans: British Museum, gmeinfrei:',
   },
+  tafel: {
+    button: 'Jasstafele ufmache',
+    title: 'Jasstafele',
+    aria: (a: string, pa: number, b: string, pb: number) => `Jasstafele: ${a} ${pa}, ${b} ${pb}`,
+    hands: 'Bishärigi Rundene',
+    hand: 'Rundi',
+    contract: 'Spielart',
+    empty: 'No kei Rundi fertig gspilt.',
+    note: 'Hunderter obe, dr Füfzger uf dr Diagonale, Zwänzger unde, dr Rescht als Ziffere.',
+    close: 'Zue',
+  },
   trick: { takes: (name: string) => `${name} macht dä Stich`, youTake: 'Du machsch dä Stich' },
   lastTrick: {
     title: 'Letschte Stich',

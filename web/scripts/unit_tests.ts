@@ -1,6 +1,7 @@
 import * as Schieber from '../src/engine/schieber';
 import * as Bot from '../src/engine/bot';
 import * as Coach from '../src/game/coach';
+import { tafel, tallyGroups } from '../src/game/jasstafel';
 import { seatStoeck, seatWeis, weisLabel } from '../src/components/table/seatWeis';
 
 function assert(cond: boolean, msg: string) {
@@ -986,6 +987,17 @@ function testCoachReadsThePlays() {
   assert(Coach.readContract(st, 0) === null, 'my own contract is not a signal');
 }
 
+function testTafelSums() {
+  for (let n = 0; n <= 6000; n++) {
+    const { h, f, z, rest } = tafel(n);
+    if (100 * h + 50 * f + 20 * z + rest !== n) throw new Error(`tafel(${n}) does not add up`);
+    if (f > 1 || z > 2 || rest < 0 || rest > 19) throw new Error(`tafel(${n}) out of range`);
+  }
+  const g = tallyGroups(12);
+  if (g.join() !== '5,5,2') throw new Error('tally groups ' + g.join());
+}
+
+
 function runAll() {
   const tests = [testRankOrder, testCompareCardsTrump, testWeisCompare, testLegalPlayEnforcement];
   tests.push(testBotNamesKeptAcrossHands);
@@ -1033,6 +1045,7 @@ function runAll() {
     testCoachReadsThePlays,
   );
   tests.push(testWeisAnnouncedWithFirstCard, testWeisLabelAndStoeck);
+  tests.push(testTafelSums);
   let passed = 0;
   for (const t of tests) {
     try {

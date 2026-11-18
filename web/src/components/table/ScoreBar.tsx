@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { contractMultiplier } from '../../engine/schieber';
 import { SuitIcon, trumpName } from './SuitBadge';
 import { messages, type Lang } from '../../i18n';
+import Icon from '../Icon';
+import TafelSheet, { type RoundRow } from './TafelSheet';
 
 export const TEAM_COLORS: Record<number, string> = { 1: '#c8372d', 2: '#2f5f8f' };
 
@@ -12,6 +14,7 @@ type Props = {
   target: number;
   trump?: string | null;
   myTeam?: number;
+  rounds?: RoundRow[];
 };
 
 // Counts up to a new score instead of jumping (no animation for reduced motion or a lower value).
@@ -48,8 +51,10 @@ function useCountUp(value: number, ms = 600) {
 const Points: React.FC<{ value: number }> = ({ value }) => <>{useCountUp(value)}</>;
 
 // Slim match bar: both team totals with a thin progress line, and the trump pill in between.
-const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myTeam }) => {
+const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myTeam, rounds }) => {
   const t = messages(lang).scoreBar;
+  const [tafelOpen, setTafelOpen] = useState(false);
+  const tafelRef = useRef<HTMLButtonElement>(null);
   const mult = contractMultiplier(trump);
   const team = (n: 1 | 2) => {
     const score = n === 1 ? scores.team1 : scores.team2;
@@ -96,11 +101,31 @@ const ScoreBar: React.FC<Props> = ({ lang, teamNames, scores, target, trump, myT
             </span>
           )}
         </div>
-        <span className="score-bar__target" data-testid="target">
+        <button
+          ref={tafelRef}
+          type="button"
+          className="score-bar__target score-bar__tafel"
+          data-testid="target"
+          data-tafel-open
+          aria-haspopup="dialog"
+          aria-label={`${t.toTarget(target)}: ${messages(lang).tafel.button}`}
+          onClick={() => setTafelOpen(true)}
+        >
+          <Icon name="slate" size={12} />
           {t.toTarget(target)}
-        </span>
+        </button>
       </div>
       {team(2)}
+      {tafelOpen && (
+        <TafelSheet
+          lang={lang}
+          teamNames={teamNames}
+          scores={scores}
+          rounds={rounds || []}
+          onClose={() => setTafelOpen(false)}
+          returnFocusRef={tafelRef}
+        />
+      )}
     </div>
   );
 };

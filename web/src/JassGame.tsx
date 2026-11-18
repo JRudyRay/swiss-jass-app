@@ -832,7 +832,6 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
     setUiPendingResolve,
     mapPlayersWithSeats,
     completeGame,
-    updateTotalsFromGameState,
     selectTrump: (trump: string) => selectTrump(trump),
   });
 
@@ -1207,6 +1206,7 @@ export const JassGame: React.FC<{ user?: any; onLogout?: () => void; lang: Lang 
             target={maxPoints}
             trump={currentTrump}
             myTeam={players.find((p) => p.position === 'south')?.team}
+            rounds={roundHistory}
           />
         )}
 

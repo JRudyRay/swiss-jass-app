@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { messages, type Lang } from '../i18n';
 import { TEAM_COLORS } from './table/ScoreBar';
 import { trumpName } from './table/SuitBadge';
+import Jasstafel from './table/Jasstafel';
 
 interface VictoryModalProps {
   isOpen: boolean;
@@ -111,6 +112,16 @@ const VictoryModal: React.FC<VictoryModalProps> = ({
                 </div>
               </React.Fragment>
             ))}
+          </div>
+          <div className="victory__slate">
+            <Jasstafel
+              lang={lang}
+              compact
+              teams={[
+                { name: teamNames[1], points: finalScores.team1 },
+                { name: teamNames[2], points: finalScores.team2 },
+              ]}
+            />
           </div>
           <div className="victory__meta">
             {m.game.finalScore} · {v.rounds}: {roundHistory.length}

@@ -87,6 +87,17 @@ const fr: Messages = {
     title: 'Les cartes',
     body: 'Jeu de cartes suisse allemand, lithographie coloriée à la main, Hasle bei Burgdorf, fin du XIXe siècle. Numérisation : British Museum, domaine public :',
   },
+  tafel: {
+    button: 'Ouvrir l’ardoise',
+    title: 'Ardoise de jass',
+    aria: (a: string, pa: number, b: string, pb: number) => `Ardoise : ${a} ${pa}, ${b} ${pb}`,
+    hands: 'Donnes jouées',
+    hand: 'Donne',
+    contract: 'Contrat',
+    empty: 'Aucune donne terminée pour l’instant.',
+    note: 'Centaines en haut, le cinquante sur la diagonale, vingtaines en bas, le reste en chiffres.',
+    close: 'Fermer',
+  },
   trick: { takes: (name: string) => `${name} remporte le pli`, youTake: 'Vous remportez le pli' },
   lastTrick: {
     title: 'Dernier pli',
