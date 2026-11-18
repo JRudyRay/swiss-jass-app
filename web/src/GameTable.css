@@ -6,11 +6,20 @@
    ========================================================================== */
 
 .jass-screen {
-  --g-card-w: 64px; /* hand card width */
-  /* the felt takes the height the score strip and the hand leave free */
+  /* hand card width: nine cards fan across the width (each shows ~36% of its width, enough for
+     the corner index), and the hand may not take more than 13% of the height */
+  --g-card-w: clamp(58px, calc((100vw - 40px) / 4.1), min(124px, 13dvh));
+  --g-hand-h: calc(var(--g-card-w) * 1.52 + 30px + env(safe-area-inset-bottom, 0px));
   --g-coach-h: 0px; /* row of the training-mode coach, when it is on */
-  --g-table-min: 250px;
-  --g-table-h: clamp(var(--g-table-min), calc(100dvh - 340px - var(--g-coach-h)), 560px);
+  --g-chrome: 125px; /* header, score strip and their gaps above the felt */
+  --g-stage-w: 760px;
+  --g-table-min: 230px;
+  /* the felt takes the height the header, score strip and the hand leave free */
+  --g-table-h: clamp(
+    var(--g-table-min),
+    calc(100dvh - var(--g-chrome) - var(--g-hand-h) - var(--g-coach-h) - 2px),
+    720px
+  );
   /* trick card width: grows with the table, always smaller than a hand card */
   --g-trick-w: clamp(56px, calc(var(--g-table-h) * 0.2), min(92px, 24vw));
   --g-seat-v: 46px; /* space kept free above/below the trick for the seat chips */
@@ -31,6 +40,15 @@
   background: radial-gradient(120% 70% at 50% 0%, #24382c 0%, #14211a 55%, #0d1611 100%);
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
+/* the table view is exactly one screen: the hand sits on the bottom edge */
+.jass-screen--play {
+  padding-bottom: 0;
+  overflow: clip; /* the outer cards of the fan dip a few px below the edge */
+}
+.jass-screen--play .jass-screen__area {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
 .jass-screen__area {
   max-width: 960px;
   margin: 8px auto;
@@ -48,7 +66,7 @@
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  max-width: 760px;
+  max-width: var(--g-stage-w);
   margin: 0 auto 8px;
   padding: 6px 12px 8px;
   background: var(--paper);
@@ -168,7 +186,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 760px;
+  max-width: var(--g-stage-w);
   margin: 0 auto 8px;
 }
 .jass-status__msg {
@@ -207,7 +225,7 @@
 
 .jass-stage {
   position: relative;
-  max-width: 760px;
+  max-width: var(--g-stage-w);
   margin: 0 auto;
 }
 
@@ -366,16 +384,19 @@
 /* Who named the contract: its suit on the opposite corner from the dealer mark. */
 .seat__chose {
   position: absolute;
-  top: -14px;
-  right: -4px;
+  top: -13px;
+  right: -6px;
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   background: #f4ead2;
-  border: 1px solid var(--gold);
+  border: 1.5px solid var(--gold);
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  /* dark ring: reads as a badge on the chip's corner, not as part of it */
+  box-shadow:
+    0 0 0 2px rgba(14, 22, 17, 0.92),
+    0 1px 4px rgba(0, 0, 0, 0.45);
 }
 .seat--side .seat__chose {
   right: 1px;
@@ -623,6 +644,7 @@
   justify-content: center;
   min-height: calc(var(--g-card-w) * 1.52 + 30px);
   padding: 22px 10px 6px;
+  box-sizing: border-box;
 }
 .hand-slot {
   --d: calc(var(--i) - (var(--n) - 1) / 2);
@@ -807,7 +829,7 @@
 /* ---------- Weis ---------- */
 
 .weis-panel {
-  max-width: 760px;
+  max-width: var(--g-stage-w);
   margin: 12px auto 0;
   padding: 10px 12px;
   background: var(--paper);
@@ -1055,7 +1077,8 @@
 .jass-toast {
   position: fixed;
   left: 50%;
-  top: calc(12px + env(safe-area-inset-top, 0px));
+  /* the slot over the lower edge of the hand: never over the trick or the seats */
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   z-index: 3000;
   box-sizing: border-box;
   max-width: min(92vw, 420px);
@@ -1083,7 +1106,7 @@
 
 @keyframes toastIn {
   from {
-    transform: translate(-50%, -12px);
+    transform: translate(-50%, 12px);
     opacity: 0;
   }
   to {
@@ -1153,16 +1176,15 @@
 
 @media (min-width: 400px) and (max-width: 600px) {
   .jass-screen {
-    --g-card-w: 66px;
     --g-trick-w: clamp(60px, calc(var(--g-table-h) * 0.2), 94px);
   }
 }
 
 @media (min-width: 601px) {
   .jass-screen {
-    --g-card-w: 84px;
-    --g-table-h: clamp(300px, calc(100dvh - 390px - var(--g-coach-h)), 600px);
-    --g-trick-w: clamp(80px, calc(var(--g-table-h) * 0.19), 112px);
+    --g-chrome: 142px;
+    --g-table-min: 300px;
+    --g-trick-w: clamp(80px, calc(var(--g-table-h) * 0.19), 124px);
     --g-seat-v: 52px;
     --g-seat-h: 96px;
   }
@@ -1199,8 +1221,20 @@
 
 @media (min-width: 900px) and (min-height: 760px) {
   .jass-screen {
-    --g-card-w: 94px;
-    --g-trick-w: clamp(92px, calc(var(--g-table-h) * 0.19), 124px);
+    --g-stage-w: 880px;
+    --g-trick-w: clamp(92px, calc(var(--g-table-h) * 0.2), 140px);
+    --g-seat-h: 112px;
+  }
+  .seat--side {
+    width: 96px;
+  }
+  .seat__avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
+  .seat__name {
+    font-size: 14px;
   }
 }
 
@@ -1518,10 +1552,13 @@
     font-size: 15px;
   }
 
-  /* Toast: slim, top centre. */
+  /* Toast and notice: slim, over the lower edge of the hand column. */
   .jass-toast {
-    top: calc(6px + env(safe-area-inset-top, 0px));
-    max-width: min(70vw, 420px);
+    left: calc((100% + var(--g-rail, 0px)) / 2);
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    max-width: min(60vw, 420px);
+  }
+  .jass-toast {
     padding: 6px 12px;
     font-size: 13px;
   }
@@ -2043,10 +2080,10 @@
 
 /* ---------- Notice: floats over the table, takes no space ---------- */
 .jass-notice {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  /* just above your own seat chip: near the hand, and clear of the partner's name */
-  bottom: calc(var(--g-seat-v) + 4px);
+  /* same slot as the toast: over the lower edge of the hand, clear of the trick and the seats */
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   z-index: 30;
   max-width: calc(100% - 24px);
   padding: 6px 14px;
@@ -2060,6 +2097,13 @@
   pointer-events: none;
   transform: translateX(-50%);
   animation: noticeIn 2400ms ease both;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .jass-notice {
+    left: calc((100% + var(--g-rail, 0px)) / 2);
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    max-width: min(60vw, 420px);
+  }
 }
 @keyframes noticeIn {
   0% {
@@ -2368,6 +2412,18 @@
 
 /* Narrow phones: the top chip must not reach the corner buttons. */
 @media (orientation: portrait) and (max-width: 380px) {
+  /* side chips are 58px wide: a smaller fan, so the card count stays inside the plate */
+  .seat--side .fan {
+    --fw: 5px;
+    height: 12px;
+  }
+  .seat--side .fan i {
+    margin-left: -3px;
+  }
+  .seat--side .seat__count--fan {
+    gap: 3px;
+    padding: 2px 5px 2px 3px;
+  }
   .seat:not(.seat--side) .seat__thinking {
     display: none;
   }
@@ -2444,7 +2500,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 760px;
+  max-width: var(--g-stage-w);
   height: 68px;
   margin: 8px auto 0;
   padding: 2px 6px 2px 10px;
@@ -2643,7 +2699,7 @@
 }
 
 .setup-footer {
-  max-width: 760px;
+  max-width: var(--g-stage-w);
   margin: 12px auto 0;
   padding: 0 12px 16px;
 }

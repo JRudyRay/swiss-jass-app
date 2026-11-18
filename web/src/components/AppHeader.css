@@ -261,3 +261,19 @@
     white-space: nowrap;
   }
 }
+
+/* On the table the header gives height back to the game. */
+.app:has([data-jass-table]) .app-header__inner {
+  min-height: 40px;
+}
+.app:has([data-jass-table]) .app-brand,
+.app:has([data-jass-table]) .app-lang {
+  min-height: 40px;
+}
+.app:has([data-jass-table]) .app-brand__logo {
+  width: 28px;
+  height: 28px;
+}
+.app:has([data-jass-table]) .app-header {
+  border-bottom-width: 1px;
+}
